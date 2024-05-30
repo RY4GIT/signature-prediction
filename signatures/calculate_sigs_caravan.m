@@ -4,6 +4,13 @@ clear all
 delete(gcp('nocreate'))
 clc
 
+% Start the total runtime timer
+totalTimer = tic;
+
+%___________________________________________________________________________________
+%%%%%%%%% CHANGE HERE %%%%%%%%%%%%%%%%%
+sig_cat = 'calc_McMillan_OverlandFlow'; % 'calc_ALL', 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater'
+
 %___________________________________________________________________________________
 % Add TOSSH toolbox to the path
 baseDir = 'C:\Users\flipl\dev';
@@ -11,13 +18,23 @@ TOSSHDir = 'TOSSH\TOSSH_code';
 addpath(genpath(fullfile(baseDir, TOSSHDir)));
 
 % Define directories and file type
-data_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data';
+home_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki';
+data_dir = fullfile(home_dir, 'data');
 caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
 caravan_data = 'hysets';
-out_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures';
+
+currentDate = datestr(now, 'yyyymmdd');
+out_dir = fullfile(home_dir, 'out', 'signatures', ['caravan_', caravan_data, '_', currentDate]);
+out_filename = ['out_' sig_cat '.csv'];
+if ~exist(out_dir, 'dir')
+    mkdir(out_dir);  % This will create the directory and any necessary subdirectories
+    fprintf('Directory created: %s\n', out_dir);
+else
+    fprintf('Directory already exists: %s\n', out_dir);
+end
 
 %___________________________________________________________________________________
 % Read metadata
@@ -49,8 +66,8 @@ resultsCell = cell(numGauges, 1);
 
 % Progress update setup
 disp('Starting processing...');
-totalIterations = numGauges;
-progressStepSize = 100; % How often to update progress percentage
+% totalIterations = numGauges;
+% progressStepSize = 100; % How often to update progress percentage
 
 %___________________________________________________________________________________
 % Loop through each gauge in us_gauges and collect data
@@ -79,19 +96,24 @@ parfor idx = 1:numGauges
 
         %___________________________________________________________________________________
         % Signature calculation
-        signatures = calc_All(...
-            Q, t, P, PET, T);
-        % Make table with IDs
-        signatures.gauge_id = cell2mat(us_gauge.gauge_id);
+        if strcmp(sig_cat, 'calc_All')
+            signatures = calc_All(Q, t, P, PET, T);
+        end
+
+        if strcmp(sig_cat, 'calc_McMillan_Groundwater')
+            signatures = calc_McMillan_Groundwater(Q, t, P, PET);
+        end
+
+        if strcmp(sig_cat, 'calc_McMillan_OverlandFlow')
+            signatures = calc_McMillan_OverlandFlow(Q, t, P);
+        end
+        
+        % Make table
         signatures = struct2table(signatures);
 
         % Store the results in the Composite variable
         resultsCell{idx} = signatures;
 
-        % Update the progress display
-        if mod(idx, progressStepSize) == 0
-            fprintf('Progress: %d%% completed\n', floor((idx/totalIterations) * 100));
-        end
     catch ME
         fprintf('Error at index %d: %s\n', idx, ME.message);
     end
@@ -99,15 +121,16 @@ end
 
 % Combine all results into one table after the loop
 results = vertcat(resultsCell{:});
+results.gauge_id = us_gauges.gauge_id(1:numGauges);
 
+if strcmp(sig_cat, 'calc_All')
 % remove FDC to save space
-results.FDC = [];
-results.FDC_error_str = [];
+    results.FDC = [];
+    results.FDC_error_str = [];
+end
 
 % Save the table to a CSV file
-currentDate = datestr(now, 'yyyymmdd');
-out_filename = fullfile(out_dir, ['caravan_us_' currentDate '.csv']);
-writetable(results, out_filename, 'WriteVariableNames', true);
-fprintf('Finished the analysis. Results are saved to %s\n', out_filename);
-
+writetable(results, fullfile(out_dir, out_filename), 'WriteVariableNames', true);
+fprintf('Finished the analysis. Results are saved to %s\n', fullfile(out_dir, out_filename));
+fprintf('Total processing time: %.2f seconds\n', toc(totalTimer));
 
