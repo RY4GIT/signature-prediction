@@ -8,53 +8,63 @@ import os
 home_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 data_dir = "data"
 sig_output_dir = r"out\signatures"
-caravan_data = "hysets"
 fig_dir = "figs"
+plot_config = pd.read_csv("plot_sig_configs.csv", index_col=0)
 
+
+# caravan_data = "camels"
 # %%
 ########################################
-results_dir = "caravan_hysets_20240529"
+camels_results_dir = "caravan_camels_20240530" 
+hysets_results_dir = "caravan_hysets_20240529"
 sig_cat = "McMillan_set"  # 'calc_ALL', or 'McMillan set' 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater'
 ########################################
 
 # %%
 # ______________________________________________________________________________________________
 # Load data
+def get_sig_results(sig_cat, results_dir):
+    if sig_cat == "calc_ALL":
+        sigs = pd.read_csv(
+            os.path.join(home_dir, sig_output_dir, results_dir, f"out_{sig_cat}.csv")
+        )
+        sigs.set_index("gauge_id", inplace=True)
+    elif sig_cat == "McMillan_set":
+        sigs_of = pd.read_csv(
+            os.path.join(
+                home_dir, sig_output_dir, results_dir, f"out_calc_McMillan_OverlandFlow.csv"
+            )
+        )
+        sigs_of.set_index("gauge_id", inplace=True)
+        sigs_gw = pd.read_csv(
+            os.path.join(
+                home_dir, sig_output_dir, results_dir, f"out_calc_McMillan_Groundwater.csv"
+            )
+        )
+        sigs_gw.set_index("gauge_id", inplace=True)
+        sigs = sigs_of.join(sigs_gw, how="outer")
 
-if sig_cat == "calc_ALL":
-    sigs = pd.read_csv(
-        os.path.join(home_dir, sig_output_dir, results_dir, f"out_{sig_cat}.csv")
-    )
-    sigs.set_index("gauge_id", inplace=True)
-elif sig_cat == "McMillan_set":
-    sigs_of = pd.read_csv(
-        os.path.join(
-            home_dir, sig_output_dir, results_dir, f"out_calc_McMillan_OverlandFlow.csv"
-        )
-    )
-    sigs_of.set_index("gauge_id", inplace=True)
-    sigs_gw = pd.read_csv(
-        os.path.join(
-            home_dir, sig_output_dir, results_dir, f"out_calc_McMillan_Groundwater.csv"
-        )
-    )
-    sigs_gw.set_index("gauge_id", inplace=True)
-    sigs = sigs_of.join(sigs_gw, how="outer")
-plot_config = pd.read_csv("plot_sig_configs.csv", index_col=0)
-sigs.head()
+    # Get column names
+    _signames = sigs.columns.to_list()
+    signames = [s for s in _signames if "_error_str" not in s]
+    not_gw_nor_of = [s for s in signames if s not in plot_config["column_name"].tolist()]
+    not_calculated = [s for s in plot_config["column_name"].tolist() if s not in signames]
+    print("Calculated but not in the LargeSig paper:", not_gw_nor_of)
+    print("Not calculated:", not_calculated)
+    print(len(plot_config["column_name"].tolist()))
+    print(len(signames))
+    print(len(not_gw_nor_of))
+    print(signames)
+
+    return sigs
 # %%
+sigs_camels = get_sig_results(sig_cat, camels_results_dir)
+print(len(sigs_camels))
 
-# Get column names
-_signames = sigs.columns.to_list()
-signames = [s for s in _signames if "_error_str" not in s]
-not_gw_nor_of = [s for s in signames if s not in plot_config["name"].tolist()]
-not_calculated = [s for s in plot_config["name"].tolist() if s not in signames]
-print("Calculated but not in the LargeSig paper:", not_gw_nor_of)
-print("Not calculated:", not_calculated)
-print(len(plot_config["name"].tolist()))
-print(len(signames))
-print(len(not_gw_nor_of))
-print(signames)
+sigs_hysets = get_sig_results(sig_cat, hysets_results_dir)
+print(len(sigs_hysets))
+
+# %%
 # %%
 # ______________________________________________________________________________________________
 # Plot histogram of signatures for overland flow & groundwater signatures
@@ -72,25 +82,41 @@ import seaborn as sns
 # Plot each histogram
 for ax, (index, row) in zip(axes, plot_config.iterrows()):
     try:
-        data = sigs[row["name"]]
         ax.hist(
-            data,
+            sigs_camels[row["column_name"]],
             bins=30,
             range=(row["lower_lim"], row["upper_lim"]),
             facecolor="none",
             edgecolor="tab:blue",
             density=True,
+            label="CAMELS-US"
         )
-        # sns.kdeplot(data, ax=ax, color='tab:blue')
-        ax.set_xlabel(f"{row['name']} {row['unit']}")
+        ax.hist(
+            sigs_hysets[row["column_name"]],
+            bins=30,
+            range=(row["lower_lim"], row["upper_lim"]),
+            facecolor="none",
+            edgecolor="tab:pink",
+            density=True,
+            label="HYSETS"
+        )
+        sns.kdeplot(sigs_camels[row["column_name"]], ax=ax, color='tab:blue')
+        sns.kdeplot(sigs_hysets[row["column_name"]], ax=ax, color='tab:pink')
+        ax.set_xlabel(f"{row['label']} {row['unit']}")
         ax.set_ylabel("Density")
-        ax.set_xlim([row["lower_lim"], row["upper_lim"]])
+        # ax.set_xlim([row["lower_lim"], row["upper_lim"]])
+
     except:
         continue
 
 # Disable unused axes if any
 for i in range(num_plots, len(axes)):
     axes[i].axis("off")
+    
+    # TODO: fix this
+    # Check if this is the last plot to add a legend
+    if i == num_plots-1:  # Adjust the condition based on your total number of subplots
+        axes[i].legend()
 
 # Layout adjustment
 plt.tight_layout()
@@ -98,7 +124,10 @@ plt.show()
 
 # %%
 # ______________________________________________________________________________________________
-# Compare with Sebastian's results
+# Compare with Sebastian's results for calc_ALLs
+sigsall_hysets = get_sig_results("calc_ALL", hysets_results_dir)
+sigsall_names = sigsall_hysets.columns.to_list()
+
 Sebastian_results = (
     r"C:\Users\flipl\dev\TOSSH_signatures_Caravan\results\TOSSH_signatures_Caravan.csv"
 )
@@ -106,11 +135,11 @@ sigs_SG = pd.read_csv(Sebastian_results)
 sigs_SG.set_index("gauge_id", inplace=True)
 sigs_SG.head()
 # %%
-compare_SG = sigs.join(sigs_SG, lsuffix="_sigs", rsuffix="_sigs_SG", how="left")
+compare_SG = sigs.join(sigsall_hysets, lsuffix="_sigs", rsuffix="_sigs_SG", how="left")
 # compare_SG.head()
 
 # Determine the number of rows needed based on the number of signals
-num_signals = len(signames)
+num_signals = len(sigsall_names)
 num_cols = 4
 num_rows = (
     num_signals + num_cols - 1
@@ -123,7 +152,7 @@ fig, axes = plt.subplots(
 axes = axes.flatten()  # Flatten the axes array to make it easier to iterate
 
 # Plotting
-for i, col in enumerate(signames):
+for i, col in enumerate(sigsall_names):
     try:
         ax = axes[i]
 

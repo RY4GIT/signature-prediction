@@ -8,10 +8,11 @@ clc
 totalTimer = tic;
 
 %___________________________________________________________________________________
-%%%%%%%%% CHANGE HERE %%%%%%%%%%%%%%%%%
-sig_cat = 'calc_McMillan_OverlandFlow'; 
+% CHANGE HERE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+sig_cat = 'calc_McMillan_Groundwater'; 
 % 'calc_ALL', 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater',
 % 'calc_Addor', 'calc_Sawicz', 'calc_Euser',  'calc_BasicSet'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %___________________________________________________________________________________
 % Add TOSSH toolbox to the path
@@ -26,7 +27,7 @@ caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
-caravan_data = 'hysets';
+caravan_data = 'camels';
 
 currentDate = datestr(now, 'yyyymmdd');
 out_dir = fullfile(home_dir, 'out', 'signatures', ['caravan_', caravan_data, '_', currentDate]);
@@ -40,7 +41,7 @@ end
 
 %___________________________________________________________________________________
 % Read metadata
-attrs_geo = readtable(fullfile(data_dir, caravan_dir, attributes_dir, caravan_data, ['attributes_other_hysets.' data_type]));
+attrs_geo = readtable(fullfile(data_dir, caravan_dir, attributes_dir, caravan_data, ['attributes_other_' caravan_data '.' data_type]));
 attrs_geo_names = attrs_geo.Properties.VariableNames;
 % disp(head(attrs_geo));
 
