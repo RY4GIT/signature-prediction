@@ -14,17 +14,35 @@ fig_dir = "figs"
 # %%
 ########################################
 results_dir = "caravan_hysets_20240529"
-sig_cat = "calc_McMillan_OverlandFlow"  # 'calc_ALL', 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater'
+sig_cat = "McMillan_set"  # 'calc_ALL', or 'McMillan set' 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater'
 ########################################
 
 # %%
 # ______________________________________________________________________________________________
 # Load data
-sigs = pd.read_csv(
-    os.path.join(home_dir, sig_output_dir, results_dir, f"out_{sig_cat}.csv")
-)
-sigs.set_index("gauge_id", inplace=True)
+
+if sig_cat == "calc_ALL":
+    sigs = pd.read_csv(
+        os.path.join(home_dir, sig_output_dir, results_dir, f"out_{sig_cat}.csv")
+    )
+    sigs.set_index("gauge_id", inplace=True)
+elif sig_cat == "McMillan_set":
+    sigs_of = pd.read_csv(
+        os.path.join(
+            home_dir, sig_output_dir, results_dir, f"out_calc_McMillan_OverlandFlow.csv"
+        )
+    )
+    sigs_of.set_index("gauge_id", inplace=True)
+    sigs_gw = pd.read_csv(
+        os.path.join(
+            home_dir, sig_output_dir, results_dir, f"out_calc_McMillan_Groundwater.csv"
+        )
+    )
+    sigs_gw.set_index("gauge_id", inplace=True)
+    sigs = sigs_of.join(sigs_gw, how="outer")
 plot_config = pd.read_csv("plot_sig_configs.csv", index_col=0)
+sigs.head()
+# %%
 
 # Get column names
 _signames = sigs.columns.to_list()
@@ -36,7 +54,7 @@ print("Not calculated:", not_calculated)
 print(len(plot_config["name"].tolist()))
 print(len(signames))
 print(len(not_gw_nor_of))
-
+print(signames)
 # %%
 # ______________________________________________________________________________________________
 # Plot histogram of signatures for overland flow & groundwater signatures
@@ -86,8 +104,8 @@ Sebastian_results = (
 )
 sigs_SG = pd.read_csv(Sebastian_results)
 sigs_SG.set_index("gauge_id", inplace=True)
-# sigs_SG.head()
-
+sigs_SG.head()
+# %%
 compare_SG = sigs.join(sigs_SG, lsuffix="_sigs", rsuffix="_sigs_SG", how="left")
 # compare_SG.head()
 
@@ -108,15 +126,18 @@ axes = axes.flatten()  # Flatten the axes array to make it easier to iterate
 for i, col in enumerate(signames):
     try:
         ax = axes[i]
-        ax.scatter(compare_SG[col + "_sigs_SG"], compare_SG[col + "_sigs"], alpha=0.5)
-        # Adding a y=x reference line
-        min_val = min(
-            compare_SG[col + "_sigs_SG"].min(), compare_SG[col + "_sigs"].min()
-        )
-        max_val = max(
-            compare_SG[col + "_sigs_SG"].max(), compare_SG[col + "_sigs"].max()
-        )
-        ax.plot([min_val, max_val], [min_val, max_val], "--", color="tab:grey")
+
+        data_x = compare_SG[col + "_sigs_SG"]
+        data_y = compare_SG[col + "_sigs"]
+
+        # Exclude NaNs for quantile calculation
+        valid_data_x = data_x.dropna()
+
+        min_val = np.quantile(valid_data_x, 0.0001)
+        max_val = np.quantile(valid_data_x, 0.9999)
+
+        ax.scatter(data_x, data_y, alpha=0.5)
+        ax.plot([min_val, max_val], [min_val, max_val], "--", color="grey")
 
         ax.set_xlabel(f"Sebastian")
         ax.set_ylabel(f"Ryoko")
@@ -124,9 +145,9 @@ for i, col in enumerate(signames):
     except:
         continue
 
-# Disable unused axes if there are any
-for i in range(num_signals, len(axes)):
-    axes[i].axis("off")
+# # Disable unused axes if there are any
+# for i in range(num_signals, len(axes)):
+#     axes[i].axis("off")
 
 plt.tight_layout()
 plt.show()

@@ -9,7 +9,9 @@ totalTimer = tic;
 
 %___________________________________________________________________________________
 %%%%%%%%% CHANGE HERE %%%%%%%%%%%%%%%%%
-sig_cat = 'calc_McMillan_OverlandFlow'; % 'calc_ALL', 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater'
+sig_cat = 'calc_McMillan_OverlandFlow'; 
+% 'calc_ALL', 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater',
+% 'calc_Addor', 'calc_Sawicz', 'calc_Euser',  'calc_BasicSet'
 
 %___________________________________________________________________________________
 % Add TOSSH toolbox to the path
@@ -66,8 +68,6 @@ resultsCell = cell(numGauges, 1);
 
 % Progress update setup
 disp('Starting processing...');
-% totalIterations = numGauges;
-% progressStepSize = 100; % How often to update progress percentage
 
 %___________________________________________________________________________________
 % Loop through each gauge in us_gauges and collect data
@@ -96,18 +96,25 @@ parfor idx = 1:numGauges
 
         %___________________________________________________________________________________
         % Signature calculation
-        if strcmp(sig_cat, 'calc_All')
-            signatures = calc_All(Q, t, P, PET, T);
+        switch sig_cat
+            case 'calc_All'
+                signatures = calc_All(Q, t, P, PET, T);
+            case 'calc_McMillan_Groundwater'
+                signatures = calc_McMillan_Groundwater(Q, t, P, PET);
+            case 'calc_McMillan_OverlandFlow'
+                signatures = calc_McMillan_OverlandFlow(Q, t, P);
+            case 'calc_Addor'
+                signatures = calc_Addor(Q, t, P);
+            case 'calc_BasicSet'
+                signatures = calc_BasicSet(Q, t);
+            case 'calc_Euser'
+                signatures = calc_Euser(Q, t);
+            case 'calc_Sawicz'
+                signatures = calc_Sawicz(Q, t, P, T);
+            otherwise
+                warning('Unexpected signature category');
         end
 
-        if strcmp(sig_cat, 'calc_McMillan_Groundwater')
-            signatures = calc_McMillan_Groundwater(Q, t, P, PET);
-        end
-
-        if strcmp(sig_cat, 'calc_McMillan_OverlandFlow')
-            signatures = calc_McMillan_OverlandFlow(Q, t, P);
-        end
-        
         % Make table
         signatures = struct2table(signatures);
 
