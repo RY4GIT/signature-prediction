@@ -49,22 +49,24 @@ def get_sig_results(sig_cat, results_dir):
     signames = [s for s in _signames if "_error_str" not in s]
     not_gw_nor_of = [s for s in signames if s not in plot_config["column_name"].tolist()]
     not_calculated = [s for s in plot_config["column_name"].tolist() if s not in signames]
-    print("Calculated but not in the LargeSig paper:", not_gw_nor_of)
-    print("Not calculated:", not_calculated)
-    print(len(plot_config["column_name"].tolist()))
-    print(len(signames))
-    print(len(not_gw_nor_of))
-    print(signames)
+
+    print("________________________________________________________________________")
+    print("Results from:", results_dir)
+    print("Size of the results:", len(sigs))
+    # print("____________________________________")
+    # print("Number of signatures (plot config):", len(plot_config["column_name"].tolist()))
+    # print("Number of signatures (results file):",len(signames))
+    # print("____________________________________")
+    # print("Signature calculated:", signames)
+    # print("Calculated but not in the LargeSig paper:", not_gw_nor_of)
+    # print("In the LargeSig paper but not calculated:", not_calculated, "\n", "\n")
+    
 
     return sigs
 # %%
 sigs_camels = get_sig_results(sig_cat, camels_results_dir)
-print(len(sigs_camels))
-
 sigs_hysets = get_sig_results(sig_cat, hysets_results_dir)
-print(len(sigs_hysets))
 
-# %%
 # %%
 # ______________________________________________________________________________________________
 # Plot histogram of signatures for overland flow & groundwater signatures
@@ -125,6 +127,7 @@ plt.show()
 # %%
 # ______________________________________________________________________________________________
 # Compare with Sebastian's results for calc_ALLs
+
 sigsall_hysets = get_sig_results("calc_ALL", hysets_results_dir)
 sigsall_names = sigsall_hysets.columns.to_list()
 
@@ -135,7 +138,7 @@ sigs_SG = pd.read_csv(Sebastian_results)
 sigs_SG.set_index("gauge_id", inplace=True)
 sigs_SG.head()
 # %%
-compare_SG = sigs.join(sigsall_hysets, lsuffix="_sigs", rsuffix="_sigs_SG", how="left")
+compare_SG = sigsall_hysets.join(sigs_SG, lsuffix="_sigs", rsuffix="_sigs_SG", how="left")
 # compare_SG.head()
 
 # Determine the number of rows needed based on the number of signals
