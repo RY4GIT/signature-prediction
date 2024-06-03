@@ -1,4 +1,7 @@
 % Calculate signatures from Caravan dataset
+% Ryoko Araki (@ry4git), 2024
+
+% Cleaning
 close all
 clear all
 delete(gcp('nocreate'))

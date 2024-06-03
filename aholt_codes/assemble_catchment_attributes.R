@@ -5,6 +5,9 @@
 # first, CAMELS, CARAVAN, and new attributes are assembled for the 671 CAMELS US catchments
 # attributes are also later assembled for the HYSETS catchments (not including CAMELS catchments)
 
+# Author: Anne Holt (@annieholt)
+# Date: 2024
+
 library(tidyverse)
 library(randomForest)
 library(caret)

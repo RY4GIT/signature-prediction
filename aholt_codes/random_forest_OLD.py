@@ -8,6 +8,9 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 
+# Author: Anne Holt (@annieholt)
+# Date: 2024
+
 # import input data for random forest modeling
 # in this case, dataset of hydrologic signatures and catchment attributes
 

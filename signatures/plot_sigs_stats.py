@@ -1,9 +1,13 @@
 # %%
+# Plot the distribution of signatures calculated from caravan (calculate_sigs_caravan.m)
+# Ryoko Araki (@ry4git), 2024
+
 # %%
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+
 
 home_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 data_dir = "data"

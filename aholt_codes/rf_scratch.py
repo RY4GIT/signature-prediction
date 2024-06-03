@@ -8,6 +8,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_val_score, KFold
 
+# Author: Anne Holt (@annieholt)
+# Date: 2024
+
 
 # rf_data = pandas.read_csv("E:/SDSU_GEOG/Thesis/Data/RandomForest/BFI_attributes_test_data.csv", header=0, index_col=0)
 # rf_data = pandas.read_csv("E:/SDSU_GEOG/Thesis/Data/RandomForest/sigs_attributes_master.csv")

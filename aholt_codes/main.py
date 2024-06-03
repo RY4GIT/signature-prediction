@@ -1,9 +1,12 @@
 # Full analysis
 
-from signatures.calculate_sigs_camels import *
-from signatures.pca import *
+from signatures.archive.calculate_sigs_camels import *
+from signatures.archive.pca import *
 import geopandas
 import numpy as np
+
+# Author: Anne Holt (@annieholt)
+# Date: 2024
 
 # testing functions
 # import data

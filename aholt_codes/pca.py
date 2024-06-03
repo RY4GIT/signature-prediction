@@ -2,7 +2,10 @@
 # using Spearman rank correlation coefficients with the SciPy Python module and the Variance Inflation Factor (VIF)
 # method using the statmodels Python module
 
-from signatures.calculate_sigs_camels import *
+# Author: Anne Holt (@annieholt)
+# Date: 2024
+
+from signatures.archive.calculate_sigs_camels import *
 import scipy
 import statsmodels
 import pandas

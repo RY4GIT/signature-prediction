@@ -5,6 +5,9 @@
 # Note that this workflow was run like Addor et al., 2018:
 # time period 1 Oct 1989 to 30 Sep 2009; 671 CAMELS catchments
 
+# Author: Anne Holt (@annieholt)
+# Date: 2024
+
 # Import packages
 import matlab.engine
 import pandas as pd

@@ -1,6 +1,9 @@
-from signatures.calculate_sigs_camels import *
+from signatures.archive.calculate_sigs_camels import *
 import geopandas
 import matplotlib.pyplot as plt
+
+# Author: Anne Holt (@annieholt)
+# Date: 2024
 
 # import data
 pi_path = 'C:/Users/holta/Documents/Repositories/baseflow_prediction/signatures/camels_gw_sigs_pi.obj'
