@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import seaborn as sns
 
 
 home_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
@@ -83,7 +84,6 @@ fig, axes = plt.subplots(
 )  # Adjust the size as needed
 axes = axes.flatten()  # Flatten the axes array for easy iteration
 
-import seaborn as sns
 
 # Plot each histogram
 for ax, (index, row) in zip(axes, plot_config.iterrows()):
@@ -127,6 +127,80 @@ for i in range(num_plots, len(axes)):
 # Layout adjustment
 plt.tight_layout()
 plt.show()
+
+# %%
+# ______________________________________________________________________________________________
+# Highlight distributions from HUC regions
+# %% Get HUCx gauges and results 
+
+# %% Plot them
+sigs_camels.head()
+# %%
+
+for HUCnum in range(1, 21+1):
+    
+    prefix = f'camels_{HUCnum:02}'
+    print(f"Currently plotting HUC{HUCnum:02}")
+
+    sigs_camels_subset = sigs_camels[[idx.startswith(prefix) for idx in sigs_camels.index]]
+
+    # Number of rows for 4 plots per row
+    num_plots = len(plot_config)
+    num_rows = (num_plots + 3) // 4  # Ceiling division to ensure all plots fit
+    fig, axes = plt.subplots(
+        nrows=num_rows, ncols=4, figsize=(15, 2.5 * num_rows)
+    )  # Adjust the size as needed
+    axes = axes.flatten()  # Flatten the axes array for easy iteration
+
+    # Plot each histogram
+    for ax, (index, row) in zip(axes, plot_config.iterrows()):
+        try:
+            ax.hist(
+                sigs_camels[row["column_name"]],
+                bins=30,
+                range=(row["lower_lim"], row["upper_lim"]),
+                facecolor="none",
+                edgecolor="tab:grey",
+                density=True,
+                label="all gauges in CAMELS-US"
+            )
+            ax.hist(
+                sigs_camels_subset[row["column_name"]],
+                bins=30,
+                range=(row["lower_lim"], row["upper_lim"]),
+                facecolor="none",
+                edgecolor="tab:red",
+                density=True,
+                label=f"gauges in HUC{prefix}"
+            )
+            sns.kdeplot(sigs_camels[row["column_name"]], ax=ax, color='tab:grey')
+            sns.kdeplot(sigs_camels_subset[row["column_name"]], ax=ax, color='tab:red')
+            ax.set_xlabel(f"{row['label']} {row['unit']}")
+            ax.set_ylabel("Density")
+            ax.set_xlim([row["lower_lim"], row["upper_lim"]])
+
+        except:
+            continue
+
+    # Disable unused axes if any
+    for i in range(num_plots, len(axes)):
+        axes[i].axis("off")
+        
+        # TODO: fix this
+        # Check if this is the last plot to add a legend
+        if i == num_plots-1:  # Adjust the condition based on your total number of subplots
+            axes[i].legend()
+            
+
+    # Add a supertitle for the whole figure
+    fig.suptitle(f'HUC{HUCnum:02} in red; all camels in grey', fontsize=16)
+
+    # Layout adjustment
+    plt.tight_layout()
+    plt.show()
+    fig.savefig(os.path.join(home_dir, sig_output_dir, camels_results_dir, f"sigdist_HUC{prefix}.png"))
+    plt.close()
+
 
 # %%
 # ______________________________________________________________________________________________
