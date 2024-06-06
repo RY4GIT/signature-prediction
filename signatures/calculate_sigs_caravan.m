@@ -12,7 +12,7 @@ totalTimer = tic;
 
 %___________________________________________________________________________________
 % CHANGE HERE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-sig_cat = 'calc_McMillan_Groundwater'; 
+sig_cat = 'calc_ALL'; 
 % 'calc_ALL', 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater',
 % 'calc_Addor', 'calc_Sawicz', 'calc_Euser',  'calc_BasicSet'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,7 +101,7 @@ parfor idx = 1:numGauges
         %___________________________________________________________________________________
         % Signature calculation
         switch sig_cat
-            case 'calc_All'
+            case 'calc_ALL'
                 signatures = calc_All(Q, t, P, PET, T);
             case 'calc_McMillan_Groundwater'
                 signatures = calc_McMillan_Groundwater(Q, t, P, PET);
@@ -134,7 +134,7 @@ end
 results = vertcat(resultsCell{:});
 results.gauge_id = us_gauges.gauge_id(1:numGauges);
 
-if strcmp(sig_cat, 'calc_All')
+if strcmp(sig_cat, 'calc_ALL')
 % remove FDC to save space
     results.FDC = [];
     results.FDC_error_str = [];
@@ -144,4 +144,3 @@ end
 writetable(results, fullfile(out_dir, out_filename), 'WriteVariableNames', true);
 fprintf('Finished the analysis. Results are saved to %s\n', fullfile(out_dir, out_filename));
 fprintf('Total processing time: %.2f seconds\n', toc(totalTimer));
-
