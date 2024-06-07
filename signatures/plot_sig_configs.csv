@@ -7,8 +7,8 @@
 5,StorageFraction_3,TotalStorage,[mm],0,1500,groundwater
 6,Recession_a_Seasonality,Recession_a_Seasonality,[-],0,6,groundwater
 7,AverageStorage,AverageStorage,[mm],0,600,groundwater
-8,RecessionParameters_1,RecessionParameters_b,[-],0,6,groundwater
-9,RecessionParameters_2,RecessionParameters_T0,[d],0,60,groundwater
+8,RecessionParameters_1,RecessionParameters_b,[-],0,1,groundwater
+9,RecessionParameters_2,RecessionParameters_T0,[d],0,2,groundwater
 10,MRC_num_segments,MRC_num_segments,[-],0.5,3.5,groundwater
 11,BFI,BFI,[-],0,1,groundwater
 12,BaseflowRecessionK,BaseflowRecessionK,[1/d],0,0.6,groundwater

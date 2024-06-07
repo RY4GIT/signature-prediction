@@ -26,7 +26,8 @@ attrs_geo_names = attrs_geo.columns.to_list()
 attrs_geo.head()
 
 gauge_ids = attrs_geo["gauge_id"][attrs_geo["gauge_id"].str.startswith(f'{caravan_data}_')].tolist()
-
+import random
+gauge_ids_rnd = random.sample(gauge_ids, 30)
 # caravan_data = "camels"
 # %%
 ########################################
@@ -46,7 +47,7 @@ axes = axes.flatten()  # Flatten the axes array for easy iteration
 
 # ______________________________________________________________________________________________
 # Load data
-for i, gauge_id in enumerate(gauge_ids[:4]):
+for i, gauge_id in enumerate(gauge_ids):
     # ______________________________________________________________________________________________
     # Get the data
 
@@ -71,6 +72,7 @@ for i, gauge_id in enumerate(gauge_ids[:4]):
                 x_ticks = np.arange(0, max(sigs["duration"]) + 5, 5)
                 ax.set_xlabel("Duration (year)")
                 ax.set_xticks(x_ticks)  # Set major ticks every 5
+                # ax.set_ylim([row["lower_lim"], row["upper_lim"]])
                 # ax.set_xticklabels([str(tick) if (tick % 2.5 == 0) else "" for tick in x_ticks])
         except:
             continue
@@ -90,4 +92,7 @@ for i, gauge_id in enumerate(gauge_ids[:4]):
 # Layout adjustment
 plt.tight_layout()
 plt.show()
+# %%
+fig.savefig(os.path.join(home_dir, sig_output_dir, camels_results_dir, f"sig_vs_duration.png"))
+
 # %%
