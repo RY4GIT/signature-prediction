@@ -20,7 +20,7 @@ caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
-caravan_data = 'camels';
+caravan_data = 'camels'; %'camels', 'hysets';
 
 currentDate = datestr(now, 'yyyymmdd');
 out_dir = fullfile(home_dir, 'out', 'signatures', ['caravan_', caravan_data, '_deepdive_', currentDate]);
@@ -47,7 +47,7 @@ numGauges = height(us_gauges);
 %___________________________________________________________________________________
 % Data preparation
 % Specify the gauge id
-gauge_id = 'camels_01435000';
+gauge_id = 'camels_14222500';
 
 % Load data and convert it to datetime table
 file_path = fullfile(data_dir, caravan_dir, timeseries_dir,data_type, caravan_data, [gauge_id '.' data_type]);
@@ -56,12 +56,12 @@ data.date = datetime(data.date, 'InputFormat', 'yyyy-MM-dd');
 data_timetable = table2timetable(data, 'RowTimes', 'date');
 
 % Subset data_timetable to 2010-2012
-start_year = 2012;
-end_year = start_year + 1;
+start_year = 1990;
+end_year = start_year + 2;
 TR = timerange(datetime(start_year, 10, 1),datetime(end_year, 9,30));
 subset_data = data_timetable(TR, :);
 
-% Prepare TOSSH imput
+% Prepare TOSSH input
 Q = subset_data.streamflow; %mm/day
 t = subset_data.date;
 P = subset_data.total_precipitation_sum;
@@ -78,14 +78,18 @@ T = subset_data.temperature_2m_mean;
 
 timestep = 24; % time step of precipitation array [hours] (1=hourly, 24=daily)
 
-min_termination = 72; % minimum termination time (time between storms) [hours]
-min_duration = 24; % minimum duration of storm [hours]
-min_intensity_day = 10; % minimum intensity (per day)
+min_termination = 48; % minimum termination time (time between storms) [hours]
+
+min_intensity_day = 4.8; % minimum intensity (per day)
 min_intensity_day_during = 4.8; % minimum timestep intensity allowed during storm event without contributing to termination time
-max_recessiondays = 6; % maximum number of days to allow recession after rain ends
+
+min_duration = 24; % minimum duration of storm [hours]
+
+max_recessiondays = 8; % maximum number of days to allow recession after rain ends
 
 min_intensity_hour = 2; % minimum intensity (per hour)
 min_intensity_hour_during = 0.2; % minimum timestep intensity allowed during storm event without contributing to termination time
+
 plot_results = true;
 
 [stormarray, ~, ~, fig_storm] = util_EventSeparation(...
@@ -105,11 +109,12 @@ plot_results = true;
     'max_recessiondays', max_recessiondays, ...
     'plot_results', plot_results);
 
-% recession_length = 5;
-% n_start = 1;
-% eps = 0;
-% filter_par = 0.925;
-% [Recession_Parameters, recession_month, ~, ~, fig_recession] = ...
-%     sig_RecessionAnalysis(Q, t, 'recession_length', recession_length, 'n_start', n_start, 'eps', eps, 'filter_par', filter_par, 'plot_results', true);
+recession_length = 5; %  min. length of recession segments [days], default = 5
+n_start = 0; % days to be removed after start of recession
+eps = 0.08; %  allowed increase in flow during recession period, default = 0
+filter_par = 0.925; % smoothing parameter of Lyne-Hollick filter to determine
+%      start of recession (higher = later recession start)
+[Recession_Parameters, recession_month, ~, ~, fig_recession] = ...
+    sig_RecessionAnalysis(Q, t, 'recession_length', recession_length, 'n_start', n_start, 'eps', eps, 'filter_par', filter_par, 'plot_results', true);
 
 stormarray_datetime = t(stormarray);
