@@ -9,6 +9,7 @@ clc
 
 % Start the total runtime timer
 totalTimer = tic;
+diary('log.txt');
 
 %___________________________________________________________________________________
 % CHANGE HERE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,7 +31,7 @@ caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
-caravan_data = 'camels';
+caravan_data = 'hysets';
 
 currentDate = datestr(now, 'yyyymmdd');
 out_dir = fullfile(home_dir, 'out', 'signatures', ['caravan_', caravan_data, '_', currentDate]);
@@ -53,7 +54,7 @@ us_gauges = attrs_geo(strcmp(attrs_geo.country, 'United States of America'), :);
 % disp(head(us_gauges));
 
 % Number of gauges
-numGauges = 5; %height(us_gauges);
+numGauges = height(us_gauges);
 
 % Parameter config
 config_OF = readtable('calculate_sigs_config_overlandflow.csv');
@@ -77,7 +78,7 @@ end
 resultsCell = cell(numGauges, 1);
 
 % Progress update setup
-disp('Starting processing...');
+fprintf("Starting processing ... %s dataset", caravan_data);
 
 %___________________________________________________________________________________
 % Loop through each gauge in us_gauges and collect data
@@ -116,12 +117,13 @@ parfor idx = 1:numGauges
                 OF_param = config_OF(config_OF.ws_code == ws_code, :);
                 
                 % Recession
-                p99 = prctile(data.streamflow, 99);
-                if (p99 < 1)
+                p95 = prctile(data.streamflow, 95);
+                if (p95 < 1)
                     recession_param = config_recession(string(config_recession.flow) == {'low'}, :);
                 else
                     recession_param = config_recession(string(config_recession.flow) == {'normal'}, :);
                 end
+                
             catch ME
                 fprintf('Error at index %d: %s\n', idx, ME.message);
             end
@@ -166,7 +168,8 @@ parfor idx = 1:numGauges
         
         % Make table
         signatures = struct2table(signatures);
-        signatures.gauge_id = gauge_id;
+%         signatures.gauge_id = gauge_id; % this somehow doesn't work when
+%         doing vertcat
         
         % Store the results in the Composite variable
         resultsCell{idx} = signatures;
@@ -178,7 +181,7 @@ end
 
 % Combine all results into one table after the loop
 results = vertcat(resultsCell{:});
-% results.gauge_id = us_gauges.gauge_id(1:numGauges);
+results.gauge_id = us_gauges.gauge_id(1:numGauges);
 
 if contains(sig_cat, 'calc_All')
     % remove FDC to save space
@@ -190,3 +193,5 @@ end
 writetable(results, fullfile(out_dir, out_filename), 'WriteVariableNames', true);
 fprintf('Finished the analysis. Results are saved to %s\n', fullfile(out_dir, out_filename));
 fprintf('Total processing time: %.2f seconds\n', toc(totalTimer));
+
+diary off;

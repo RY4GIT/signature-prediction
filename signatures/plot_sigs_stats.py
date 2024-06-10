@@ -14,22 +14,60 @@ home_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 data_dir = "data"
 sig_output_dir = r"out\signatures"
 fig_dir = "figs"
-plot_config = pd.read_csv("plot_sig_configs.csv", index_col=0)
-
+output_dir = "out"
+plot_config = pd.read_csv("plot_sigs_config.csv", index_col=0)
+hysets_qa = pd.read_csv(
+    os.path.join(
+        home_dir, output_dir, "caravan_datacheck", "hysets_summary_w_manualflag.csv"
+    ),
+    index_col="gauge_id",
+)
 
 # caravan_data = "camels"
 # %%
 ########################################
-camels_results_dir = "caravan_camels_20240530" 
-hysets_results_dir = "caravan_hysets_20240529"
-sig_cat = "McMillan_set"  # 'calc_ALL', or 'McMillan set' 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater'
+# Directory
+camels_results_dir = "caravan_camels_20240609"
+hysets_results_dir = "caravan_hysets_20240609"
+sig_cat = "calc_All_custom"  # 'calc_All_custom', 'calc_All', or 'McMillan set' 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater'
+
 ########################################
+# Hysets quality control threshold
+subset_nan_fraction_thresh = 0.3
+duration_thresh = 10
+Q95_thresh = 1.0
+########################################
+
+# %%
+# Calculate some stats
+hysets_qa["start_date"] = pd.to_datetime(hysets_qa["start_date"])
+hysets_qa["end_date"] = pd.to_datetime(hysets_qa["end_date"])
+hysets_qa["start_year"] = hysets_qa["start_date"].dt.year
+hysets_qa["end_year"] = hysets_qa["end_date"].dt.year
+hysets_qa["duration_yr"] = (
+    hysets_qa["end_date"] - hysets_qa["start_date"]
+).dt.days / 365
+hysets_qa["qf_subset_nan_fraction"] = (
+    hysets_qa["subset_nan_fraction"] < subset_nan_fraction_thresh
+)
+hysets_qa["qf_duration"] = hysets_qa["duration_yr"] > duration_thresh
+hysets_qa["qf_manualcheck"] = ~hysets_qa["manual_check"].notna()
+hysets_qa["qf_Q95"] = hysets_qa["Q95"] > Q95_thresh
+
+# %%
+hysets_qa["qf_overall"] = (
+    hysets_qa["qf_subset_nan_fraction"]
+    & hysets_qa["qf_duration"]
+    & hysets_qa["qf_manualcheck"]
+    & hysets_qa["qf_Q95"]
+)
+
 
 # %%
 # ______________________________________________________________________________________________
 # Load data
 def get_sig_results(sig_cat, results_dir):
-    if sig_cat == "calc_ALL":
+    if (sig_cat == "calc_All") | (sig_cat == "calc_All_custom"):
         sigs = pd.read_csv(
             os.path.join(home_dir, sig_output_dir, results_dir, f"out_{sig_cat}.csv")
         )
@@ -37,13 +75,19 @@ def get_sig_results(sig_cat, results_dir):
     elif sig_cat == "McMillan_set":
         sigs_of = pd.read_csv(
             os.path.join(
-                home_dir, sig_output_dir, results_dir, f"out_calc_McMillan_OverlandFlow.csv"
+                home_dir,
+                sig_output_dir,
+                results_dir,
+                f"out_calc_McMillan_OverlandFlow.csv",
             )
         )
         sigs_of.set_index("gauge_id", inplace=True)
         sigs_gw = pd.read_csv(
             os.path.join(
-                home_dir, sig_output_dir, results_dir, f"out_calc_McMillan_Groundwater.csv"
+                home_dir,
+                sig_output_dir,
+                results_dir,
+                f"out_calc_McMillan_Groundwater.csv",
             )
         )
         sigs_gw.set_index("gauge_id", inplace=True)
@@ -52,8 +96,8 @@ def get_sig_results(sig_cat, results_dir):
     # Get column names
     _signames = sigs.columns.to_list()
     signames = [s for s in _signames if "_error_str" not in s]
-    not_gw_nor_of = [s for s in signames if s not in plot_config["column_name"].tolist()]
-    not_calculated = [s for s in plot_config["column_name"].tolist() if s not in signames]
+    # not_gw_nor_of = [s for s in signames if s not in plot_config["column_name"].tolist()]
+    # not_calculated = [s for s in plot_config["column_name"].tolist() if s not in signames]
 
     print("________________________________________________________________________")
     print("Results from:", results_dir)
@@ -65,13 +109,19 @@ def get_sig_results(sig_cat, results_dir):
     # print("Signature calculated:", signames)
     # print("Calculated but not in the LargeSig paper:", not_gw_nor_of)
     # print("In the LargeSig paper but not calculated:", not_calculated, "\n", "\n")
-    
 
     return sigs
-# %%
-sigs_camels = get_sig_results(sig_cat, camels_results_dir)
-sigs_hysets = get_sig_results(sig_cat, hysets_results_dir)
 
+
+# %%
+_sigs_camels = get_sig_results(sig_cat, camels_results_dir)
+sigs_camels = _sigs_camels
+# sigs_camels = _sigs_camels[_sigs_camels["Q95"]>Q95_thresh]
+print(f"Passed quality control: {len(sigs_camels)}")
+_sigs_hysets = get_sig_results(sig_cat, hysets_results_dir)
+_sigs_hysets = _sigs_hysets.join(hysets_qa.drop(columns=["Q95"]))
+sigs_hysets = _sigs_hysets[_sigs_hysets["qf_overall"] == True]
+print(f"Passed quality control: {len(sigs_hysets)}")
 # %%
 # ______________________________________________________________________________________________
 # Plot histogram of signatures for overland flow & groundwater signatures
@@ -95,7 +145,7 @@ for ax, (index, row) in zip(axes, plot_config.iterrows()):
             facecolor="none",
             edgecolor="tab:blue",
             density=True,
-            label="CAMELS-US"
+            label="CAMELS-US",
         )
         ax.hist(
             sigs_hysets[row["column_name"]],
@@ -104,45 +154,113 @@ for ax, (index, row) in zip(axes, plot_config.iterrows()):
             facecolor="none",
             edgecolor="tab:pink",
             density=True,
-            label="HYSETS"
+            label="HYSETS",
         )
-        sns.kdeplot(sigs_camels[row["column_name"]], ax=ax, color='tab:blue')
-        sns.kdeplot(sigs_hysets[row["column_name"]], ax=ax, color='tab:pink')
+        sns.kdeplot(
+            sigs_camels[row["column_name"]],
+            ax=ax,
+            color="tab:blue",
+            clip=[row["lower_lim"], 9999],
+        )
+        sns.kdeplot(
+            sigs_hysets[row["column_name"]],
+            ax=ax,
+            color="tab:pink",
+            clip=[row["lower_lim"], 9999],
+        )  # , clip=[row["lower_lim"], row["upper_lim"]])
         ax.set_xlabel(f"{row['label']} {row['unit']}")
         ax.set_ylabel("Density")
         # ax.set_xlim([row["lower_lim"], row["upper_lim"]])
-
+        plt.tight_layout()
     except:
         continue
 
 # Disable unused axes if any
 for i in range(num_plots, len(axes)):
     axes[i].axis("off")
-    
+
     # TODO: fix this
     # Check if this is the last plot to add a legend
-    if i == num_plots-1:  # Adjust the condition based on your total number of subplots
+    if (
+        i == num_plots - 1
+    ):  # Adjust the condition based on your total number of subplots
         axes[i].legend()
 
 # Layout adjustment
 plt.tight_layout()
 plt.show()
 
+
+# %% ##############################################################################
+# Check extremely large values of signatures
+##############################################################################
+
+sig_key = "TotalRR"
+sig_value_thresh = 0.05
+sig_extreme = sigs_camels[sigs_camels[sig_key] < sig_value_thresh][[sig_key]]
+print(sig_extreme)
+print(sig_extreme.index)
+
+# %%
+# Get data and plot
+sig_extreme_gauge_id = "camels_08202700"  # sig_extreme.index.item()
+data = pd.read_csv(
+    os.path.join(
+        home_dir,
+        data_dir,
+        "Caravan1.4",
+        "timeseries",
+        "csv",
+        "camels",
+        f"{sig_extreme_gauge_id}.csv",
+    ),
+    parse_dates=["date"],
+    index_col="date",
+)
+start_yr = "2000"  # "1950" # "2010"
+end_yr = "2005"  # $"2020" #"2011"
+ax = data.streamflow[start_yr:end_yr].plot()
+ax.set_ylim([0, 1])
+print(sig_extreme.index)
+
+print(f"Q50: {data.streamflow.quantile(0.5)}")
+print(f"Q95: {data.streamflow.quantile(0.95)}")
+# %%
+hysets_qa.loc[sig_extreme_gauge_id]
+
+# Sort data
+x = np.sort(data.streamflow.dropna())
+# Calculate CDF values
+y = np.arange(1, len(x) + 1)
+
+plt.figure(figsize=(8, 4))  # Optional: adjusts the size of the plot
+plt.plot(x, y, marker=".", linestyle="none")  # 'none' for no line
+plt.title("CDF of Streamflow")
+plt.xlabel("Streamflow")
+plt.ylabel("CDF")
+plt.grid(True)  # Optional: adds a grid
+plt.show()
+
+
+# %%
+
 # %%
 # ______________________________________________________________________________________________
 # Highlight distributions from HUC regions
-# %% Get HUCx gauges and results 
+# %% Get HUCx gauges and results
 
 # %% Plot them
 sigs_camels.head()
 # %%
 
-for HUCnum in range(1, 21+1):
-    
-    prefix = f'camels_{HUCnum:02}'
+for HUCnum in range(1, 21 + 1):
+
+    prefix = f"camels_{HUCnum:02}"
     print(f"Currently plotting HUC{HUCnum:02}")
 
-    sigs_camels_subset = sigs_camels[[idx.startswith(prefix) for idx in sigs_camels.index]]
+    sigs_camels_subset = sigs_camels[
+        [idx.startswith(prefix) for idx in sigs_camels.index]
+    ]
 
     # Number of rows for 4 plots per row
     num_plots = len(plot_config)
@@ -162,7 +280,7 @@ for HUCnum in range(1, 21+1):
                 facecolor="none",
                 edgecolor="tab:grey",
                 density=True,
-                label="all gauges in CAMELS-US"
+                label="all gauges in CAMELS-US",
             )
             ax.hist(
                 sigs_camels_subset[row["column_name"]],
@@ -171,10 +289,12 @@ for HUCnum in range(1, 21+1):
                 facecolor="none",
                 edgecolor="tab:red",
                 density=True,
-                label=f"gauges in HUC{prefix}"
+                label=f"gauges in HUC{prefix}",
             )
-            sns.kdeplot(sigs_camels[row["column_name"]], ax=ax, color='tab:grey')
-            sns.kdeplot(sigs_camels_subset[row["column_name"]], ax=ax, color='tab:red')
+            sns.kdeplot(sigs_camels[row["column_name"]], ax=ax, color="tab:grey", cut=0)
+            sns.kdeplot(
+                sigs_camels_subset[row["column_name"]], ax=ax, color="tab:red", cut=0
+            )
             ax.set_xlabel(f"{row['label']} {row['unit']}")
             ax.set_ylabel("Density")
             ax.set_xlim([row["lower_lim"], row["upper_lim"]])
@@ -185,20 +305,25 @@ for HUCnum in range(1, 21+1):
     # Disable unused axes if any
     for i in range(num_plots, len(axes)):
         axes[i].axis("off")
-        
+
         # TODO: fix this
         # Check if this is the last plot to add a legend
-        if i == num_plots-1:  # Adjust the condition based on your total number of subplots
+        if (
+            i == num_plots - 1
+        ):  # Adjust the condition based on your total number of subplots
             axes[i].legend()
-            
 
     # Add a supertitle for the whole figure
-    fig.suptitle(f'HUC{HUCnum:02} in red; all camels in grey', fontsize=16)
+    fig.suptitle(f"HUC{HUCnum:02} in red; all camels in grey", fontsize=16)
 
     # Layout adjustment
     plt.tight_layout()
     plt.show()
-    fig.savefig(os.path.join(home_dir, sig_output_dir, camels_results_dir, f"sigdist_HUC{prefix}.png"))
+    fig.savefig(
+        os.path.join(
+            home_dir, sig_output_dir, camels_results_dir, f"sigdist_HUC{prefix}.png"
+        )
+    )
     plt.close()
 
 
@@ -206,7 +331,7 @@ for HUCnum in range(1, 21+1):
 # ______________________________________________________________________________________________
 # Compare with Sebastian's results for calc_ALLs
 
-sigsall_hysets = get_sig_results("calc_ALL", hysets_results_dir)
+sigsall_hysets = get_sig_results("calc_All", hysets_results_dir)
 sigsall_names = sigsall_hysets.columns.to_list()
 
 Sebastian_results = (
@@ -216,7 +341,9 @@ sigs_SG = pd.read_csv(Sebastian_results)
 sigs_SG.set_index("gauge_id", inplace=True)
 sigs_SG.head()
 # %%
-compare_SG = sigsall_hysets.join(sigs_SG, lsuffix="_sigs", rsuffix="_sigs_SG", how="left")
+compare_SG = sigsall_hysets.join(
+    sigs_SG, lsuffix="_sigs", rsuffix="_sigs_SG", how="left"
+)
 # compare_SG.head()
 
 # Determine the number of rows needed based on the number of signals

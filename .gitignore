@@ -1,6 +1,8 @@
 ################################# GENERAL
 
 .vscode/
+log.txt
+*/log.txt
 
 ################################# MATLAB
 # Windows default autosave extension

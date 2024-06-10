@@ -47,6 +47,7 @@ for index, us_gauge in tqdm(us_gauges.iterrows(), total=len(us_gauges)):
         data_subset = data[(data["date"] > start_date) & (data["date"] < end_date)]
         subset_nan_count = data_subset.streamflow.isna().sum()
         subset_nan_fraction = subset_nan_count / len(data_subset)
+        Q95 = data.streamflow.quantile(0.95)
         
         # Append the results to the summary list
         summary.append({
@@ -55,7 +56,8 @@ for index, us_gauge in tqdm(us_gauges.iterrows(), total=len(us_gauges)):
             "end_date": end_date,
             "nan_count": nan_count,
             "nan_fraction": nan_fraction,
-            "subset_nan_fraction": subset_nan_fraction
+            "subset_nan_fraction": subset_nan_fraction,
+            "Q95": Q95
         })
     except Exception as e:
         print(e)
@@ -65,7 +67,8 @@ for index, us_gauge in tqdm(us_gauges.iterrows(), total=len(us_gauges)):
             "end_date": "NaT",
             "nan_count": np.nan,
             "nan_fraction": np.nan,
-            "subset_nan_fraction": subset_nan_fraction
+            "subset_nan_fraction": subset_nan_fraction,
+            "Q95": Q95
         })
         print(f"Error at {us_gauge.gauge_id}")
 
