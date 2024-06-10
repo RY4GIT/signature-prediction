@@ -64,14 +64,14 @@ plot_results = false;
 %___________________________________________________________________________________
 % Prepare parallel pool
 %
-% % Specify the number of workers
-% numWorkers = 12;  % Adjust based on your system capabilities
-%
-% % Set up the parallel pool
-% pool = gcp('nocreate');
-% if isempty(pool)
-%     parpool(numWorkers);  % Start a parallel pool
-% end
+% Specify the number of workers
+numWorkers = 12;  % Adjust based on your system capabilities
+
+% Set up the parallel pool
+pool = gcp('nocreate');
+if isempty(pool)
+    parpool(numWorkers);  % Start a parallel pool
+end
 
 % Initialize the cell array for results
 resultsCell = cell(numGauges, 1);
@@ -81,7 +81,7 @@ disp('Starting processing...');
 
 %___________________________________________________________________________________
 % Loop through each gauge in us_gauges and collect data
-for idx = 1:numGauges
+parfor idx = 1:numGauges
     try
         % Get the gauge id
         gauge_id = cell2mat(us_gauges(idx, :).gauge_id);
@@ -108,20 +108,23 @@ for idx = 1:numGauges
         
         if strcmp(sig_cat,'calc_All_custom')
             
-            % Overland flow
-            parts = split(gauge_id, '_');
-            gauge_code = parts{2};
-            ws_code = str2double(gauge_code(1:2));
-            OF_param = config_OF(config_OF.ws_code == ws_code, :);
-            
-            % Recession
-            p99 = prctile(data.streamflow, 99);
-            if (p99 < 1)
-                recession_param = config_recession(string(config_recession.flow) == {'low'}, :);
-            else
-                recession_param = config_recession(string(config_recession.flow) == {'normal'}, :);
+            try
+                % Overland flow
+                parts = split(gauge_id, '_');
+                gauge_code = parts{2};
+                ws_code = str2double(gauge_code(1:2));
+                OF_param = config_OF(config_OF.ws_code == ws_code, :);
+                
+                % Recession
+                p99 = prctile(data.streamflow, 99);
+                if (p99 < 1)
+                    recession_param = config_recession(string(config_recession.flow) == {'low'}, :);
+                else
+                    recession_param = config_recession(string(config_recession.flow) == {'normal'}, :);
+                end
+            catch ME
+                fprintf('Error at index %d: %s\n', idx, ME.message);
             end
-            
         end
         
         %___________________________________________________________________________________
@@ -130,16 +133,21 @@ for idx = 1:numGauges
             case 'calc_All'
                 signatures = calc_All(Q, t, P, PET, T);
             case 'calc_All_custom'
-                signatures = calc_All_custom(Q, t, P, PET, T,...
-                    'min_termination', OF_param.min_termination, ...
-                    'min_duration', OF_param. min_duration, ...
-                    'min_intensity_day', OF_param.min_intensity_day, ...
-                    'min_intensity_day_during', OF_param.min_intensity_day_during, ...
-                    'max_recessiondays', OF_param.max_recessiondays, ...
-                    'recession_length', recession_param.recession_length, ...
-                    'eps', recession_param.eps, ...
-                    'plot_results', plot_results ...
-                    );
+                try
+                    signatures = calc_All_custom(Q, t, P, PET, T,...
+                        'min_termination', OF_param.min_termination, ...
+                        'min_duration', OF_param. min_duration, ...
+                        'min_intensity_day', OF_param.min_intensity_day, ...
+                        'min_intensity_day_during', OF_param.min_intensity_day_during, ...
+                        'max_recessiondays', OF_param.max_recessiondays, ...
+                        'recession_length', recession_param.recession_length, ...
+                        'eps', recession_param.eps, ...
+                        'plot_results', plot_results ...
+                        );
+                catch ME
+                    fprintf('Error at index %d: %s\n', idx, ME.message);
+                    signatures = calc_All(Q, t, P, PET, T);
+                end
             case 'calc_McMillan_Groundwater'
                 signatures = calc_McMillan_Groundwater(Q, t, P, PET);
             case 'calc_McMillan_OverlandFlow'
