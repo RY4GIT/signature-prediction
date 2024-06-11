@@ -22,7 +22,18 @@ hysets_qa = pd.read_csv(
     ),
     index_col="gauge_id",
 )
-
+hysets_attrs = pd.read_csv(
+    os.path.join(
+        home_dir,
+        data_dir,
+        "Caravan1.4",
+        "attributes",
+        "hysets",
+        "attributes_other_hysets.csv",
+    ),
+    index_col="gauge_id",
+)
+hysets_qa = hysets_qa.join(hysets_attrs)
 # caravan_data = "camels"
 # %%
 ########################################
@@ -34,7 +45,7 @@ sig_cat = "calc_All_custom"  # 'calc_All_custom', 'calc_All', or 'McMillan set' 
 ########################################
 # Hysets quality control threshold
 subset_nan_fraction_thresh = 0.3
-duration_thresh = 10
+duration_thresh = 5
 Q95_thresh = 1.0
 ########################################
 
@@ -51,16 +62,9 @@ hysets_qa["qf_subset_nan_fraction"] = (
     hysets_qa["subset_nan_fraction"] < subset_nan_fraction_thresh
 )
 hysets_qa["qf_duration"] = hysets_qa["duration_yr"] > duration_thresh
-hysets_qa["qf_manualcheck"] = ~hysets_qa["manual_check"].notna()
-hysets_qa["qf_Q95"] = hysets_qa["Q95"] > Q95_thresh
-
-# %%
-hysets_qa["qf_overall"] = (
-    hysets_qa["qf_subset_nan_fraction"]
-    & hysets_qa["qf_duration"]
-    & hysets_qa["qf_manualcheck"]
-    & hysets_qa["qf_Q95"]
-)
+# hysets_qa["qf_manualcheck"] = ~hysets_qa["manual_check"].notna()
+# hysets_qa["qf_Q95"] = hysets_qa["Q95"] > Q95_thresh
+hysets_qa["qf_overall"] = hysets_qa["qf_subset_nan_fraction"] & hysets_qa["qf_duration"]
 
 
 # %%
@@ -93,22 +97,9 @@ def get_sig_results(sig_cat, results_dir):
         sigs_gw.set_index("gauge_id", inplace=True)
         sigs = sigs_of.join(sigs_gw, how="outer")
 
-    # Get column names
-    _signames = sigs.columns.to_list()
-    signames = [s for s in _signames if "_error_str" not in s]
-    # not_gw_nor_of = [s for s in signames if s not in plot_config["column_name"].tolist()]
-    # not_calculated = [s for s in plot_config["column_name"].tolist() if s not in signames]
-
     print("________________________________________________________________________")
     print("Results from:", results_dir)
     print("Size of the results:", len(sigs))
-    # print("____________________________________")
-    # print("Number of signatures (plot config):", len(plot_config["column_name"].tolist()))
-    # print("Number of signatures (results file):",len(signames))
-    # print("____________________________________")
-    # print("Signature calculated:", signames)
-    # print("Calculated but not in the LargeSig paper:", not_gw_nor_of)
-    # print("In the LargeSig paper but not calculated:", not_calculated, "\n", "\n")
 
     return sigs
 
@@ -190,20 +181,19 @@ for i in range(num_plots, len(axes)):
 plt.tight_layout()
 plt.show()
 
-
 # %% ##############################################################################
 # Check extremely large values of signatures
 ##############################################################################
 
-sig_key = "TotalRR"
-sig_value_thresh = 0.05
-sig_extreme = sigs_camels[sigs_camels[sig_key] < sig_value_thresh][[sig_key]]
+sig_key = "Storage_thresh"
+sig_value_thresh = 5000
+sig_extreme = sigs_hysets[sigs_hysets[sig_key] > sig_value_thresh][[sig_key]]
 print(sig_extreme)
 print(sig_extreme.index)
 
 # %%
 # Get data and plot
-sig_extreme_gauge_id = "camels_08202700"  # sig_extreme.index.item()
+target_gauge_id = "hysets_09520280"  # sig_extreme.index.item()
 data = pd.read_csv(
     os.path.join(
         home_dir,
@@ -211,35 +201,48 @@ data = pd.read_csv(
         "Caravan1.4",
         "timeseries",
         "csv",
-        "camels",
-        f"{sig_extreme_gauge_id}.csv",
+        "hysets",
+        f"{target_gauge_id}.csv",
     ),
     parse_dates=["date"],
     index_col="date",
 )
-start_yr = "2000"  # "1950" # "2010"
-end_yr = "2005"  # $"2020" #"2011"
-ax = data.streamflow[start_yr:end_yr].plot()
-ax.set_ylim([0, 1])
+start_date = data[data["streamflow"].notna()].index[0]
+end_date = data[data["streamflow"].notna()].index[-1]
+ax = data.streamflow[start_date:end_date].plot()
+ax.set_ylabel("streamflow (mm/d)")
+ax.set_title(
+    f"{target_gauge_id}: {hysets_qa.loc[target_gauge_id].gauge_name}\n{sig_key}={sigs_hysets.loc[target_gauge_id][sig_key]:.3f}",
+    fontsize=15,
+)
+# ax.set_ylim([0, 0.1])
+fig = ax.get_figure()  # Get the figure object associated with the axis
+fig.autofmt_xdate()  # Apply auto-formatting of the dates on the x-axis
+
+# print next gauges to check
 print(sig_extreme.index)
 
-print(f"Q50: {data.streamflow.quantile(0.5)}")
-print(f"Q95: {data.streamflow.quantile(0.95)}")
+
+# %%%
+
 # %%
-hysets_qa.loc[sig_extreme_gauge_id]
+# print(f"Q50: {data.streamflow.quantile(0.5)}")
+# print(f"Q95: {data.streamflow.quantile(0.95)}")
+# # %%
+# hysets_qa.loc[sig_extreme_gauge_id]
 
-# Sort data
-x = np.sort(data.streamflow.dropna())
-# Calculate CDF values
-y = np.arange(1, len(x) + 1)
+# # Sort data
+# x = np.sort(data.streamflow.dropna())
+# # Calculate CDF values
+# y = np.arange(1, len(x) + 1)
 
-plt.figure(figsize=(8, 4))  # Optional: adjusts the size of the plot
-plt.plot(x, y, marker=".", linestyle="none")  # 'none' for no line
-plt.title("CDF of Streamflow")
-plt.xlabel("Streamflow")
-plt.ylabel("CDF")
-plt.grid(True)  # Optional: adds a grid
-plt.show()
+# plt.figure(figsize=(8, 4))  # Optional: adjusts the size of the plot
+# plt.plot(x, y, marker=".", linestyle="none")  # 'none' for no line
+# plt.title("CDF of Streamflow")
+# plt.xlabel("Streamflow")
+# plt.ylabel("CDF")
+# plt.grid(True)  # Optional: adds a grid
+# plt.show()
 
 
 # %%

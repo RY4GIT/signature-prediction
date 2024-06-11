@@ -10,8 +10,8 @@ library(sf)
 library(mltools)
 library(data.table)
 
-
-#### Import datasets ####
+# _______________________________________________________________________________________________________________
+# Import datasets 
 
 sigs_all = read.csv('E:/SDSU_GEOG/Thesis/Data/Signatures/sigs_camels_v2.csv', colClasses = c(gauge_id = "character"))
 
@@ -97,6 +97,8 @@ rf_input_attribs_new = hysets_caravan_attribs_v2 %>%
   select(-high_prec_freq, -high_prec_dur) %>% 
   select(-p_mean, -pet_mean)
 
+
+# _______________________________________________________________________________________________________________
 #### Random forests, with cross validation for evaluation ####
 
 # list of predictor variables (signatures) to loop through
@@ -188,6 +190,9 @@ for(sig in sigs_list){
 
   }
 
+
+# _______________________________________________________________________________________________________________
+# Output the results
 all_sig_predictions = bind_rows(rf_sig_predictions)
 all_var_importance <- bind_rows(rf_out_var_importance)
 all_r2 = bind_rows(rf_out_r2) %>%

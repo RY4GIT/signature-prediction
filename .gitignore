@@ -207,6 +207,7 @@ cython_debug/
 .Rhistory
 .Rapp.history
 .Rproj
+*.Rproj
 
 # Session Data files
 .RData

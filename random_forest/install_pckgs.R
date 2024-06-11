@@ -1,5 +1,5 @@
 # Load the list of packages from the file
-package_list <- readLines("r/packages.txt")
+package_list <- readLines("random_forest/packages.txt")
 
 # Install packages if they are not already installed
 installed_packages <- rownames(installed.packages())
@@ -13,3 +13,4 @@ lapply(package_list, library, character.only = TRUE)
 
 #### To run this
 #### source("r/install_pckg.R")
+
