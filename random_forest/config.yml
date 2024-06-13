@@ -1,29 +1,30 @@
 default:
   paths:
-    home_dir:  "E:/SDSU_GEOG"
-    data_dir: "E:/SDSU_GEOG/Thesis/Data"
-    input:
-      signatures: "/Thesis/Data/Signatures/sigs_camels_v2.csv"
-      attributes: "/RandomForest_R/inputs/camels_attribs_v2.csv"
-    output:
-      predictions: "/RandomForest_R/outputs_final/caravan_geol_giw_predicted_signatures.csv"
-      importance: "/RandomForest_R/outputs_final/caravan_geol_giw_var_importance.csv"
-      rsquared: "/RandomForest_R/outputs_final/caravan_geol_giw_r_squared.csv"
+    home_dir:  "G:/Shared drives/Signatures -- large scale/baseflow"
+    out_dir: "RAraki/out/rf"
+    train:
+      signatures: "RAraki/out/signatures/caravan_camels_20240609/out_calc_ALL_custom.csv"
+      attributes: "RAraki/data/Caravan1.4/attributes/camels/attributes_caravan_camels.csv"
+    test:
+      attributes: "RAraki/data/Caravan1.4/attributes/camels/attributes_caravan_camels.csv"
+  experiment_name: "test"
   settings:
     seed: 0
     ntree: 500
+    num_folds: 2
+  parallel:
+    nCores: 4
   sigs_predict:
-    - gauge_id
     - TotalRR
     - RR_Seasonality
-    - EventRR
-    - Recession_a_Seasonality
-    - AverageStorage
-    - RecessionParameters_1
-    - RecessionParameters_2
-    - First_Recession_Slope
-    - Mid_Recession_Slope
-    - EventRR_TotalRR_ratio
-    - VariabilityIndex
-    - BFI
-    - BaseflowRecessionK
+    # - EventRR
+    # - Recession_a_Seasonality
+    # - AverageStorage
+    # - RecessionParameters_1
+    # - RecessionParameters_2
+    # - First_Recession_Slope
+    # - Mid_Recession_Slope
+    # - EventRR_TotalRR_ratio
+    # - VariabilityIndex
+    # - BFI
+    # - BaseflowRecessionK

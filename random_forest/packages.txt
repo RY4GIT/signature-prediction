@@ -8,3 +8,7 @@ mltools
 data.table
 cowplot
 config
+lubridate
+styler
+doParallel
+foreach

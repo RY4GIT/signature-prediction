@@ -13,4 +13,3 @@ lapply(package_list, library, character.only = TRUE)
 
 #### To run this
 #### source("r/install_pckg.R")
-
