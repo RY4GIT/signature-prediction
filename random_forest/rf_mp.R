@@ -81,12 +81,13 @@ registerDoParallel(cores = config$parallel$nCores)
 # Random forest initialization
 
 set.seed(config$settings$seed)
+
 out_r2 <- list()
 out_var_importance <- list()
 out_sig_predictions <- list()
 
 hyper_grid <- expand.grid(
-  mtry = c(1:length(attrs_train) - 1)
+  mtry = c(1:(length(attrs_train) - 1))
 )
 
 kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, search = "grid", verboseIter = TRUE)
@@ -99,7 +100,6 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
   
   # Prepare messages to log
   log_messages <- character()
-  
   log_messages <- c(log_messages, paste("Processing:", sig, "\n"))
   
   # _______________________________________________________________________________________________________________
@@ -108,7 +108,7 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
   # define repeated cross-validation with 10 folds and three repeats
   # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
 
-  train_data <- attrs %>%
+  train_data <- attrs_train %>%
     left_join(sigs %>% select(gauge_id, sig), by = "gauge_id") %>%
     select(-gauge_id) %>%
     drop_na()
@@ -143,7 +143,6 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
 
   predictions <- predict(forest, test_data)
 
-
   log_messages <- c(log_messages, "Completed processing for signature.")
   
   
@@ -175,13 +174,12 @@ all_var_importance <- bind_rows(out_var_importance)
 all_r2 <- bind_rows(out_r2)
 
 write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures.csv"), row.names = FALSE)
-
 write.csv(all_var_importance, file.path(out_path, "var_importance.csv"), row.names = FALSE)
-
 write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
 
 yaml::write_yaml(config, file.path(out_path, "config.yaml"))
 
+# ______________________________________________________
 # After the loop, write all log messages to file
 # Log the execution time
 for (result in results) {
@@ -192,12 +190,13 @@ for (result in results) {
   writeLines(result$log_messages, con = log_file)
 }
 
-
+# ______________________________________________________
 # Calculate execution time
 end_time <- proc.time()
 execution_time <- end_time - start_time
 print(paste("Total Execution Time: ", execution_time[3], "seconds"), con = log_file)
 
 close(log_file)
+
 # Stop the parallel backend when done
 stopImplicitCluster()

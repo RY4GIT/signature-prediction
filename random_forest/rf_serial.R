@@ -32,6 +32,9 @@ if (!dir.exists(out_path)) {
 }
 print(config$experiment_name)
 
+# Start the timer
+start_time <- proc.time()
+
 # _______________________________________________________________________________________________________________
 # Load data
 
@@ -44,7 +47,7 @@ load_signatures <- function(file_path) {
   # and return it as a data frame
   data %>%
     select(gauge_id, all_of(config$sigs_predict)) %>%
-    as.data.frame()  # Ensure the output is a data frame
+    as.data.frame()
 }
 
 sigs_train_path <- file.path(home_dir, config$paths$train$signatures)
@@ -70,9 +73,7 @@ set.seed(config$settings$seed)
 
 # define repeated cross-validation with 10 folds and three repeats
 # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
-max_mtry <- ncol(attrs_train) - 1  # assuming `attrs_train` includes only predictors and one response column
-hyper_grid <- expand.grid(mtry = 1:max_mtry)
-
+hyper_grid <- expand.grid(mtry = 1:(ncol(attrs_train) - 1))
 kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, search = "grid", verboseIter = TRUE)
 
 out_r2 <- list()
@@ -85,7 +86,7 @@ for(sig in config$sigs_predict){
   
   # _______________________________________________________________________________________________________________
   # TRAINING
-  train_data <- attrs %>%
+  train_data <- attrs_train %>%
     left_join(sigs %>% select(gauge_id, sig), by = "gauge_id") %>%
     select(-gauge_id) %>%
     drop_na()
@@ -103,7 +104,7 @@ for(sig in config$sigs_predict){
     ntree = config$settings$ntree,
     # adding the repeated cross validation
     trControl = kfold_cv,
-    # hyperparameter testing
+    # hyper parameter testing
     tuneGrid = hyper_grid,
     # return importance, want %IncMSE data
     importance = TRUE
@@ -111,8 +112,6 @@ for(sig in config$sigs_predict){
   
   print(forest)
   print(forest$finalModel)
-  
-  
   
   # _______________________________________________________________________________________________________________
   # Save the model to a file
@@ -152,9 +151,11 @@ all_r2 <- bind_rows(out_r2) %>%
   pivot_longer(everything(), names_to = "sig_name", values_to = "r_squared")
 
 write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures.csv"), row.names = FALSE)
-
 write.csv(all_var_importance, file.path(out_path, "var_importance.csv"), row.names = FALSE)
-
 write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
 
 yaml::write_yaml(config, file.path(out_path, "config.yaml"))
+
+end_time <- proc.time()
+execution_time <- end_time - start_time
+print(paste("Total Execution Time: ", execution_time[3], "seconds"), con = log_file)
