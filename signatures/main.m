@@ -57,8 +57,8 @@ us_gauges = attrs_geo(strcmp(attrs_geo.country, 'United States of America'), :);
 numGauges = height(us_gauges);
 
 % Parameter config
-config_OF = readtable('calculate_sigs_config_overlandflow.csv');
-config_recession = readtable('calculate_sigs_config_recession.csv');
+config_OF = readtable('config_overlandflow.csv');
+config_recession = readtable('config_recession.csv');
 
 plot_results = false;
 
