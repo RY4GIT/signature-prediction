@@ -193,7 +193,7 @@ print(sig_extreme.index)
 
 # %%
 # Get data and plot
-target_gauge_id = "hysets_09520280"  # sig_extreme.index.item()
+target_gauge_id = "hysets_14242511"  # sig_extreme.index.item()
 data = pd.read_csv(
     os.path.join(
         home_dir,
@@ -212,7 +212,7 @@ end_date = data[data["streamflow"].notna()].index[-1]
 ax = data.streamflow[start_date:end_date].plot()
 ax.set_ylabel("streamflow (mm/d)")
 ax.set_title(
-    f"{target_gauge_id}: {hysets_qa.loc[target_gauge_id].gauge_name}\n{sig_key}={sigs_hysets.loc[target_gauge_id][sig_key]:.3f}",
+    f"{target_gauge_id}: {hysets_qa.loc[target_gauge_id].gauge_name}",  # \n{sig_key}={sigs_hysets.loc[target_gauge_id][sig_key]:.3f}",
     fontsize=15,
 )
 # ax.set_ylim([0, 0.1])
