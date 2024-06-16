@@ -87,7 +87,7 @@ out_var_importance <- list()
 out_sig_predictions <- list()
 
 hyper_grid <- expand.grid(
-  mtry = c(1:(length(attrs_train) - 1))
+  mtry = c(1:(length(attrs_train)))
 )
 
 kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, search = "grid", verboseIter = TRUE)
@@ -121,7 +121,7 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
     # Random forest method
     method = "rf",
     # metric to evaluate model performance
-    metric = "MSE",
+    metric = config$settings$eval_metric,
     # Number of trees
     ntree = config$settings$ntree,
     # adding the repeated cross validation
@@ -136,8 +136,7 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
   print(forest$finalModel)
 
   # _______________________________________________________________________________________________________________
-  # TEST
-  # Predict signature value for new samples
+  # Predict signature value / can be on a test dataset. Currently it is used to simply get predicted signature values from training & validation
   test_data <- attrs_test %>%
     select(-gauge_id)
 

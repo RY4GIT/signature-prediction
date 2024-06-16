@@ -73,7 +73,7 @@ set.seed(config$settings$seed)
 
 # define repeated cross-validation with 10 folds and three repeats
 # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
-hyper_grid <- expand.grid(mtry = 1:(ncol(attrs_train) - 1))
+hyper_grid <- expand.grid(mtry = 1:(ncol(attrs_train)))
 kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, search = "grid", verboseIter = TRUE)
 
 out_r2 <- list()
@@ -99,7 +99,7 @@ for(sig in config$sigs_predict){
     # Random forest method
     method = "rf",
     # metric to evaluate model performance
-    metric = "RMSE",
+    metric = config$settings$eval_metric,
     # Number of trees
     ntree = config$settings$ntree,
     # adding the repeated cross validation
@@ -127,8 +127,7 @@ for(sig in config$sigs_predict){
   
   
   # _______________________________________________________________________________________________________________
-  # TEST
-  # Predict signature value for new samples
+  # Predict signature value / can be on a test dataset. Currently it is used to simply get predicted signature values from training & validation
   test_data <- attrs_test %>%
     select(-gauge_id)
   

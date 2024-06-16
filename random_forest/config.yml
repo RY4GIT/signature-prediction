@@ -12,6 +12,8 @@ default:
     seed: 0
     ntree: 500
     num_folds: 2
+    eval_metric: "MSE"
+    # "MSE", "RMSE" etc.. 
   parallel:
     nCores: 4
   sigs_predict:
