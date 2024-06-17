@@ -90,7 +90,7 @@ set.seed(config$settings$seed)
 
 # define repeated cross-validation with 10 folds and three repeats
 # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
-hyper_grid <- expand.grid(mtry = 1:(ncol(attrs_train)))
+hyper_grid <- expand.grid(mtry = 1:(ncol(attrs_train)-1))
 kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, search = "grid", verboseIter = TRUE)
 
 out_r2 <- list()
@@ -106,7 +106,7 @@ for(sig in config$sigs_predict){
   train_data <- attrs_train %>%
     left_join(sigs %>% select(gauge_id, sig), by = "gauge_id") %>%
     select(-gauge_id) %>%
-    drop_na()
+    drop_na() 
 
   forest <- train(
     # signature to predict
@@ -134,25 +134,36 @@ for(sig in config$sigs_predict){
   # Save the model to a file
   
   # append r2 value
-  out_r2[[sig]] <- mean(forest$finalModel$rsq)
+  if(length(forest$finalModel$rsq) == 0) {
+      out_r2[[sig]] <- NA  # Use NA when no r_squared value is calculated
+    } else {
+      out_r2[[sig]] <- mean(forest$final$rsq)
+    }
   
   # Append to larger output list, variable importance
-  out_var_importance[[sig]] <- importance(forest$finalModel, type = 1, scale = TRUE) %>%
-    as.data.frame() %>%
-    tibble::rownames_to_column(var = "predictor") %>%
-    dplyr::mutate(sig_name = sig)
+  if(nrow(importance(forest$finalModel, type = 1, scale = TRUE)) == 0) {
+    out_var_importance[[sig]] <- data.frame(predictor = NA, Importance = NA, sig_name = sig)
+  } else {
+    out_var_importance[[sig]] <- importance(forest$finalModel, type = 1, scale = TRUE) %>%
+      as.data.frame() %>%
+      tibble::rownames_to_column(var = "predictor") %>%
+      dplyr::mutate(sig_name = sig)
+  }
   
   
   # _______________________________________________________________________________________________________________
   # Predict signature value / can be on a test dataset. Currently it is used to simply get predicted signature values from training & validation
   test_data <- attrs_test %>%
-    select(-gauge_id)
+    drop_na() 
   
-  predictions <- predict(forest, test_data)
+  predictions <- predict(forest, test_data%>%select(-gauge_id))
   
   # Store predictions in the list
-  out_sig_predictions[[sig]] <- data.frame(gauge_id = attrs_test$gauge_id, prediction = predictions, sig_name = sig)
-  
+  if(length(predictions) == 0) {
+    out_sig_predictions[[sig]] <- data.frame(gauge_id = NA, prediction = NA, sig_name = sig)
+  } else {
+    out_sig_predictions[[sig]] <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
+  }
 }
 
 # _______________________________________________________________________________________________________________
@@ -174,4 +185,4 @@ yaml::write_yaml(config, file.path(out_path, "config.yaml"))
 
 end_time <- proc.time()
 execution_time <- end_time - start_time
-print(paste("Total Execution Time: ", execution_time[3], "seconds"), con = log_file)
+print(paste("Total Execution Time: ", execution_time[3], "seconds"))

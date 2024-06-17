@@ -98,25 +98,25 @@ caravan_equiv:
   experiment_name: "caravan_equiv"
   settings:
     seed: 42
-    ntree: 500
-    num_folds: 10
+    ntree: 5
+    num_folds: 1
     eval_metric: "MSE"
   parallel:
     nCores: 4
   sigs_predict:
     - TotalRR
     - RR_Seasonality
-    - EventRR
-    - Recession_a_Seasonality
-    - AverageStorage
-    - RecessionParameters_1
-    - RecessionParameters_2
-    - First_Recession_Slope
-    - Mid_Recession_Slope
-    - EventRR_TotalRR_ratio
-    - VariabilityIndex
-    - BFI
-    - BaseflowRecessionK
+    # - EventRR
+    # - Recession_a_Seasonality
+    # - AverageStorage
+    # - RecessionParameters_1
+    # - RecessionParameters_2
+    # - First_Recession_Slope
+    # - Mid_Recession_Slope
+    # - EventRR_TotalRR_ratio
+    # - VariabilityIndex
+    # - BFI
+    # - BaseflowRecessionK
   attrs_of_interest:
     - frac_snow
     - aridity

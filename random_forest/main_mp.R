@@ -38,8 +38,8 @@ if (!dir.exists(out_path)) {
 }
 print(config$experiment_name)
 
-# Before the loop, open a connection to a log file
-log_file <- file(file.path(out_path, "log.txt"), open = "wt")
+# # Before the loop, open a connection to a log file
+# log_file <- file(file.path(out_path, "log.txt"), open = "wt")
 
 # Start the timer
 start_time <- proc.time()
@@ -101,7 +101,7 @@ out_var_importance <- list()
 out_sig_predictions <- list()
 
 hyper_grid <- expand.grid(
-  mtry = c(1:(length(attrs_train)))
+  mtry = c(1:(length(attrs_train)-1))
 )
 
 kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, search = "grid", verboseIter = TRUE)
@@ -112,9 +112,9 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
   library(dplyr)  # Ensure dplyr is loaded
   library(tidyr)  # Ensure tidyr is loaded
   
-  # Prepare messages to log
-  log_messages <- character()
-  log_messages <- c(log_messages, paste("Processing:", sig, "\n"))
+  # # Prepare messages to log
+  # log_messages <- character()
+  # log_messages <- c(log_messages, paste("Processing:", sig, "\n"))
   
   # _______________________________________________________________________________________________________________
   # TRAINING
@@ -152,22 +152,43 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
   # _______________________________________________________________________________________________________________
   # Predict signature value / can be on a test dataset. Currently it is used to simply get predicted signature values from training & validation
   test_data <- attrs_test %>%
-    select(-gauge_id)
-
-  predictions <- predict(forest, test_data)
-
-  log_messages <- c(log_messages, "Completed processing for signature.")
+    drop_na() 
   
+  predictions <- predict(forest, test_data%>%select(-gauge_id))
+# 
+#   log_messages <- c(log_messages, "Completed processing for signature.")
+#   
   
   # _______________________________________________________________________________________________________________
   # Collect results for CSV
-  list(
-    sig_predictions = data.frame(gauge_id = attrs_test$gauge_id, prediction = predictions, sig_name = sig),
-    r2 = data.frame(sig_name = sig, r_squared = mean(forest$finalModel$rsq)),
-    var_importance = importance(forest$finalModel, type = 1, scale = TRUE) %>%
+  
+  # append r2 value
+  if(length(forest$finalModel$rsq) == 0) {
+    out_r2 <- data.frame(sig_name = sig, r_squared = NA)  # Use NA when no r_squared value is calculated
+  } else {
+    out_r2 <- data.frame(sig_name = sig, r_squared = mean(forest$final$rsq))
+  }
+  
+  # Append to larger output list, variable importance
+  if(nrow(importance(forest$finalModel, type = 1, scale = TRUE)) == 0) {
+    out_var_importance <- data.frame(predictor = NA, Importance = NA, sig_name = sig)
+  } else {
+    out_var_importance <- importance(forest$finalModel, type = 1, scale = TRUE) %>%
       as.data.frame() %>%
       tibble::rownames_to_column(var = "predictor") %>%
       dplyr::mutate(sig_name = sig)
+  }
+  
+  if(length(predictions) == 0) {
+    out_sig_predictions <- data.frame(gauge_id = NA, prediction = NA, sig_name = sig)
+  } else {
+    out_sig_predictions <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
+  }
+  
+  list(
+    sig_predictions = out_sig_predictions, 
+    r2 = out_r2,
+    var_importance = out_var_importance
   )
 }
 
@@ -192,24 +213,24 @@ write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
 
 yaml::write_yaml(config, file.path(out_path, "config.yaml"))
 
-# ______________________________________________________
-# After the loop, write all log messages to file
-# Log the execution time
-for (result in results) {
-  # Convert log messages to character if not already
-  if (!is.character(result$log_messages)) {
-    result$log_messages <- as.character(result$log_messages)
-  }
-  writeLines(result$log_messages, con = log_file)
-}
+# # ______________________________________________________
+# # After the loop, write all log messages to file
+# # Log the execution time
+# for (result in results) {
+#   # Convert log messages to character if not already
+#   if (!is.character(result$log_messages)) {
+#     result$log_messages <- as.character(result$log_messages)
+#   }
+#   writeLines(result$log_messages, con = log_file)
+# }
 
 # ______________________________________________________
 # Calculate execution time
 end_time <- proc.time()
 execution_time <- end_time - start_time
-print(paste("Total Execution Time: ", execution_time[3], "seconds"), con = log_file)
+print(paste("Total Execution Time: ", execution_time[3], "seconds")) #, con = log_file)
 
-close(log_file)
+# close(log_file)
 
 # Stop the parallel backend when done
 stopImplicitCluster()
