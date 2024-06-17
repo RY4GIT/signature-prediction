@@ -20,6 +20,10 @@ library(foreach)
 
 # _______________________________________________________________________________________________________________
 # Load configuration
+#############################################
+# Change here to select which config to read
+Sys.setenv(R_CONFIG_ACTIVE = "reproduce_aholt") # "default", "reproduce_aholt"
+#############################################
 config <- config::get(file = "./random_forest/config.yml")
 home_dir <- config$paths$home_dir
 
@@ -59,12 +63,22 @@ sigs_train_path <- file.path(home_dir, config$paths$train$signatures)
 sigs_train <- load_signatures(sigs_train_path)
 
 # Attributes
+load_attrs <- function(file_path) {
+  # Read the data from the specified file path
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Select the gauge_id and all the specified columns from the data
+  # and return it as a data frame
+  data %>%
+    select(gauge_id, all_of(config$attrs_of_interest)) %>%
+    as.data.frame()
+}
+
 attrs_train_path <- file.path(home_dir, config$paths$train$attributes)
-attrs_train <- read_csv(attrs_train_path)
+attrs_train <- load_attrs(attrs_train_path)
 
 attrs_test_path <- file.path(home_dir, config$paths$test$attributes)
-attrs_test <- read_csv(attrs_test_path)
-
+attrs_test <- load_attrs(attrs_test_path)
 
 #############################################
 # EXECUTION
