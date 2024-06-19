@@ -39,3 +39,7 @@ print(unique_df2.head())
 unique_df2.set_index("gauge_id", inplace=True)
 unique_df2.to_csv(output_path)
 # %%
+print(f'{sum(unique_df2["country_y"]=="United States of America")}')
+print(f'{sum(df1["country"]=="United States of America")}')
+print(f'{sum(df2["country"]=="United States of America")}')
+# %%

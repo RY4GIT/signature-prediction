@@ -104,7 +104,7 @@ for(sig in config$sigs_predict){
   # _______________________________________________________________________________________________________________
   # TRAINING
   train_data <- attrs_train %>%
-    left_join(sigs %>% select(gauge_id, sig), by = "gauge_id") %>%
+    left_join(sigs_train %>% select(gauge_id, sig), by = "gauge_id") %>%
     select(-gauge_id) %>%
     drop_na() 
 

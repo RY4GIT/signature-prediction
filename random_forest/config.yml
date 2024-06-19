@@ -38,7 +38,7 @@ reproduce_aholt:
     home_dir:  "G:/Shared drives/Signatures -- large scale/baseflow"
     out_dir: "RAraki/out/rf"
     train:
-      signatures: "/AHolt/data/Signatures/sigs_camels_v2.csv"
+      signatures: "RAraki/out/signatures/sig_camels_v2_aholt.csv"
       attributes: "AHolt/data/derived_attrs/assembled_RA/attrs_camels_original.csv"
     test:
       attributes: "AHolt/data/derived_attrs/assembled_RA/attrs_camels_original.csv"

@@ -713,3 +713,6 @@ var_imp %>%
 # ## Print the accuracy
 # accuracy <- mean(y_hats == testing_set$baseflow_index)*100
 # cat('Accuracy on testing data: ', round(accuracy, 2), '%',  sep='')
+
+
+# %%
