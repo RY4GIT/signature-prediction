@@ -38,7 +38,7 @@ reproduce_aholt:
     home_dir:  "G:/Shared drives/Signatures -- large scale/baseflow"
     out_dir: "RAraki/out/rf"
     train:
-      signatures: "RAraki/out/signatures/caravan_camels_20240530_defaultparams/out_calc_ALL.csv"
+      signatures: "/AHolt/data/Signatures/sigs_camels_v2.csv"
       attributes: "AHolt/data/derived_attrs/assembled_RA/attrs_camels_original.csv"
     test:
       attributes: "AHolt/data/derived_attrs/assembled_RA/attrs_camels_original.csv"
@@ -56,8 +56,8 @@ reproduce_aholt:
     - EventRR
     - Recession_a_Seasonality
     - AverageStorage
-    - RecessionParameters_1
-    - RecessionParameters_2
+    - RecessionParameters_b
+    - RecessionParameters_T0
     - First_Recession_Slope
     - Mid_Recession_Slope
     - EventRR_TotalRR_ratio
@@ -85,6 +85,8 @@ reproduce_aholt:
     - carbonate_rocks_frac
     - geol_porostiy
     - geol_permeability
+    - geol_major_age_ma
+    - isowet_areafrac
 
 caravan_equiv:
   paths:
@@ -129,3 +131,5 @@ caravan_equiv:
     - slt_pc_sav
     - cly_pc_sav
     - kar_pc_sse
+    - geol_major_age_ma
+    - isowet_areafrac

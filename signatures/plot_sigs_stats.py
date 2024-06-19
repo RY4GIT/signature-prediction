@@ -392,3 +392,72 @@ for i, col in enumerate(sigsall_names):
 plt.tight_layout()
 plt.show()
 # %%
+# Compare Anni'es signature and mine
+# ______________________________________________________________________________________________
+# Compare with Sebastian's results for calc_ALLs
+
+sigsall_hysets = get_sig_results("calc_All", hysets_results_dir)
+sigsall_names = sigsall_hysets.columns.to_list()
+
+Sebastian_results = (
+    r"C:\Users\flipl\dev\TOSSH_signatures_Caravan\results\TOSSH_signatures_Caravan.csv"
+)
+sigs_SG = pd.read_csv(Sebastian_results)
+sigs_SG.set_index("gauge_id", inplace=True)
+sigs_SG.head()
+# %%
+
+
+sigs_camels_raraki = get_sig_results(
+    "calc_All", "caravan_camels_20240530_defaultparams"
+)  # pd.read_csv(
+# r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_camels_20240530_defaultparams\out_calc_All.csv",
+# index_col="gauge_id",
+# )
+sigs_camels_aholt = pd.read_csv(
+    r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\Signatures\sigs_camels_v2.csv",
+    index_col="gauge_id",
+)
+sigsall_names = sigs_camels_raraki.columns.to_list()  # ["TotalRR", "EventRR"]  #
+# sigs_camels_aholt.rename(columns={""})
+# sigs_camels_aholt.columns
+print(sigsall_names)
+# %%
+# Determine the number of rows needed based on the number of signals
+num_signals = len(sigsall_names)
+num_cols = 4
+num_rows = (
+    num_signals + num_cols - 1
+) // num_cols  # Compute the required number of rows
+
+# Create the subplots
+fig, axes = plt.subplots(
+    nrows=num_rows, ncols=num_cols, figsize=(15, 2.5 * num_rows)
+)  # Adjust the size as needed
+axes = axes.flatten()  # Flatten the axes array to make it easier to iterate
+
+# Plotting
+for i, col in enumerate(sigsall_names):
+    try:
+        ax = axes[i]
+
+        data_x = sigs_camels_aholt[col]
+        data_y = sigs_camels_raraki[col]
+
+        # Exclude NaNs for quantile calculation
+        valid_data_x = data_x.dropna()
+
+        min_val = np.quantile(valid_data_x, 0.0001)
+        max_val = np.quantile(valid_data_x, 0.9999)
+
+        ax.scatter(data_x, data_y, alpha=0.5)
+        ax.plot([min_val, max_val], [min_val, max_val], "--", color="grey")
+
+        ax.set_xlabel(f"Annie")
+        ax.set_ylabel(f"Ryoko")
+        ax.set_title(f"{col}")
+    except:
+        continue
+
+plt.tight_layout()
+# %%
