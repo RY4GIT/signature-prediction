@@ -18,7 +18,8 @@ fig_title = "Original CAMELS attrs (reprod. Annie's)"
 _df = pd.read_csv(
     os.path.join(derived_attrs_dir, target_attrs_file), index_col="gauge_id"
 )
-
+_df.columns
+# %%
 if target_attrs_file == "attrs_cam_hys.csv":
     selected_columns = [
         "frac_snow",

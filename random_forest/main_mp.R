@@ -4,13 +4,7 @@
 library(tidyverse)
 library(randomForest)
 library(caret)
-library(rpart)
-library(rpart.plot)
-library(sf)
-library(mltools)
-library(data.table)
 library(dplyr)
-library(lubridate)
 library(doParallel)
 library(foreach)
 

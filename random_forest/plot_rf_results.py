@@ -8,7 +8,7 @@ import os
 # ____________________________________________________________________________________
 # Config
 results_dir = r"G:/Shared drives/Signatures -- large scale/baseflow/RAraki/out/rf/"
-output_dir = r"output_20240618_reproduce_aholt"
+output_dir = r"output_20240619_reproduce_aholt_usingCaravanDerivedSigs"
 
 
 # ____________________________________________________________________________________
@@ -30,13 +30,13 @@ print(df_r2.head(10))
 
 # Customize color by predictor
 color_mapping = {
-    "geol_major_age_ma": "red",
+    "geol_weighted_ave_age_ma": "red",
     "isowet_areafrac": "blue",
-    "p_seasonality": "darkgrey",
-    "frac_snow": "darkgrey",
-    "low_prec_dur": "darkgrey",
-    "low_prec_freq": "darkgrey",
-    "aridity": "darkgrey",
+    "p_seasonality": "dimgrey",
+    "frac_snow": "dimgrey",
+    "low_prec_dur": "dimgrey",
+    "low_prec_freq": "dimgrey",
+    "aridity": "dimgrey",
 }
 
 
@@ -66,6 +66,23 @@ sigs = [
     "BaseflowRecessionK",
     "BFI",
 ]  # df_imp["sig_name"].unique()
+
+# sigs = [
+#     "EventRR",
+#     "TotalRR",
+#     "RR_Seasonality",
+#     "Recession_a_Seasonality",
+#     "AverageStorage",
+#     "RecessionParameters_b",
+#     "RecessionParameters_T0",
+#     "First_Recession_Slope",
+#     "Mid_Recession_Slope",
+#     "EventRR_TotalRR_ratio",
+#     "VariabilityIndex",
+#     "BaseflowRecessionK",
+#     "BFI",
+# ]
+
 n_cols = 4  # Number of columns
 n_rows = (len(sigs) + n_cols - 1) // n_cols  # Calculate number of rows needed
 
