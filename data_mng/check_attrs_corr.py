@@ -4,13 +4,124 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
-
-
+!pip install openpyxl
 # %%
-# Load dataset
 derived_attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs\assembled_RA"
+out_dir = os.path.join(derived_attrs_dir, "figs")
+
+def plot_corr_heatmap(corr_matrix, fig_title):
+
+    # Create a mask to hide the upper triangle
+    mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+
+    # Plot 
+    fig, ax = plt.subplots(figsize=(20, 20))  # Use plt.subplots() to create fig and ax
+    sns.heatmap(
+        corr_matrix,
+        annot=True,
+        annot_kws={"size": 8},
+        cmap="coolwarm",
+        vmin=-1,
+        vmax=1,
+        mask=mask,
+        ax=ax
+    )
+    ax.set_title(f"Spearman Correlation ({fig_title})")  # Set the title using ax.set_title()
+    fig.tight_layout()
+    plt.show()  # Use plt.show() to display the plot
+    return fig
+
+
+
+def strong_correlations(corr_matrix, threshold=0.8):
+    strong_pairs = []
+    
+    # Iterate through the correlation matrix
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i+1, len(corr_matrix.columns)):
+            corr_value = corr_matrix.iloc[i, j]
+            if abs(corr_value) > threshold:
+                strong_pairs.append((corr_matrix.columns[i], corr_matrix.columns[j], corr_value))
+    
+    # Print the strong correlations
+    for pair in strong_pairs:
+        print(f"Correlation between {pair[0]} and {pair[1]}: {pair[2]:.2f}")
+        
+    return strong_pairs
+# %%___________________________________________________________________________
+# Checking Caravan attributes
+target_attrs_file = "attrs_cam_hys.csv"
+ref_file = "attrs_analysis.xlsx"
+sheet_name = "basic_sets"
+
+_df = pd.read_csv(
+    os.path.join(derived_attrs_dir, target_attrs_file), index_col="gauge_id"
+)
+df = _df[_df.country == "United States of America"].copy()
+df_columns = df.columns.tolist()
+
+attr_list = pd.read_excel(
+    os.path.join(derived_attrs_dir, ref_file), sheet_name=sheet_name
+)
+# %%
+missing_columns = [var for var in attr_list.variable_name if var not in df_columns]
+
+# Display missing columns
+if missing_columns:
+    print("The following columns are not in the DataFrame:")
+    print(missing_columns)
+else:
+    print("All columns are present in the DataFrame.")
+# %%
+df_filt = df[attr_list.variable_name].copy()
+# Calculate spearman's correlation
+corr_matrix = df_filt.corr(method="spearman")
+
+fig_title = "Caravan attrs"
+fig = plot_corr_heatmap(corr_matrix, fig_title)
+fig.savefig(os.path.join(out_dir, "spearman_attrs_caravan.png"), dpi=600)
+# %%
+strong_correlations(corr_matrix)
+strong_correlations
+
+# %%___________________________________________________________________________
+# %%___________________________________________________________________________
+# Checking Caravan attributes (selected)
+sheet_name = "final"
+
+_df = pd.read_csv(
+    os.path.join(derived_attrs_dir, target_attrs_file), index_col="gauge_id"
+)
+df = _df[_df.country == "United States of America"].copy()
+df_columns = df.columns.tolist()
+
+attr_list = pd.read_excel(
+    os.path.join(derived_attrs_dir, ref_file), sheet_name=sheet_name
+)
+# %%
+missing_columns = [var for var in attr_list.variable_name if var not in df_columns]
+
+# Display missing columns
+if missing_columns:
+    print("The following columns are not in the DataFrame:")
+    print(missing_columns)
+else:
+    print("All columns are present in the DataFrame.")
+# %%
+df_filt = df[attr_list.variable_name].copy()
+# Calculate spearman's correlation
+corr_matrix = df_filt.corr(method="spearman")
+
+fig_title = "Caravan attrs"
+fig = plot_corr_heatmap(corr_matrix, fig_title)
+fig.savefig(os.path.join(out_dir, "spearman_attrs_caravan_selected.png"), dpi=600)
+# %%
+strong_correlations(corr_matrix)
+strong_correlations
+# %%___________________________________________________________________________
+# Checking attributes that Annie used
 target_attrs_file = "attrs_camels_original.csv"
-fig_title = "Original CAMELS attrs (reprod. Annie's)"
+
 
 # target_attrs_file = "attrs_cam_hys.csv"
 # fig_title = "CAMELS + Hysets, Caravan equiv attributes"
@@ -71,24 +182,10 @@ else:
 df.head()
 # %%
 # Calculate the Spearman correlation matrix
-corr_matrix = df.corr(method="spearman")
-
-# Create a mask to hide the upper triangle
-mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-
 # Plotting the heatmap with the mask
-plt.figure(figsize=(10, 10))
-sns.heatmap(
-    corr_matrix,
-    annot=True,
-    annot_kws={"size": 8},
-    cmap="coolwarm",
-    vmin=-1,
-    vmax=1,
-    mask=mask,
-)
-plt.title(f"Spearman Correlation\n({fig_title})")
-plt.tight_layout()
-plt.show()
+fig_title = "Original CAMELS attrs (reprod. Annie's)"
+corr_matrix = df.corr(method="spearman")
+plot_corr_heatmap(corr_matrix, fig_title)
+
 
 # %%

@@ -33,7 +33,24 @@ intrsct = gpd.read_file(
     os.path.join(gis_dir, r"gauge_classify\gauge_classify.gdb"),
     driver="FileGDB",
     layer=f"{subset_name}_Intersect_Ecoregion",
-).drop(columns={"Shape_Length", "Shape_Leng", f"FID_{subset_name}_basin_shapes"})
+)
+intrsct.head()
+
+# %%
+if subset_name == "camels":
+    intrsct.drop(
+        columns={"Shape_Length", "Shape_Leng", f"FID_{subset_name}_basin_shapes"},
+        inplace=True,
+    )
+elif subset_name == "hysets":
+    intrsct.drop(
+        columns={
+            "Shape_Length",
+            "Shape_Leng",
+            f"FID_{subset_name}_basin_shapes_resaved_via_qgis",
+        },
+        inplace=True,
+    )
 
 # Get the row with the maximum intersecting area for each watershed
 max_intrsct = intrsct.loc[intrsct.groupby("gauge_id")["Shape_Area"].idxmax()]
