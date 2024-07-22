@@ -1,6 +1,10 @@
 # script to execute random forest models, predicting hydrologic signatures based on catchment attribute datasets
 # # Note that originally was generating random forests in Python, but decided to use R packages used in other studies
-# 
+
+# How to run in Windows: 
+# > cd signature-prediction\random_forest
+# > run.bat
+
 # # Set CRAN mirror
 # options(repos = c(CRAN = "https://cran.rstudio.com/"))
 # 
@@ -33,24 +37,19 @@ library(yaml)
 
 # _______________________________________________________________________________________________________________
 # Load configuration
-#############################################
-# Change here to select which config to read
-# Sys.setenv(R_CONFIG_ACTIVE = "reproduce_aholt") # "default", "reproduce_aholt"
-# config <- config::get(file = "./random_forest/config.yml")
-#############################################
-
 Sys.setenv(R_CONFIG_ACTIVE = "default")
 args <- commandArgs(trailingOnly = TRUE)
 config_file <- args[1]
 config <- yaml::read_yaml(config_file)
 print(config)
 
+# ____________________________________________________________
+# Load directory paths
 home_dir <- config$paths$home_dir
 
 # Create output directory
 formatted_datetime <- format(Sys.time(), "%Y%m%d")
 out_path <- file.path(home_dir, config$paths$out_dir, paste0("output_", formatted_datetime, "_", config$experiment_name))
-print(out_path)
 if (!dir.exists(out_path)) {
   dir.create(out_path, recursive = TRUE)
   message("Directory created: ", out_path)
@@ -89,7 +88,7 @@ load_attrs <- function(file_path) {
   # Select the gauge_id and all the specified columns from the data
   # and return it as a data frame
   data %>%
-    select(gauge_id, all_of(config$attrs_of_interest)) %>%
+    select(gauge_id, all_of(config$attrs_of_interest), ecoregion) %>%
     as.data.frame()
 }
 
@@ -99,6 +98,15 @@ attrs_train <- load_attrs(attrs_train_path)
 attrs_test_path <- file.path(home_dir, config$paths$test$attributes)
 attrs_test <- load_attrs(attrs_test_path)
 
+if (config$filter_by_ecoregion$run) {
+  attrs_train <- attrs_train %>%
+    filter(ecoregion == config$filter_by_ecoregion$name) %>%
+    select(-ecoregion)
+  attrs_test <- attrs_test %>%
+    filter(ecoregion == config$filter_by_ecoregion$name) %>%
+    select(-ecoregion)
+  message("Selected ", nrow(attrs_train), " gauges in: ", config$filter_by_ecoregion$name)
+}
 
 #############################################
 # EXECUTION
@@ -125,7 +133,7 @@ for(sig in config$sigs_predict){
   # _______________________________________________________________________________________________________________
   # TRAINING
   train_data <- attrs_train %>%
-    left_join(sigs_train %>% select(gauge_id, sig), by = "gauge_id") %>%
+    left_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
     select(-gauge_id) %>%
     drop_na() 
 

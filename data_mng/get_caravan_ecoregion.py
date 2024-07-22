@@ -27,7 +27,9 @@ import geopandas as gpd
 # Config
 subset_name = "hysets"  # "camels" or "hysets"
 gis_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\gis"
-
+output_path = os.path.join(gis_dir, r"gauge_classify\Ecoregion_max_intrsct")
+attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs\EcoRegions"
+# %%
 # Load data
 intrsct = gpd.read_file(
     os.path.join(gis_dir, r"gauge_classify\gauge_classify.gdb"),
@@ -56,8 +58,17 @@ elif subset_name == "hysets":
 max_intrsct = intrsct.loc[intrsct.groupby("gauge_id")["Shape_Area"].idxmax()]
 
 # Output
-output_path = os.path.join(gis_dir, r"gauge_classify\Ecoregion_max_intrsct")
 max_intrsct.to_file(os.path.join(output_path, f"Ecoregion_{subset_name}.shp"))
+
+# %%
+# Ouptut in CSV format
+_shp = gpd.read_file(os.path.join(output_path, f"Ecoregion_{subset_name}.shp"))
+shp = _shp[["gauge_id", "NA_L1KEY"]].rename(columns={"NA_L1KEY": "ecoregion"}).copy()
+print(shp["ecoregion"].unique())
+print(shp.groupby("ecoregion").count())
+shp.to_csv(os.path.join(attrs_dir, f"Ecoregion_{subset_name}.csv"), index=False)
+
+# %%
 
 # %% The following code didn't work for some reason (Probably CRS issue for NA_CEC_Eco_Level1.shp)
 # # %%
