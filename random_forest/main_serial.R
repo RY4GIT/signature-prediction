@@ -1,5 +1,23 @@
 # script to execute random forest models, predicting hydrologic signatures based on catchment attribute datasets
-# Note that originally was generating random forests in Python, but decided to use R packages used in other studies
+# # Note that originally was generating random forests in Python, but decided to use R packages used in other studies
+# 
+# # Set CRAN mirror
+# options(repos = c(CRAN = "https://cran.rstudio.com/"))
+# 
+# # Function to install packages if not already installed
+# install_if_missing <- function(packages) {
+#   new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+#   if (length(new_packages)) install.packages(new_packages, dependencies = TRUE)
+# }
+# 
+# # List of all required packages
+# packages <- c(
+#   "tidyverse", "randomForest", "caret", 
+#   "doParallel", "dplyr", "foreach", "yaml"
+# )
+# 
+# # Install missing packages
+# install_if_missing(packages)
 
 library(tidyverse)
 library(randomForest)
@@ -7,6 +25,7 @@ library(caret)
 library(dplyr)
 library(doParallel)
 library(foreach)
+library(yaml)
 
 #############################################
 # INITIALIZATION
@@ -16,15 +35,22 @@ library(foreach)
 # Load configuration
 #############################################
 # Change here to select which config to read
-Sys.setenv(R_CONFIG_ACTIVE = "reproduce_aholt") # "default", "reproduce_aholt"
+# Sys.setenv(R_CONFIG_ACTIVE = "reproduce_aholt") # "default", "reproduce_aholt"
+# config <- config::get(file = "./random_forest/config.yml")
 #############################################
-config <- config::get(file = "./random_forest/config.yml")
+
+Sys.setenv(R_CONFIG_ACTIVE = "default")
+args <- commandArgs(trailingOnly = TRUE)
+config_file <- args[1]
+config <- yaml::read_yaml(config_file)
+print(config)
 
 home_dir <- config$paths$home_dir
 
 # Create output directory
 formatted_datetime <- format(Sys.time(), "%Y%m%d")
 out_path <- file.path(home_dir, config$paths$out_dir, paste0("output_", formatted_datetime, "_", config$experiment_name))
+print(out_path)
 if (!dir.exists(out_path)) {
   dir.create(out_path, recursive = TRUE)
   message("Directory created: ", out_path)
@@ -56,7 +82,6 @@ sigs_train <- load_signatures(sigs_train_path)
 
 
 # Attributes
-
 load_attrs <- function(file_path) {
   # Read the data from the specified file path
   data <- read.csv(file_path, stringsAsFactors = FALSE)

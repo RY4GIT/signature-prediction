@@ -1,5 +1,6 @@
 # Load the list of packages from the file
 package_list <- readLines("random_forest/packages.txt")
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
 
 # Install packages if they are not already installed
 installed_packages <- rownames(installed.packages())
@@ -12,4 +13,4 @@ if (length(packages_to_install) > 0) {
 lapply(package_list, library, character.only = TRUE)
 
 #### To run this
-#### source("r/install_pckg.R")
+#### source("random_forest/install_pckg.R")

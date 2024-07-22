@@ -1,6 +1,24 @@
 # script to execute random forest models, predicting hydrologic signatures based on catchment attribute datasets
 # Note that originally was generating random forests in Python, but decided to use R packages used in other studies
 
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+
+# Function to install packages if not already installed
+install_if_missing <- function(packages) {
+  new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+  if (length(new_packages)) install.packages(new_packages, dependencies = TRUE)
+}
+
+# List of all required packages
+packages <- c(
+  "tidyverse", "randomForest", "caret", 
+  "doParallel", "dplyr", "foreach",
+)
+
+# Install missing packages
+install_if_missing(packages)
+
 library(tidyverse)
 library(randomForest)
 library(caret)

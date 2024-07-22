@@ -1,0 +1,44 @@
+paths:
+  home_dir:  "G:/Shared drives/Signatures -- large scale/baseflow"
+  out_dir: "RAraki/out/rf"
+  train:
+    signatures: "RAraki/out/signatures/caravan_camels_20240609/out_calc_ALL_custom.csv"
+    attributes: "AHolt/data/derived_attrs/assembled_RA/attrs_camels_original.csv"
+  test:
+    attributes: "AHolt/data/derived_attrs/assembled_RA/attrs_camels_original.csv"
+experiment_name: "caravan_equiv"
+settings:
+  seed: 42
+  ntree: 500
+  num_folds: 10
+  eval_metric: "MSE"
+parallel:
+  nCores: 4
+sigs_predict:
+  - TotalRR
+  - RR_Seasonality
+  - EventRR
+  - Recession_a_Seasonality
+  - AverageStorage
+  - RecessionParameters_1
+  - RecessionParameters_2
+  - First_Recession_Slope
+  - Mid_Recession_Slope
+  - EventRR_TotalRR_ratio
+  - VariabilityIndex
+  - BFI
+  - BaseflowRecessionK
+attrs_of_interest:
+  - frac_snow
+  - aridity
+  - low_prec_freq
+  - ele_mt_smn
+  - slp_dg_sav
+  - area
+  - for_pc_sse
+  - snd_pc_sav
+  - slt_pc_sav
+  - cly_pc_sav
+  - kar_pc_sse
+  - geol_weighted_ave_age_ma
+  - isowet_areafrac

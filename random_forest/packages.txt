@@ -11,4 +11,5 @@ config
 lubridate
 styler
 doParallel
+dplyr
 foreach

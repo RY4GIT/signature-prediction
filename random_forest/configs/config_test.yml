@@ -1,0 +1,33 @@
+paths:
+  home_dir:  "G:/Shared drives/Signatures -- large scale/baseflow"
+  out_dir: "RAraki/out/rf"
+  train:
+    signatures: "RAraki/out/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
+    attributes: "RAraki/data/Caravan1.4/attributes/camels/attributes_caravan_camels.csv"
+  test:
+    attributes: "RAraki/data/Caravan1.4/attributes/camels/attributes_caravan_camels.csv"
+experiment_name: "test"
+settings:
+  seed: 0
+  ntree: 500
+  num_folds: 2
+  eval_metric: "MSE"
+  # "MSE", "RMSE" etc.. 
+parallel:
+  nCores: 4
+sigs_predict:
+  - TotalRR
+  - RR_Seasonality
+  # - EventRR
+  # - Recession_a_Seasonality
+  # - AverageStorage
+  # - RecessionParameters_1
+  # - RecessionParameters_2
+  # - First_Recession_Slope
+  # - Mid_Recession_Slope
+  # - EventRR_TotalRR_ratio
+  # - VariabilityIndex
+  # - BFI
+  # - BaseflowRecessionK
+attrs_of_interest:
+  - frac_snow
