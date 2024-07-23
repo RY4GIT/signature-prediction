@@ -1,15 +1,7 @@
 tidyverse
 randomForest
 caret
-rpart
-rpart.plot
-sf
-mltools
-data.table
-cowplot
-config
-lubridate
-styler
-doParallel
 dplyr
+doParallel
 foreach
+yaml

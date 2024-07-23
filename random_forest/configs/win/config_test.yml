@@ -1,11 +1,19 @@
 paths:
-  home_dir:  "G:/Shared drives/Signatures -- large scale/baseflow"
-  out_dir: "RAraki/out/rf"
+  home_dir:  "/home/raraki/data/signature-prediction"
+  # G:/Shared drives/Signatures -- large scale/baseflow
+  # /home/raraki/data/signature-prediction
+  out_dir: "/out/rf"
+  # "RAraki/out/rf"
+  # /out/rf
   train:
-    signatures: "RAraki/out/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
-    attributes: "AHolt/data/derived_attrs/assembled_RA/attrs_camels.csv"
+    signatures: "/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
+    # "RAraki/out/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
+    # "/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
+    attributes: "/derived_attrs/assembled_RA/attrs_camels.csv"
+    # "AHolt/data/derived_attrs/assembled_RA/attrs_camels.csv"
+    #"/derived_attrs/assembled_RA/attrs_camels.csv"
   test:
-    attributes: "AHolt/data/derived_attrs/assembled_RA/attrs_camels.csv"
+    attributes: "/derived_attrs/assembled_RA/attrs_camels.csv"
 experiment_name: "ecoregion_5"
 filter_by_ecoregion: 
   run: true

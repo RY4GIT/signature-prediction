@@ -1,0 +1,69 @@
+paths:
+  home_dir: /home/raraki/data/signature-prediction
+  out_dir: /out/rf
+  train:
+    signatures: /signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv
+    attributes: /derived_attrs/assembled_RA/attrs_cam_hys.csv
+  test:
+    attributes: /derived_attrs/assembled_RA/attrs_cam_hys.csv
+experiment_name: ecoregion_5
+filter_by_ecoregion:
+  run: true
+  name: 5  NORTHERN FORESTS
+settings:
+  seed: 0
+  ntree: 500
+  num_folds: 10
+  eval_metric: MSE
+parallel:
+  nCores: 16
+sigs_predict:
+- TotalRR
+- RR_Seasonality
+- EventRR
+- Recession_a_Seasonality
+- AverageStorage
+- RecessionParameters_1
+- RecessionParameters_2
+- First_Recession_Slope
+- Mid_Recession_Slope
+- EventRR_TotalRR_ratio
+- VariabilityIndex
+- BFI
+- BaseflowRecessionK
+- IE_effect
+- SE_effect
+- IE_thresh_signif
+- SE_thresh_signif
+- Storage_thresh_signif
+- IE_thresh
+- SE_thresh
+- Storage_thresh
+- SE_slope
+attrs_of_interest:
+- ele_mt_sav
+- area
+- sgr_dk_sav
+- for_pc_sse
+- crp_pc_sse
+- pst_pc_sse
+- ire_pc_sse
+- prm_pc_sse
+- pac_pc_sse
+- isowet_areafrac
+- cly_pc_sav
+- slt_pc_sav
+- soc_th_sav
+- kar_pc_sse
+- geol_weighted_ave_age_ma
+- ppd_pk_sav
+- gdp_ud_sav
+- hdi_ix_sav
+- p_mean
+- pet_mean
+- aridity
+- frac_snow
+- seasonality
+- high_prec_freq
+- low_prec_freq
+- low_prec_dur

@@ -1,12 +1,12 @@
 # Load the list of packages from the file
-package_list <- readLines("random_forest/packages.txt")
+package_list <- readLines("random_forest/archive/packages.txt")
 options(repos = c(CRAN = "https://cran.rstudio.com/"))
 
 # Install packages if they are not already installed
 installed_packages <- rownames(installed.packages())
 packages_to_install <- package_list[!package_list %in% installed_packages]
 if (length(packages_to_install) > 0) {
-  install.packages(packages_to_install)
+  install.packages(packages_to_install, lib="/home/raraki/Rlibs")
 }
 
 # Optionally, load the packages into the session

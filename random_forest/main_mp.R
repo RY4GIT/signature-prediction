@@ -154,7 +154,8 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
   train_data <- attrs_train %>%
     left_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
     select(-gauge_id) %>%
-    drop_na()
+    drop_na() %>%
+    filter_all(all_vars(!is.infinite(.)))
   
   forest <- train(
     # signature to predict

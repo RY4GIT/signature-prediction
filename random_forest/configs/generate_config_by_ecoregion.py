@@ -1,6 +1,31 @@
 import yaml
 import os
 
+
+# Function to generate YAML files
+def generate_yaml_files(ecoregions, template_yaml, out_dir):
+
+    for ecoregion in ecoregions:
+        # Create a copy of the template
+        yaml_content = template_yaml.copy()
+
+        # Modify the experiment_name and filter_by_ecoregion$name
+        ecoregion_cleaned = ecoregion.replace("  ", "_").replace(
+            " ", "_"
+        )  # Clean up for filename
+        ecoregion_num = ecoregion_cleaned.split("_")[0]
+        yaml_content["experiment_name"] = f"ecoregion_{ecoregion_num}"
+        yaml_content["filter_by_ecoregion"]["name"] = ecoregion
+
+        # Define the output filename
+        output_filename = f"config_ecoregion_{ecoregion_num}.yml"
+
+        # Write the YAML content to the file
+        with open(os.path.join(out_dir, output_filename), "w") as file:
+            yaml.dump(yaml_content, file, default_flow_style=False, sort_keys=False)
+
+
+os_type = "linux"  # "linux" or "win"
 # List of ecoregions
 ecoregions = [
     "5  NORTHERN FORESTS",
@@ -14,18 +39,43 @@ ecoregions = [
     "9  GREAT PLAINS",
 ]
 
+if os_type == "win":
+    home_dir = "G:/Shared drives/Signatures -- large scale/baseflow"
+    rf_out_dir = "RAraki/out/rf"
+    sigs_file = (
+        "RAraki/out/signatures/caravan_us_20240609_tunedparams/out_calc_ALL_custom.csv"
+    )
+    attrs_file = "AHolt/data/derived_attrs/assembled_RA/attrs_cam_hys.csv"
+
+    config_out_dir = (
+        rf"C:\Users\flipl\dev\signature-prediction\random_forest\configs\{os_type}"
+    )
+
+elif os_type == "linux":
+    home_dir = "/home/raraki/data/signature-prediction"
+    rf_out_dir = "/out/rf"
+    sigs_file = (
+        "/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
+    )
+    attrs_file = "/derived_attrs/assembled_RA/attrs_cam_hys.csv"
+
+    config_out_dir = (
+        rf"/home/raraki/signature-prediction/random_forest/configs/{os_type}"
+    )
+if not os.path.exists(config_out_dir):
+    os.makedirs(config_out_dir)
+
 # Template YAML content
+# Not sure why but "min_Qf_perc" doesn't work with Linux ...
 template_yaml = {
     "paths": {
-        "home_dir": "G:/Shared drives/Signatures -- large scale/baseflow",
-        "out_dir": "RAraki/out/rf",
+        "home_dir": home_dir,
+        "out_dir": rf_out_dir,
         "train": {
-            "signatures": "RAraki/out/signatures/caravan_us_20240609_tunedparams/out_calc_ALL_custom.csv",
-            "attributes": "AHolt/data/derived_attrs/assembled_RA/attrs_cam_hys.csv",
+            "signatures": sigs_file,
+            "attributes": attrs_file,
         },
-        "test": {
-            "attributes": "AHolt/data/derived_attrs/assembled_RA/attrs_cam_hys.csv"
-        },
+        "test": {"attributes": attrs_file},
     },
     "experiment_name": "ecoregion_template",
     "filter_by_ecoregion": {"run": True, "name": "ecoregion_template"},
@@ -54,7 +104,6 @@ template_yaml = {
         "SE_thresh",
         "Storage_thresh",
         "SE_slope",
-        "min_Qf_perc",
     ],
     "attrs_of_interest": [
         "ele_mt_sav",
@@ -87,35 +136,10 @@ template_yaml = {
 }
 
 
-# Function to generate YAML files
-def generate_yaml_files(ecoregions, template_yaml):
-
-    for ecoregion in ecoregions:
-        # Create a copy of the template
-        yaml_content = template_yaml.copy()
-
-        # Modify the experiment_name and filter_by_ecoregion$name
-        ecoregion_cleaned = ecoregion.replace("  ", "_").replace(
-            " ", "_"
-        )  # Clean up for filename
-        ecoregion_num = ecoregion_cleaned.split("_")[0]
-        yaml_content["experiment_name"] = f"ecoregion_{ecoregion_num}"
-        yaml_content["filter_by_ecoregion"]["name"] = ecoregion
-
-        # Define the output filename
-        output_filename = f"config_ecoregion_{ecoregion_num}.yml"
-
-        # Write the YAML content to the file
-        with open(os.path.join(out_dir, output_filename), "w") as file:
-            yaml.dump(yaml_content, file, default_flow_style=False, sort_keys=False)
-
-
 # Generate the YAML files
-out_dir = r"C:\Users\flipl\dev\signature-prediction\random_forest\configs"
-
 # ___________________________________________
 # By ecoregion
-generate_yaml_files(ecoregions, template_yaml)
+generate_yaml_files(ecoregions, template_yaml, config_out_dir)
 
 
 # ______________________
@@ -131,5 +155,8 @@ yaml_content["filter_by_ecoregion"]["name"] = "NA"
 output_filename = f"config_caravan_us.yml"
 
 # Write the YAML content to the file
-with open(os.path.join(out_dir, output_filename), "w") as file:
+with open(os.path.join(config_out_dir, output_filename), "w") as file:
     yaml.dump(yaml_content, file, default_flow_style=False, sort_keys=False)
+
+
+print(f"Output results to {config_out_dir}")
