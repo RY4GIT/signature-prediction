@@ -107,6 +107,9 @@ if (config$filter_by_ecoregion$run) {
     filter(ecoregion == config$filter_by_ecoregion$name) %>%
     select(-ecoregion)
   message("Selected ", nrow(attrs_train), " gauges in: ", config$filter_by_ecoregion$name)
+} else {
+  attrs_train <- attrs_train %>%
+    select(-ecoregion)
 }
 
 #############################################
@@ -138,88 +141,97 @@ kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, sear
 print("Start multiple RFs")
 
 results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dplyr", "tidyr", "caret", "purrr")) %dopar% {
-  library(dplyr)  # Ensure dplyr is loaded
-  library(tidyr)  # Ensure tidyr is loaded
-  
-  # # Prepare messages to log
-  # log_messages <- character()
-  # log_messages <- c(log_messages, paste("Processing:", sig, "\n"))
-  
-  # _______________________________________________________________________________________________________________
-  # TRAINING
+  tryCatch({
+    library(dplyr)  # Ensure dplyr is loaded
+    library(tidyr)  # Ensure tidyr is loaded
+    
+    # # Prepare messages to log
+    # log_messages <- character()
+    # log_messages <- c(log_messages, paste("Processing:", sig, "\n"))
+    
+    # _______________________________________________________________________________________________________________
+    # TRAINING
 
-  # define repeated cross-validation with 10 folds and three repeats
-  # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
+    # define repeated cross-validation with 10 folds and three repeats
+    # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
 
-  train_data <- attrs_train %>%
-    left_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
-    select(-gauge_id) %>%
-    drop_na() %>%
-    filter_all(all_vars(!is.infinite(.)))
-  
-  forest <- train(
-    # signature to predict
-    formula(paste(sig, "~ .")),
-    # input attribute dataset, includes signature
-    data = train_data,
-    # Random forest method
-    method = "rf",
-    # metric to evaluate model performance
-    metric = config$settings$eval_metric,
-    # Number of trees
-    ntree = config$settings$ntree,
-    # adding the repeated cross validation
-    trControl = kfold_cv,
-    # hyperparameter testing
-    tuneGrid = hyper_grid,
-    # return importance, want %IncMSE data
-    importance = TRUE
-  )
+    train_data <- attrs_train %>%
+      left_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
+      select(-gauge_id) %>%
+      drop_na() %>%
+      filter_all(all_vars(!is.infinite(.)))
+    
+    forest <- train(
+      # signature to predict
+      formula(paste(sig, "~ .")),
+      # input attribute dataset, includes signature
+      data = train_data,
+      # Random forest method
+      method = "rf",
+      # metric to evaluate model performance
+      metric = config$settings$eval_metric,
+      # Number of trees
+      ntree = config$settings$ntree,
+      # adding the repeated cross validation
+      trControl = kfold_cv,
+      # hyperparameter testing
+      tuneGrid = hyper_grid,
+      # return importance, want %IncMSE data
+      importance = TRUE
+    )
 
-  print(forest)
-  print(forest$finalModel)
+    print(forest)
+    print(forest$finalModel)
 
-  # _______________________________________________________________________________________________________________
-  # Predict signature value / can be on a test dataset. Currently it is used to simply get predicted signature values from training & validation
-  test_data <- attrs_test %>%
-    drop_na() 
-  
-  predictions <- predict(forest, test_data%>%select(-gauge_id))
-# 
-#   log_messages <- c(log_messages, "Completed processing for signature.")
-#   
-  
-  # _______________________________________________________________________________________________________________
-  # Collect results for CSV
-  
-  # append r2 value
-  if(length(forest$finalModel$rsq) == 0) {
-    out_r2 <- data.frame(sig_name = sig, r_squared = NA)  # Use NA when no r_squared value is calculated
-  } else {
-    out_r2 <- data.frame(sig_name = sig, r_squared = mean(forest$final$rsq))
-  }
-  
-  # Append to larger output list, variable importance
-  if(nrow(importance(forest$finalModel, type = 1, scale = TRUE)) == 0) {
-    out_var_importance <- data.frame(predictor = NA, Importance = NA, sig_name = sig)
-  } else {
-    out_var_importance <- importance(forest$finalModel, type = 1, scale = TRUE) %>%
-      as.data.frame() %>%
-      tibble::rownames_to_column(var = "predictor") %>%
-      dplyr::mutate(sig_name = sig)
-  }
-  
-  if(length(predictions) == 0) {
-    out_sig_predictions <- data.frame(gauge_id = NA, prediction = NA, sig_name = sig)
-  } else {
-    out_sig_predictions <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
-  }
-  
-  list(
-    sig_predictions = out_sig_predictions, 
-    r2 = out_r2,
-    var_importance = out_var_importance
-  )
+    # _______________________________________________________________________________________________________________
+    # Predict signature value / can be on a test dataset. Currently it is used to simply get predicted signature values from training & validation
+    test_data <- attrs_test %>%
+      drop_na() 
+    
+    predictions <- predict(forest, test_data%>%select(-gauge_id))
+  # 
+  #   log_messages <- c(log_messages, "Completed processing for signature.")
+  #   
+    
+    # _______________________________________________________________________________________________________________
+    # Collect results for CSV
+    
+    # append r2 value
+    if(length(forest$finalModel$rsq) == 0) {
+      out_r2 <- data.frame(sig_name = sig, r_squared = NA)  # Use NA when no r_squared value is calculated
+    } else {
+      out_r2 <- data.frame(sig_name = sig, r_squared = mean(forest$final$rsq))
+    }
+    
+    # Append to larger output list, variable importance
+    if(nrow(importance(forest$finalModel, type = 1, scale = TRUE)) == 0) {
+      out_var_importance <- data.frame(predictor = NA, Importance = NA, sig_name = sig)
+    } else {
+      out_var_importance <- importance(forest$finalModel, type = 1, scale = TRUE) %>%
+        as.data.frame() %>%
+        tibble::rownames_to_column(var = "predictor") %>%
+        dplyr::mutate(sig_name = sig)
+    }
+    
+    if(length(predictions) == 0) {
+      out_sig_predictions <- data.frame(gauge_id = NA, prediction = NA, sig_name = sig)
+    } else {
+      out_sig_predictions <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
+    }
+    
+    list(
+      sig_predictions = out_sig_predictions, 
+      r2 = out_r2,
+      var_importance = out_var_importance
+    )
+  }, error = function(e) {
+    # Return NA values if an error occurs
+    list(
+      sig_predictions = data.frame(gauge_id = NA, prediction = NA, sig_name = sig),
+      r2 = data.frame(sig_name = sig, r_squared = NA),
+      var_importance = data.frame(predictor = NA, Importance = NA, sig_name = sig)
+    )
+  })
 }
 
 # _______________________________________________________________________________________________________________
