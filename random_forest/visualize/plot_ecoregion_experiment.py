@@ -5,17 +5,40 @@ import matplotlib.pyplot as plt
 import os
 import matplotlib as mpl
 import json
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import yaml
+import geopandas as gpd
 
+# %%
 ########################## CHANGE HERE #################
 output_date = r"output_20240723"
 ########################################################
 
 # ____________________________________________________________________________________
 # Config
-results_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\rf"
-plot_attrs_config_path = "plot_attrs_config.csv"
+os.chdir(r"C:\Users\flipl\dev\signature-prediction\random_forest\visualize")
+out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out"
+out_dir_rf = os.path.join(out_dir, "rf")
+plot_attrs_config_path = "plot_config_attrs_info.csv"
+plot_sigs_config_path = (
+    r"C:\Users\flipl\dev\signature-prediction\signatures\visualize\plot_sigs_config.csv"
+)
+plot_sigs_conig = pd.read_csv(plot_sigs_config_path)
+caravan_attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\attributes"
+attrs_camels_file = os.path.join(
+    caravan_attrs_dir,
+    "camels",
+    f"attributes_other_camels.csv",
+)
+attrs_hysets_file = os.path.join(
+    caravan_attrs_dir,
+    "hysets",
+    f"attributes_other_hysets.csv",
+)
 
-fig_dir = os.path.join(results_dir, f"{output_date}_figures")
+
+fig_dir = os.path.join(out_dir_rf, f"{output_date}_figures")
 if not os.path.exists(fig_dir):
     os.makedirs(fig_dir)
 
@@ -31,6 +54,12 @@ ecoregion_info = {int(k): v for k, v in ecoregion_info.items()}
 ecoregion_numbers = ecoregion_info.keys()
 
 attrs_colors = read_json_file("plot_config_attrs_colors.json")
+
+_ecoregion_overlay = gpd.read_file(
+    r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\EcoRegions\NA_CEC_Eco_Level1.shp"
+)
+_ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
+ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
 # %%
 
 ######################################################
@@ -38,12 +67,12 @@ attrs_colors = read_json_file("plot_config_attrs_colors.json")
 #####################################################
 
 
-def load_data_r2(output_date, results_dir, ecoregion_info, ecoregion_numbers):
+def load_data_r2(output_date, out_dir_rf, ecoregion_info, ecoregion_numbers):
     _dfs_r2 = []
 
     # Read CONUS
     output_dir = f"{output_date}_caravan_us"
-    file_path = os.path.join(results_dir, output_dir, "r_squared.csv")
+    file_path = os.path.join(out_dir_rf, output_dir, "r_squared.csv")
     df_conus = pd.read_csv(file_path, index_col="sig_name")
     df_conus.columns = [f"CONUS-wide"]
     _dfs_r2.append(df_conus)
@@ -51,7 +80,7 @@ def load_data_r2(output_date, results_dir, ecoregion_info, ecoregion_numbers):
     # Read by ecoregion
     for ecoregion_n in ecoregion_numbers:
         output_dir = f"{output_date}_ecoregion_{ecoregion_n}"
-        file_path = os.path.join(results_dir, output_dir, "r_squared.csv")
+        file_path = os.path.join(out_dir_rf, output_dir, "r_squared.csv")
         if os.path.exists(file_path):
             df_temp = pd.read_csv(file_path, index_col="sig_name")
             df_temp.columns = [f'{ecoregion_n} - {ecoregion_info[ecoregion_n]["name"]}']
@@ -80,7 +109,7 @@ def plot_r2_values(df, ecoregion_info, ecoregion_numbers):
     ax.set_xticklabels(df.index, rotation=45, ha="right")
     ax.legend(title="Ecoregions", bbox_to_anchor=(1.05, 1), loc="upper left")
     fig.tight_layout()
-    plt.show()
+    fig.savefig(os.path.join(fig_dir, f"r2_per_sig.png"))
 
 
 def plot_average_r2(dfs_r2, df_conus, ecoregion_info):
@@ -108,11 +137,11 @@ def plot_average_r2(dfs_r2, df_conus, ecoregion_info):
     ax.set_ylabel(r"Average $R^2$")
     ax.set_xticklabels(df_avg_r2["Ecoregion"], rotation=45, ha="right")
     fig.tight_layout()
-    plt.show()
+    fig.savefig(os.path.join(fig_dir, f"r2_average.png"))
 
 
 dfs_r2, df_conus = load_data_r2(
-    output_date, results_dir, ecoregion_info, ecoregion_numbers
+    output_date, out_dir_rf, ecoregion_info, ecoregion_numbers
 )
 plot_r2_values(dfs_r2, ecoregion_info, ecoregion_numbers)
 plot_average_r2(dfs_r2, df_conus, ecoregion_info)
@@ -126,20 +155,18 @@ plot_average_r2(dfs_r2, df_conus, ecoregion_info)
 
 
 # Function to load data
-def load_data_incRMSE(results_dir, output_date, ecoregion_n, plot_config_path):
+def load_data_incRMSE(out_dir_rf, output_date, ecoregion_n, plot_config_path):
     if not isinstance(ecoregion_n, (int, float)):
         output_dir = f"{output_date}_{ecoregion_n}"
     else:
         output_dir = f"{output_date}_ecoregion_{ecoregion_n}"
 
-    print(output_dir)
-    _df_imp = pd.read_csv(os.path.join(results_dir, output_dir, "var_importance.csv"))
+    _df_imp = pd.read_csv(os.path.join(out_dir_rf, output_dir, "var_importance.csv"))
     df_plot_config = pd.read_csv(plot_config_path)
-    print(_df_imp.tail())
     df_imp = _df_imp.merge(
         df_plot_config, how="left", left_on="predictor", right_on="variable_name"
     )
-    print(df_imp.tail())
+
     return df_imp
 
 
@@ -185,9 +212,8 @@ def plot_bar_plots(df, sigs, ecoregion_n, ecoregion_name):
     for j in range(i + 1, len(axes)):
         axes[j].set_visible(False)
 
-    fig.suptitle(ecoregion_name)
+    fig.suptitle(ecoregion_name, fontsize=32)
     fig.savefig(os.path.join(fig_dir, f"var_importance_bar_{ecoregion_n}.png"))
-    plt.show()
 
 
 # Function to plot pie charts
@@ -225,9 +251,8 @@ def plot_pie_charts(df, sigs, color_mapping, ecoregion_n, ecoregion_name):
     for j in range(i + 1, len(axes)):
         axes[j].set_visible(False)
 
-    fig.suptitle(ecoregion_name)
+    fig.suptitle(ecoregion_name, fontsize=32)
     fig.savefig(os.path.join(fig_dir, f"var_importance_pie_{ecoregion_n}.png"))
-    plt.show()
 
     return axes
 
@@ -237,13 +262,17 @@ def plot_pie_charts(df, sigs, color_mapping, ecoregion_n, ecoregion_name):
 ecoregion_n = "caravan_us"
 ecoregion_name = "CONUS-wide"
 print(f"Processing {ecoregion_name}...")
-df_imp = load_data_incRMSE(
-    results_dir, output_date, ecoregion_n, plot_attrs_config_path
+df_imp_conus = load_data_incRMSE(
+    out_dir_rf, output_date, ecoregion_n, plot_attrs_config_path
 )
-sigs = df_imp["sig_name"].unique()
-plot_bar_plots(df_imp, sigs, ecoregion_n, ecoregion_name)
+sigs = df_imp_conus["sig_name"].unique()
 # %%
 
+plot_bar_plots(df_imp_conus, sigs, ecoregion_n, ecoregion_name)
+plot_pie_charts(df_imp_conus, sigs, attrs_colors, ecoregion_n, ecoregion_name)
+# %%
+# ____________________________________________________________
+# Per ecoregion
 
 # Main function to loop through ecoregions
 for ecoregion_n in ecoregion_numbers:
@@ -251,7 +280,235 @@ for ecoregion_n in ecoregion_numbers:
     print(f"Processing {ecoregion_name}...")
 
     df_imp = load_data_incRMSE(
-        results_dir, output_date, ecoregion_n, plot_attrs_config_path
+        out_dir_rf, output_date, ecoregion_n, plot_attrs_config_path
     )
     plot_bar_plots(df_imp, sigs, ecoregion_n, ecoregion_name)
     plot_pie_charts(df_imp, sigs, attrs_colors, ecoregion_n, ecoregion_name)
+
+# %%
+df_imp_conus
+
+
+# %%
+def load_data_sigpred(output_date, out_dir_rf, ecoregion_info, ecoregion_numbers):
+    _dfs = []
+
+    # Read CONUS
+    output_dir = f"{output_date}_caravan_us"
+    file_path = os.path.join(out_dir_rf, output_dir, "predicted_signatures.csv")
+    df_conus = pd.read_csv(file_path, index_col="gauge_id")
+    df_conus["region"] = "CONUS-wide"
+    _dfs.append(df_conus)
+
+    # Read by ecoregion
+    for ecoregion_n in ecoregion_numbers:
+        output_dir = f"{output_date}_ecoregion_{ecoregion_n}"
+        file_path = os.path.join(out_dir_rf, output_dir, "predicted_signatures.csv")
+        if os.path.exists(file_path):
+            df_temp = pd.read_csv(file_path, index_col="gauge_id")
+            df_temp["region"] = f'{ecoregion_n} - {ecoregion_info[ecoregion_n]["name"]}'
+            _dfs.append(df_temp)
+        else:
+            print(f"File not found: {file_path}")
+
+    dfs = pd.concat(_dfs, axis=0)
+    return dfs, df_conus
+
+
+df_sigpred, df_conus = load_data_sigpred(
+    output_date, out_dir_rf, ecoregion_info, ecoregion_numbers
+)
+# %%__________________________________________________________________________________
+# LOAD OBSERVED AND PREDICTED SIGNAUTURES
+
+# Concat original signature file that is used by sig_name and gauge_id
+# file_path = os.path.join(out_dir_rf, f"{output_date}_caravan_us", "config.yaml")
+# with open(file_path, "r") as file:
+#     rf_config = yaml.safe_load(file)
+
+# sigobs_path = rf_config["paths"]["train"]["signatures"]
+# if sigobs_path.startswith("/"):
+#     sigobs_path = sigobs_path.lstrip("/")
+sigobs_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20240609_tunedparams\out_calc_All_custom.csv"
+
+# Load the observed signatures
+df_sigobs = pd.read_csv(sigobs_path)
+
+# Subset df_sigpred based on region
+df_sigpred_conus = df_sigpred[df_sigpred["region"] == "CONUS-wide"]
+df_sigpred_regional = df_sigpred[df_sigpred["region"] != "CONUS-wide"]
+
+# Pivot df_sigpred_regional to make each signature a column
+df_sigpred_pivot = (
+    df_sigpred_conus.reset_index()
+    .pivot(index="gauge_id", columns="sig_name", values="prediction")
+    .reset_index()
+)
+
+# Ensure gauge_id columns are strings and strip any leading/trailing whitespace
+df_sigobs["gauge_id"] = df_sigobs["gauge_id"].astype(str).str.strip()
+df_sigpred_pivot["gauge_id"] = df_sigpred_pivot["gauge_id"].astype(str).str.strip()
+
+# Merge the pivoted df_sigpred with df_sigobs on gauge_id
+df_merged = pd.merge(
+    df_sigobs, df_sigpred_pivot, on="gauge_id", how="left", suffixes=("", "_pred")
+)
+df_merged.set_index("gauge_id", inplace=True)
+
+# %%
+attrs_camels = pd.read_csv(attrs_camels_file, index_col="gauge_id")
+attrs_hysets = pd.read_csv(attrs_hysets_file, index_col="gauge_id")
+caravan_attrs = pd.concat([attrs_camels, attrs_hysets])
+
+# %%
+# Merge attributes with the merged signatures DataFrame
+df_sigs = pd.merge(caravan_attrs, df_merged, on="gauge_id", how="left")
+
+# Save the final DataFrame to a CSV file
+file_path = os.path.join(fig_dir, "predicted_signatures_merged.csv")
+df_sigs.to_csv(file_path)
+# %%
+eco_camels_file = r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs\EcoRegions\Ecoregion_camels.csv"
+eco_hysets_file = r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs\EcoRegions\Ecoregion_hysets.csv"
+eco_camels = pd.read_csv(eco_camels_file, index_col="gauge_id")
+eco_hysets = pd.read_csv(eco_hysets_file, index_col="gauge_id")
+eco_caravan = pd.concat([eco_camels, eco_hysets])
+df_sigs_eco = df_sigs.join(eco_caravan, how="left")
+
+
+# %% ______________________________________________________________________________________
+# Plot the residuals R2 by ecoregion or CONUS-wide
+def plot_sigerr_map(df, sig_name, overlay_layer):
+
+    # Get plot config
+    plot_config = plot_sigs_conig.loc[plot_sigs_conig["column_name"] == sig_name].iloc[
+        0
+    ]
+
+    # Calculate abs diffrences
+    abs_err = df[sig_name] - df[sig_name + "_pred"]
+
+    # Set up the map
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+
+    # Add a legend
+    overlay_layer.plot(
+        ax=ax,
+        edgecolor="black",
+        facecolor="none",
+        linewidth=0.5,
+        aspect=1.1,
+        zorder=100,
+    )
+
+    land = cfeature.NaturalEarthFeature(
+        "physical",
+        "land",
+        "50m",
+        edgecolor="face",
+        facecolor="lightgrey",  # Set land color to light gray
+    )
+    ax.add_feature(land)
+
+    # Set extent to CONUS
+    ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+    # Add map features
+    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
+
+    # Plotting the filtered data
+    scatter = ax.scatter(
+        df["gauge_lon"],
+        df["gauge_lat"],
+        c=abs_err,
+        cmap="Reds",
+        marker="o",
+        # edgecolors="grey",
+        s=5,
+        alpha=0.8,
+        zorder=99,
+        vmin=0,
+        vmax=abs_err.quantile(0.90),
+    )
+
+    # for geometry in overlay_layer.geometry:
+    #     ax.add_geometries([geometry], crs=ccrs.PlateCarree(), edgecolor='black', facecolor='none', linewidth=1, zorder=100)
+
+    ax.set_title(f"{plot_config["label"]}")
+
+    # Adding a colorbar
+    cbar = plt.colorbar(scatter, ax=ax, shrink=0.5)
+    cbar.set_label(r"$|e|$" + f'{plot_config["unit"]}', rotation=270, labelpad=30)
+    # Display the plot
+    plt.tight_layout()
+    plt.savefig(os.path.join(fig_dir, f"sigerr_{sig_name}.png"))
+
+
+# %%
+
+for sigs_name in plot_sigs_conig.column_name:
+    try:
+        plot_sigerr_map(df_sigs, sigs_name, ecoregion_overlay)
+    except:
+        print(f"{sigs_name} is not in the prediction")
+
+# %%
+# ______________________________________________________________
+# Get the error bar plot per region
+
+
+def plot_err_box(df, sig_name):
+
+    plot_config = plot_sigs_conig.loc[plot_sigs_conig["column_name"] == sig_name].iloc[
+        0
+    ]
+
+    df["abs_err"] = abs(df[sig_name] - df[sig_name + "_pred"])
+    abs_err_percentile = df["abs_err"].quantile(0.99)
+
+    sample_counts = df["ecoregion"].value_counts()
+    valid_ecoregions = sample_counts[sample_counts >= 100].index
+    df_filt = df[df["ecoregion"].isin(valid_ecoregions)].copy()
+    df_filt["ecoregion_number"] = df_filt["ecoregion"].str.extract(r"(\d+)").astype(int)
+
+    df_sorted = df_filt.sort_values("ecoregion_number")
+
+    # Plot the boxplot using Seaborn
+    ecoregion_colors = [
+        "#9ACDCF",
+        "#5DC05A",
+        "#4DCAC2",
+        "#BBDD90",
+        "#FECE9F",
+        "#FFDB71",
+        "#D1E8BA",
+        "#BBDD90",
+    ]
+
+    plt.figure(figsize=(12, 5))
+    boxplot = sns.boxplot(
+        x="abs_err",
+        y="ecoregion",
+        data=df_sorted,
+        palette=ecoregion_colors,
+        order=df_sorted["ecoregion"].unique(),
+    )
+
+    # Customize the plot
+    boxplot.set_xlabel(r"$|e|$" + f'{plot_config["unit"]}')
+    boxplot.set_ylabel("Ecoregion")
+    boxplot.set_title(f"{plot_config['label']}")
+    boxplot.set_xlim([0, abs_err_percentile])
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(fig_dir, f"sigerrbox_{sig_name}.png"))
+    plt.show()
+
+
+for sigs_name in plot_sigs_conig.column_name:
+    try:
+        plot_err_box(df_sigs_eco, sigs_name)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# %%
