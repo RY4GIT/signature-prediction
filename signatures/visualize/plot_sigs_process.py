@@ -1,3 +1,4 @@
+# %%
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ import geopandas as gpd
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\signatures\visualize")
 out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20240609_tunedparams"
 plot_sigs_config_path = "plot_sigs_config.csv"
-plot_sigs_conig = pd.read_csv(plot_sigs_config_path)
+plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
 fig_dir = os.path.join(out_dir, "figs")
 if not os.path.exists(fig_dir):
@@ -59,14 +60,21 @@ _df_sigs = pd.read_csv(
 _df_sigs = _df_sigs.join(attrs_caravan, how="left")
 df_sigs = _df_sigs.join(eco_caravan, how="left")
 
+# %%
+# Get the percentile
+for sigs_name in plot_sigs_config["column_name"]:
+    # Get df[sigs_name]
+    column_data = df_sigs[sigs_name]
+
+    # Calculate the percentile rank for each value in the column
+    df_sigs[sigs_name + "_percentile"] = column_data.rank(pct=True) * 100
+
 
 # %% ________________________________________________
-def plot_sigerr_map(df, sig_name, overlay_layer, mode="normal"):
+def plot_sig_map(df, sig_name, overlay_layer, mode="normal"):
 
     # Get plot config
-    plot_config = plot_sigs_conig.loc[plot_sigs_conig["column_name"] == sig_name].iloc[
-        0
-    ]
+
     # Set up the map
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
@@ -97,17 +105,32 @@ def plot_sigerr_map(df, sig_name, overlay_layer, mode="normal"):
 
     # Plotting the filtered data
     if mode == "normal":
+        plot_config = plot_sigs_config.loc[
+            plot_sigs_config["column_name"] == sig_name
+        ].iloc[0]
         c_data = df[sig_name]
         llim = plot_config["lower_lim"]
         ulim = plot_config["upper_lim"]
         cbar_label = f'{plot_config["unit"]}'
         out_file_name = f"map_{sig_name}.png"
+        title_label = f"{plot_config["label"]}"
     elif mode == "percentile":
+        plot_config = plot_sigs_config.loc[
+            plot_sigs_config["column_name"] == sig_name
+        ].iloc[0]
         c_data = df[sig_name + "_percentile"]
         llim = 0
         ulim = 100
         cbar_label = "percentile"
         out_file_name = f"map_perc_{sig_name}.png"
+        title_label = f"{plot_config["label"]}"
+    elif mode == "process_perc":
+        c_data = df[sig_name + "_medperc"]
+        llim = 0
+        ulim = 100
+        cbar_label = "Median percentile"
+        out_file_name = f"map_medperc_{sig_name}.png"
+        title_label = sig_name
 
     scatter = ax.scatter(
         df["gauge_lon"],
@@ -122,7 +145,7 @@ def plot_sigerr_map(df, sig_name, overlay_layer, mode="normal"):
         vmin=llim,
         vmax=ulim,
     )
-    ax.set_title(f"{plot_config["label"]}")
+    ax.set_title(title_label)
 
     # Adding a colorbar
     cbar = plt.colorbar(scatter, ax=ax, shrink=0.5)
@@ -135,25 +158,99 @@ def plot_sigerr_map(df, sig_name, overlay_layer, mode="normal"):
 # %%
 # _____________________________________________________________________________
 # Plot signature value map
-for sigs_name in plot_sigs_conig.column_name:
+# For testing
+# plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, mode="normal")
+for sigs_name in plot_sigs_config.column_name:
     try:
-        plot_sigerr_map(df_sigs, sigs_name, ecoregion_overlay, mode="normal")
+        plot_sig_map(df_sigs, sigs_name, ecoregion_overlay, mode="normal")
     except:
         print(f"{sigs_name} is not in the prediction")
 
 # %%
 # ______________________________________________________________________________
 # Plot the percentile map
-for sigs_name in plot_sigs_conig["column_name"]:
-    # Get df[sigs_name]
-    column_data = df_sigs[sigs_name]
-
-    # Calculate the percentile rank for each value in the column
-    df_sigs[sigs_name + "_percentile"] = column_data.rank(pct=True) * 100
-
-for sigs_name in plot_sigs_conig.column_name:
+# For testing
+# plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, mode="normal")
+for sigs_name in plot_sigs_config.column_name:
     try:
-        plot_sigerr_map(df_sigs, sigs_name, ecoregion_overlay, mode="percentile")
+        plot_sig_map(df_sigs, sigs_name, ecoregion_overlay, mode="percentile")
     except:
         print(f"{sigs_name} is not in the prediction")
+
+# %%
+# ______________________________________________________________________________
+# Plot the average percentile per processes
+process_name = "Baseflow"
+baseflow_columns = plot_sigs_config[plot_sigs_config["process"] == "Baseflow"]
+baseflow_columns
+# %%
+percentiles = []
+
+for _, row in baseflow_columns.iterrows():
+    column_name = row["column_name"]
+    relationship = row["relationship"]
+    percentile_column = column_name + "_percentile"
+
+    if relationship == "pos":
+        percentiles.append(df_sigs[percentile_column])
+    elif relationship == "neg":
+        percentiles.append(100 - df_sigs[percentile_column])
+
+# Combine the percentiles and calculate the average
+df_sigs[process_name + "_medperc"] = pd.concat(percentiles, axis=1).median(axis=1)
+df_sigs
+
+# %%
+plot_sig_map(df_sigs, process_name, ecoregion_overlay, mode="process_perc")
+
+# %%
+
+# %%
+df_sigs.ecoregion
+
+
+# %%
+def plot_err_box(df, sig_name):
+
+    sample_counts = df["ecoregion"].value_counts()
+    valid_ecoregions = sample_counts[sample_counts >= 100].index
+    df_filt = df[df["ecoregion"].isin(valid_ecoregions)].copy()
+    df_filt["ecoregion_number"] = df_filt["ecoregion"].str.extract(r"(\d+)").astype(int)
+
+    df_sorted = df_filt.sort_values("ecoregion_number")
+
+    # Plot the boxplot using Seaborn
+    ecoregion_colors = [
+        "#9ACDCF",
+        "#5DC05A",
+        "#4DCAC2",
+        "#BBDD90",
+        "#FECE9F",
+        "#FFDB71",
+        "#D1E8BA",
+        "#BBDD90",
+    ]
+
+    plt.figure(figsize=(12, 5))
+    boxplot = sns.boxplot(
+        x=f"{sig_name}_medperc",
+        y="ecoregion",
+        data=df_sorted,
+        palette=ecoregion_colors,
+        order=df_sorted["ecoregion"].unique(),
+    )
+
+    # Customize the plot
+    boxplot.set_xlabel("Median percentile")
+    boxplot.set_ylabel("Ecoregion")
+    boxplot.set_title(sig_name)
+    boxplot.set_xlim([0, 100])
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(fig_dir, f"medpercbox_{sig_name}.png"))
+    plt.show()
+
+
+plot_err_box(df_sigs, process_name)
+
 # %%
