@@ -17,7 +17,9 @@ Scripts to calculate hydrologic signatures, running TOSSH Toolbox functions, and
     ```
     git clone https://github.com/RY4GIT/Wetland_GeologicAge_Attributes.git
     ```
-- 1.2. Download Caravan and CAMELS datasets
+- Download Caravan and original CAMELS datasets
+    - https://zenodo.org/records/10968468
+    - https://gdex.ucar.edu/dataset/camels.html
 
 ### 2. Calculate hydrologic signatures and attributes
 - Calculate signatures using ```signatures\main.m```
