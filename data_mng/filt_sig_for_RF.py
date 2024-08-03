@@ -1,21 +1,25 @@
 # %%
 import pandas as pd
 import os
+import numpy as np
 
 # %% ____________________________________________________________
 # Config
-sig_outdir = (
-    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures"
-)
+shared_drive = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
+
+sig_outdir = os.path.join(shared_drive, "out", "signatures")
 out_dir = os.path.join(sig_outdir, "caravan_us_20240609_tunedparams")
 hys_dir = "caravan_hysets_20240609_tunedparams"
 camels_dir = "caravan_camels_20240609_tunedparams"
-attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\attributes"
+attrs_dir = os.path.join(shared_drive, "data", "Caravan1.4", "attributes")
 derived_attrs_dir = (
     r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs"
 )
 filename = "out_calc_All_custom.csv"
-hys_qa_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\caravan_datacheck\hysets_summary.csv"
+hys_qa_file = os.path.join(
+    shared_drive, "out", "caravan_datacheck", "hysets_summary.csv"
+)
+
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
@@ -110,6 +114,79 @@ print(
     f"{len(sigs)} survived, after combining CAMELS {len(sigs_camels)} + HYSETS {len(sigs_hys_filt)} - OVERLAP {len(overlapping_gauges)}, which should be equal to {len(sigs_camels) + len(sigs_hys_filt) - len(overlapping_gauges)}"
 )
 
+# %% ____________________________________________________________
+# Mask overland flow signature calculated for snowy area
+# TODO: This is temporary solution. Consider snow or temprature when calculating signature calculation for more regirous analysis
+
+attrs_caravan_hys = pd.read_csv(
+    os.path.join(attrs_dir, "hysets", "attributes_caravan_hysets.csv"),
+    index_col="gauge_id",
+)
+attrs_caravan_camels = pd.read_csv(
+    os.path.join(attrs_dir, "camels", "attributes_caravan_camels.csv"),
+    index_col="gauge_id",
+)
+attrs_caravan = pd.concat([attrs_caravan_hys, attrs_caravan_camels])
+
+sigs_fs = sigs.join(attrs_caravan.frac_snow, how="left")
+# %%
+frac_snow_thresh = 0.2
+row_mask_idx = sigs_fs["frac_snow"] > frac_snow_thresh
+columns_mask = [
+    "IE_thresh",
+    "IE_effect",
+    "SE_effect",
+    "IE_thresh_signif",
+    "SE_thresh_signif",
+    "IE_thresh",
+    "SE_thresh",
+    "SE_slope",
+    "Storage_thresh_signif",
+    "Storage_thresh",
+]
+
+sigs.loc[row_mask_idx, columns_mask] = np.nan
+# %%
+print(
+    f"{(~pd.isna(sigs.IE_effect)).sum()} survived ({(~pd.isna(sigs.IE_effect)).sum()/len(sigs)*100:.1f} %)"
+)
 # %%  ____________________________________________________________
 # Save
-sigs.to_csv(os.path.join(derived_attrs_dir, "assembled_RA", f"attrs_cam_hys.csv"))
+sigs.to_csv(os.path.join(derived_attrs_dir, "assembled_RA", f"attrs_cam_hys_filt.csv"))
+
+# %%
+
+# %%
+# %%
+# import netCDF4 as nc
+# import xarray as xr
+
+# hydroclimate_file = r"G:\Shared drives\Perceptual model review\plot_climates\HydrologicClimateClassification.nc"
+
+# ds_climate = nc.Dataset(hydroclimate_file, "r")
+# fs = ds_climate.variables["array_annualSnowFraction_fs"][:][0]
+# fd_lat = ds_climate.variables["array_latitude"][:][0]
+# fd_lon = ds_climate.variables["array_longitude"][:][0]
+
+# df_climate = pd.DataFrame({"SnowFraction": fs, "lat": fd_lat, "lon": fd_lon})
+# # %%
+# # Example reshaping
+
+# # %%
+# # Reshape the data (assuming fs is the flat data arra
+# # Plot using imshow
+# import matplotlib.pyplot as plt
+
+# # Create scatter plot
+# plt.figure(figsize=(10, 6))
+# snow_idx = fs > 0.2
+# sc = plt.scatter(
+#     fd_lon[snow_idx], fd_lat[snow_idx], c=fs[snow_idx], cmap="viridis", s=10, alpha=0.6, edgecolor="none"
+# )  # Adjust size 's' and transparency 'alpha' as needed
+# plt.colorbar(sc, label="Snow Fraction")  # Add a color bar with a label
+# plt.xlabel("Longitude")
+# plt.ylabel("Latitude")
+# plt.title("Geographic Distribution of Annual Snow Fraction")
+# plt.grid(True)  # Optional: add a grid for better orientation
+# plt.show()
+#
