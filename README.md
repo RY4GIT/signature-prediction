@@ -23,7 +23,7 @@ Scripts to calculate hydrologic signatures, running TOSSH Toolbox functions, and
 
 ### 2. Calculate hydrologic signatures and attributes
 - Calculate signatures using ```signatures\main.m```
-- Calculate wetland and geologic attributes (Holt et al., 2024) and assemble all the attributes by following instructions in  ```Wetland_GeologicAge_Attributes``` repo
+- Calculate wetland and geologic attributes (Holt et al., 2024), get ecoregion attributes, and assemble all the attributes by following instructions in  ```Wetland_GeologicAge_Attributes``` repo
 
 ### 3. Prepare training dataset and input attributes for RF
 - Calculate statistics about Hysets data qualtiy using ```data_mng\check_hysets_qa.py```. This removes
@@ -31,8 +31,7 @@ Scripts to calculate hydrologic signatures, running TOSSH Toolbox functions, and
     - Gauge location with snow-dominated region based on lat/lon (still in development)
     - Overlapping gauge with CAMEL's watershed, based on the gauge_id
 
-- Mask out the signature output calculated in Step #2 using the data quality flags using ```code is still in development```
-- Get the subset flags for regional RF experiment using ```data_mng\get_caravan_ecoregion.py``` (subset region is subject to change)
+- Mask out the signature output calculated in Step #2 using the data quality flags using ```filt_sig_for_RFtrain.py```
 
 ### 4. Run RF experiment 
 - Prepare config files in ```random_forest\configs``` 

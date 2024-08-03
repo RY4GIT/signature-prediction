@@ -1,0 +1,115 @@
+# %%
+import pandas as pd
+import os
+
+# %% ____________________________________________________________
+# Config
+sig_outdir = (
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures"
+)
+out_dir = os.path.join(sig_outdir, "caravan_us_20240609_tunedparams")
+hys_dir = "caravan_hysets_20240609_tunedparams"
+camels_dir = "caravan_camels_20240609_tunedparams"
+attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\attributes"
+derived_attrs_dir = (
+    r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs"
+)
+filename = "out_calc_All_custom.csv"
+hys_qa_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\caravan_datacheck\hysets_summary.csv"
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
+
+# %% ____________________________________________________________
+# Load signatures
+
+# Hysets
+_sigs_hys = pd.read_csv(os.path.join(sig_outdir, hys_dir, filename))
+attrs_hys = pd.read_csv(
+    os.path.join(attrs_dir, "hysets", "attributes_other_hysets.csv")
+)
+sigs_hys = _sigs_hys.merge(attrs_hys, on="gauge_id")
+print(len(sigs_hys), len(sigs_hys.columns))
+
+# Quality control of Hysets signatures
+qa_hys = pd.read_csv(hys_qa_file)
+
+# Calculate and filter by duration of the record
+qa_hys["start_date"] = pd.to_datetime(qa_hys["start_date"])
+qa_hys["end_date"] = pd.to_datetime(qa_hys["end_date"])
+qa_hys["duration_yr"] = (qa_hys["end_date"] - qa_hys["start_date"]).dt.days / 365
+duration_thresh = 5
+qa_hys["qf_duration"] = qa_hys["duration_yr"] > duration_thresh
+
+# Filer by the nan fraction in the available (non-NaN) data record
+subset_nan_fraction_thresh = 0.3
+qa_hys["qf_subset_nan_fraction"] = (
+    qa_hys["subset_nan_fraction"] < subset_nan_fraction_thresh
+)
+
+# Combine all the criteria
+qa_hys["qf_overall"] = qa_hys["qf_subset_nan_fraction"] & qa_hys["qf_duration"]
+
+print(
+    f"{qa_hys['qf_overall'].sum()} gauges passed the criteria ({qa_hys['qf_overall'].sum()/len(qa_hys['qf_overall'])*100:.1f} percent)"
+)
+
+# Get the filtered dataset
+sigs_hys_qf = sigs_hys.merge(qa_hys, on="gauge_id")
+sigs_hys_filt = sigs_hys[sigs_hys_qf["qf_overall"]]
+
+print(f"{len(sigs_hys_filt)}")
+
+# %%
+# Camels
+_sigs_camels = pd.read_csv(os.path.join(sig_outdir, camels_dir, filename))
+attrs_camels = pd.read_csv(
+    os.path.join(attrs_dir, "camels", "attributes_other_camels.csv")
+)
+sigs_camels = _sigs_camels.merge(attrs_camels, on="gauge_id")
+print(len(sigs_camels), len(sigs_camels.columns))
+
+# sigs = pd.concat([sigs_camels, sigs_hys], axis=0).reset_index(drop=True)
+# print(len(sigs), len(sigs.columns))
+
+# %% ____________________________________________________________
+# Filter out the Hysets gauge_id that are overlapping with CAMELS
+
+# get gauge_num in each df by getting the second element of gauge_id, deliminating it with _ (underscore)
+sigs_hys_filt["gauge_num"] = sigs_hys_filt["gauge_id"].apply(lambda x: x.split("_")[1])
+sigs_camels["gauge_num"] = sigs_camels["gauge_id"].apply(lambda x: x.split("_")[1])
+
+# Check which gauge_num overlap
+overlapping_gauges = set(sigs_camels["gauge_num"]).intersection(
+    set(sigs_hys_filt["gauge_num"])
+)
+print(overlapping_gauges)
+print(len(overlapping_gauges))
+
+# Check where gauge_lat and gauge_lon overlaps (if it's the same set as above)
+overlapping_gauges_latlon = sigs_camels[
+    ~sigs_camels["gauge_num"].isin(overlapping_gauges)
+    & sigs_camels[["gauge_lat", "gauge_lon"]]
+    .apply(tuple, axis=1)
+    .isin(sigs_hys_filt[["gauge_lat", "gauge_lon"]].apply(tuple, axis=1))
+]["gauge_num"].tolist()
+print(overlapping_gauges_latlon)  # This should return nothing
+print(len(overlapping_gauges_latlon))  # This should return zero
+
+# %% ____________________________________________________________
+# Join camels + hysets. Prioritize camels if hysets gauge overlaps
+# Prioritize camels if both hysets and camels gauge exist
+sigs = (
+    sigs_camels.set_index("gauge_num")
+    .combine_first(sigs_hys_filt.set_index("gauge_num"))
+    .reset_index()
+)
+sigs.set_index("gauge_id", inplace=True)
+sigs.head()
+
+print(
+    f"{len(sigs)} survived, after combining CAMELS {len(sigs_camels)} + HYSETS {len(sigs_hys_filt)} - OVERLAP {len(overlapping_gauges)}, which should be equal to {len(sigs_camels) + len(sigs_hys_filt) - len(overlapping_gauges)}"
+)
+
+# %%  ____________________________________________________________
+# Save
+sigs.to_csv(os.path.join(derived_attrs_dir, "assembled_RA", f"attrs_cam_hys.csv"))
