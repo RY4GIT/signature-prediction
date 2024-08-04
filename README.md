@@ -26,20 +26,26 @@ Scripts to calculate hydrologic signatures, running TOSSH Toolbox functions, and
 - Calculate wetland and geologic attributes (Holt et al., 2024), get ecoregion attributes, and assemble all the attributes by following instructions in  ```Wetland_GeologicAge_Attributes``` repo
 
 ### 3. Prepare training dataset and input attributes for RF
-- Calculate statistics about Hysets data qualtiy using ```data_mng\check_hysets_qa.py```. This removes
+- Calculate statistics about Hysets data and get qualtiy flags using ```data_mng\check_hysets_qa.py```
+- Mask out the signature output calculated in Step #2 using the data quality flags using ```data_mng\filt_sig_for_RFtrain.py```. This removes following gauges from the signature output file:
     - Data with inadequate duration (<5yrs) and too many nan data (>30%)
     - Gauge location with snow-dominated region based on lat/lon (still in development)
     - Overlapping gauge with CAMEL's watershed, based on the gauge_id
 
-- Mask out the signature output calculated in Step #2 using the data quality flags using ```filt_sig_for_RFtrain.py```
+The following gauges are already removed at the stage of calculating attributes:
+- Non-US gauges
 
 ### 4. Run RF experiment 
 - Prepare config files in ```random_forest\configs``` 
+    - ```random_forest\configs\generate_config_by_ecoregion.py``` helps to generate config files
 - Run the code ```random_forest\run.bat``` or ```random_forest\run.sh``` depending on the OS
 
-### 5. Process analysis
+### 5. Derive process inference
 - Visualize the signature patterns using ```signatures\visualize\plot_sigs_process.py```
 - Visualize the RF results using ```random_forest\visualize\plot_ecoregion_experiment.py```
 
 ## Reference
+- We extensively used the ideas and codes of Holt, A. (2024):
+    Holt, A. (2024). New predictors for hydrologic signatures: Wetlands and geologic age across continental scales (Order No. 31483645). Available from ProQuest Dissertations & Theses Global: The Humanities and Social Sciences Collection; ProQuest One Academic. (3083407273). Retrieved from http://libproxy.sdsu.edu/login?url=https://www.proquest.com/dissertations-theses/new-predictors-hydrologic-signatures-wetlands/docview/3083407273/se-2
+
 - We use modified version of [TOSSH toolbox](https://github.com/TOSSHtoolbox/TOSSH) (Gnann et al., 2022) for calculating signature

@@ -156,7 +156,7 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
     # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
 
     train_data <- attrs_train %>%
-      left_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
+      right_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
       select(-gauge_id) %>%
       drop_na() %>%
       filter_all(all_vars(!is.infinite(.)))

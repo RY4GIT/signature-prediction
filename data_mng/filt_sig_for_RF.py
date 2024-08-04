@@ -152,7 +152,7 @@ print(
 )
 # %%  ____________________________________________________________
 # Save
-sigs.to_csv(os.path.join(derived_attrs_dir, "assembled_RA", f"attrs_cam_hys_filt.csv"))
+sigs.to_csv(os.path.join(out_dir, f"out_calc_All_custom_filt.csv"))
 
 # %%
 
