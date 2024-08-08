@@ -55,9 +55,9 @@ eco_hysets = pd.read_csv(eco_hysets_file, index_col="gauge_id")
 eco_caravan = pd.concat([eco_camels, eco_hysets])
 
 _df_sigs = pd.read_csv(
-    os.path.join(out_dir, "out_calc_All_custom.csv"), index_col="gauge_id"
+    os.path.join(out_dir, "out_calc_All_custom_filt.csv"), index_col="gauge_id"
 )
-_df_sigs = _df_sigs.join(attrs_caravan, how="left")
+# _df_sigs = _df_sigs.join(attrs_caravan, how="left")
 df_sigs = _df_sigs.join(eco_caravan, how="left")
 
 # %%
@@ -160,6 +160,7 @@ def plot_sig_map(df, sig_name, overlay_layer, mode="normal"):
 # Plot signature value map
 # For testing
 # plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, mode="normal")
+
 for sigs_name in plot_sigs_config.column_name:
     try:
         plot_sig_map(df_sigs, sigs_name, ecoregion_overlay, mode="normal")
@@ -176,17 +177,30 @@ for sigs_name in plot_sigs_config.column_name:
         plot_sig_map(df_sigs, sigs_name, ecoregion_overlay, mode="percentile")
     except:
         print(f"{sigs_name} is not in the prediction")
-
+# %%
+plot_sigs_config
 # %%
 # ______________________________________________________________________________
 # Plot the average percentile per processes
-process_name = "Baseflow"
-baseflow_columns = plot_sigs_config[plot_sigs_config["process"] == "Baseflow"]
-baseflow_columns
+# process_name = "Baseflow"
+# process_name = "Saturation Excess Overlandflow"  # "Infiltration Excess Overlandflow"
+# process_name = "Storage capacity and retention"  # "Water loss to deep GW or ET"
+process_name = "ET impacts on storage and baseflow"
+process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
+process_columns
 # %%
+
+
+def recalculate_percentile(column_data, thresh_value):
+    new_percentile = column_data.apply(
+        lambda x: 0 if x > thresh_value else (1 - (x / thresh_value)) * 100
+    )
+    return new_percentile
+
+
 percentiles = []
 
-for _, row in baseflow_columns.iterrows():
+for _, row in process_columns.iterrows():
     column_name = row["column_name"]
     relationship = row["relationship"]
     percentile_column = column_name + "_percentile"
@@ -195,9 +209,19 @@ for _, row in baseflow_columns.iterrows():
         percentiles.append(df_sigs[percentile_column])
     elif relationship == "neg":
         percentiles.append(100 - df_sigs[percentile_column])
-
+    elif "thresh" in relationship:
+        # Extract the threshold value from the relationship string
+        threshold = float(relationship.split(":")[1])
+        recalculated_percentile = recalculate_percentile(
+            df_sigs[column_name], threshold
+        )
+        percentiles.append(recalculated_percentile)
+# %%
 # Combine the percentiles and calculate the average
-df_sigs[process_name + "_medperc"] = pd.concat(percentiles, axis=1).median(axis=1)
+# Do not calculate the median percentile, if there is nan
+df_sigs[process_name + "_medperc"] = pd.concat(percentiles, axis=1).median(
+    axis=1, skipna=False
+)
 df_sigs
 
 # %%

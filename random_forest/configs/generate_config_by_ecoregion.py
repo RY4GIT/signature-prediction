@@ -95,8 +95,6 @@ template_yaml = {
         "VariabilityIndex",
         "BFI",
         "BaseflowRecessionK",
-        "IE_effect",
-        "SE_effect",
         "IE_thresh_signif",
         "SE_thresh_signif",
         "Storage_thresh_signif",

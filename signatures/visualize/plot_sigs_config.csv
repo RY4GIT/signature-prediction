@@ -1,27 +1,22 @@
 ﻿column_name,label,unit,lower_lim,upper_lim,type,process,relationship
-TotalRR,TotalRR,[-],0,1,groundwater,,
-EventRR,EventRR,[-],0,1,groundwater,,
-RR_Seasonality,RR_Seasonality,[-],0,4,groundwater,,
-StorageFraction_1,StorageFraction,[-],0,1.2,groundwater,,
-StorageFraction_2,ActiveStorage,[mm],0,1500,groundwater,,
-StorageFraction_3,TotalStorage,[mm],0,1500,groundwater,,
-Recession_a_Seasonality,Recession_a_Seasonality,[-],0,6,groundwater,,
-AverageStorage,AverageStorage,[mm],0,600,groundwater,,
-RecessionParameters_1,RecessionParameters_b,[-],0,1,groundwater,,
-RecessionParameters_2,RecessionParameters_T0,[d],0,2,groundwater,,
-MRC_num_segments,MRC_num_segments,[-],0.5,3.5,groundwater,,
+TotalRR,TotalRR,[-],0,1,groundwater,Water loss to deep GW or ET,neg
+EventRR,EventRR,[-],0,1,groundwater,Water loss to deep GW or ET,neg
+RR_Seasonality,RR_Seasonality,[-],0,4,groundwater,Water loss to deep GW or ET,pos
+AverageStorage,AverageStorage,[mm],0,600,groundwater,Storage capacity and retention,pos
+RecessionParameters_1,RecessionParameters_b,[-],0,1,groundwater,Storage capacity and retention,neg
+RecessionParameters_2,RecessionParameters_T0,[d],0,2,groundwater,Storage capacity and retention,pos
+First_Recession_Slope,First_Recession_Slope,[1/d],0,1.5,groundwater,Storage capacity and retention,neg
+Mid_Recession_Slope,Mid_Recession_Slope,[1/d],0,0.6,groundwater,Storage capacity and retention,neg
+EventRR_TotalRR_ratio,EventRR_TotalRR_ratio,[-],0,1,groundwater,Storage capacity and retention,neg
 BFI,BFI,[-],0,1,groundwater,Baseflow,pos
 BaseflowRecessionK,BaseflowRecessionK,[1/d],0,0.6,groundwater,Baseflow,neg
-First_Recession_Slope,First_Recession_Slope,[1/d],0,1.5,groundwater,,
-Mid_Recession_Slope,Mid_Recession_Slope,[1/d],0,0.6,groundwater,,
-EventRR_TotalRR_ratio,EventRR_TotalRR_ratio,[-],0,1,groundwater,,
-VariabilityIndex,VariabilityIndex,[-],0,1,groundwater,,
-IE_effect,IE_effect,[-],-0.4,0.8,overlandflow,Infiltration Excess Overlandflow,
-SE_effect,SE_effect,[-],0,1,overlandflow,Saturation Excess Overlandflow,
-IE_thresh_signif,IE_thresh_signif,[-],0,1,overlandflow,Infiltration Excess Overlandflow,
-SE_thresh_signif,SE_thresh_signif,[-],0,1,overlandflow,Saturation Excess Overlandflow,
-IE_thresh,IE_thresh,[mm/d],0,60,overlandflow,Infiltration Excess Overlandflow,
-SE_thresh,SE_thresh,[mm],0,150,overlandflow,Saturation Excess Overlandflow,
-SE_slope,SE_slope,[mm/mm],0,1,overlandflow,Saturation Excess Overlandflow,
-Storage_thresh_signif,Storage_thresh_signif,[-],0,1,overlandflow,Quickflow,
-Storage_thresh,Storage_thresh,[mm],0,150,overlandflow,Quickflow,
+IE_thresh_signif,IE_thresh_signif,[-],0,1,overlandflow,Infiltration Excess Overlandflow,thresh:0.05:neg
+SE_thresh_signif,SE_thresh_signif,[-],0,1,overlandflow,Saturation Excess Overlandflow,thresh:0.05:neg
+Storage_thresh_signif,Storage_thresh_signif,[-],0,1,overlandflow,Saturation Excess Overlandflow,thresh:0.05:neg
+IE_thresh,IE_thresh,[mm/d],0,60,overlandflow,Infiltration Excess Overlandflow,pos
+SE_thresh,SE_thresh,[mm],0,150,overlandflow,Saturation Excess Overlandflow,pos
+Storage_thresh,Storage_thresh,[mm],0,150,overlandflow,Saturation Excess Overlandflow,pos
+SE_slope,SE_slope,[mm/mm],0,1,overlandflow,Saturation Excess Overlandflow,pos
+RR_Seasonality,RR_Seasonality,[-],0,4,groundwater,ET impacts on storage and baseflow,pos
+Recession_a_Seasonality,Recession_a_Seasonality,[-],0,6,groundwater,ET impacts on storage and baseflow,pos
+VariabilityIndex,VariabilityIndex,[-],0,1,groundwater,ET impacts on storage and baseflow,pos
