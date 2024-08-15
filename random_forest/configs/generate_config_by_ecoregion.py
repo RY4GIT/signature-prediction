@@ -25,27 +25,35 @@ def generate_yaml_files(ecoregions, template_yaml, out_dir):
             yaml.dump(yaml_content, file, default_flow_style=False, sort_keys=False)
 
 
-os_type = "linux"  # "linux" or "win"
+os_type = "win"  # "linux" or "win"
 # List of ecoregions
 ecoregions = [
-    "5  NORTHERN FORESTS",
-    "10  NORTH AMERICAN DESERTS",
     "11  MEDITERRANEAN CALIFORNIA",
-    "12  SOUTHERN SEMIARID HIGHLANDS",
-    "13  TEMPERATE SIERRAS",
-    "6  NORTHWESTERN FORESTED MOUNTAINS",
-    "7  MARINE WEST COAST FOREST",
-    "8  EASTERN TEMPERATE FORESTS",
-    "9  GREAT PLAINS",
+    "1210 Western Deserts",
+    "6713 Western Mountains",
+    "81 North Eastern Forests",
+    "82 South Eastern Forests",
+    "91 North Great Plains",
+    "92 South Great Plains",
 ]
+
+# ecoregions = [
+#     "5  NORTHERN FORESTS",
+#     "10  NORTH AMERICAN DESERTS",
+#     "11  MEDITERRANEAN CALIFORNIA",
+#     "12  SOUTHERN SEMIARID HIGHLANDS",
+#     "13  TEMPERATE SIERRAS",
+#     "6  NORTHWESTERN FORESTED MOUNTAINS",
+#     "7  MARINE WEST COAST FOREST",
+#     "8  EASTERN TEMPERATE FORESTS",
+#     "9  GREAT PLAINS",
+# ]
 
 if os_type == "win":
     home_dir = "G:/Shared drives/Signatures -- large scale/baseflow"
     rf_out_dir = "RAraki/out/rf"
-    sigs_file = (
-        "RAraki/out/signatures/caravan_us_20240609_tunedparams/out_calc_ALL_custom.csv"
-    )
-    attrs_file = "AHolt/data/derived_attrs/assembled_RA/attrs_cam_hys.csv"
+    sigs_file = "RAraki/out/signatures/caravan_us_20240609_tunedparams/out_calc_All_custom_filt.csv"
+    attrs_file = "AHolt/data/derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv"
 
     config_out_dir = (
         rf"C:\Users\flipl\dev\signature-prediction\random_forest\configs\{os_type}"
@@ -55,9 +63,9 @@ elif os_type == "linux":
     home_dir = "/home/raraki/data/signature-prediction"
     rf_out_dir = "/out/rf"
     sigs_file = (
-        "/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
+        "/signatures/caravan_camels_20240609_tunedparams/out_calc_All_custom_filt.csv"
     )
-    attrs_file = "/derived_attrs/assembled_RA/attrs_cam_hys.csv"
+    attrs_file = "/derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv"
 
     config_out_dir = (
         rf"/home/raraki/signature-prediction/random_forest/configs/{os_type}"
@@ -100,6 +108,8 @@ template_yaml = {
         "Storage_thresh_signif",
         "IE_thresh",
         "SE_thresh",
+        "IE_effect",
+        "SE_effect",
         "Storage_thresh",
         "SE_slope",
     ],

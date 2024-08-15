@@ -10,9 +10,20 @@
 project_dir="/home/raraki/signature-prediction/random_forest"
 config_dir="$project_dir/configs/linux"
 
-echo "Running experiment with $config_dir/config_ecoregion_11.yml"
-Rscript main_mp.R "$config_dir/config_ecoregion_11.yml"
-echo "Experiment with $config_dir/config_ecoregion_11.yml finished"
+# List of ecoregion codes
+ecoregions="11 1210 6713 81 82 91 92"
+
+# Loop through each ecoregion code
+for i in $ecoregions
+do
+    echo "Running experiment with $config_dir/config_ecoregion_$i.yml"
+    Rscript main_mp.R "$config_dir/config_ecoregion_$i.yml"
+    echo "Experiment with $config_dir/config_ecoregion_$i.yml finished"
+done
+
+# echo "Running experiment with $config_dir/config_ecoregion_11.yml"
+# Rscript main_mp.R "$config_dir/config_ecoregion_11.yml"
+# echo "Experiment with $config_dir/config_ecoregion_11.yml finished"
 
 # echo "Running experiment with $config_dir/config_caravan_us.yml"
 # Rscript main_mp.R "$config_dir/config_caravan_us.yml"
