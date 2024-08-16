@@ -49,7 +49,7 @@ def read_json_file(file_path):
     return data
 
 
-ecoregion_info = read_json_file("plot_config_ecoregion_colors.json")
+ecoregion_info = read_json_file("plot_config_ecoregion_colors_v2.json")
 ecoregion_info = {int(k): v for k, v in ecoregion_info.items()}
 ecoregion_numbers = ecoregion_info.keys()
 
@@ -386,7 +386,8 @@ def plot_sigerr_map(df, sig_name, overlay_layer):
     ]
 
     # Calculate abs diffrences
-    abs_err = df[sig_name] - df[sig_name + "_pred"]
+    frac_err = abs(df[sig_name] - df[sig_name + "_pred"]) / df[sig_name]
+    # abs_err = df[sig_name] - df[sig_name + "_pred"]
 
     # Set up the map
     fig = plt.figure(figsize=(12, 8))
@@ -420,7 +421,7 @@ def plot_sigerr_map(df, sig_name, overlay_layer):
     scatter = ax.scatter(
         df["gauge_lon"],
         df["gauge_lat"],
-        c=abs_err,
+        c=frac_err,
         cmap="Reds",
         marker="o",
         # edgecolors="grey",
@@ -428,7 +429,7 @@ def plot_sigerr_map(df, sig_name, overlay_layer):
         alpha=0.8,
         zorder=99,
         vmin=0,
-        vmax=abs_err.quantile(0.90),
+        vmax=frac_err.quantile(0.90),
     )
 
     # for geometry in overlay_layer.geometry:
@@ -438,7 +439,10 @@ def plot_sigerr_map(df, sig_name, overlay_layer):
 
     # Adding a colorbar
     cbar = plt.colorbar(scatter, ax=ax, shrink=0.5)
-    cbar.set_label(r"$|e|$" + f'{plot_config["unit"]}', rotation=270, labelpad=30)
+    cbar.set_label(
+        r"$|pred-obs|/obs$" + f'{plot_config["unit"]}', rotation=270, labelpad=30
+    )
+    # cbar.set_label(r"$|e|$" + f'{plot_config["unit"]}', rotation=270, labelpad=30)
     # Display the plot
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, f"sigerr_{sig_name}.png"))
@@ -463,31 +467,61 @@ def plot_err_box(df, sig_name):
         0
     ]
 
-    df["abs_err"] = abs(df[sig_name] - df[sig_name + "_pred"])
-    abs_err_percentile = df["abs_err"].quantile(0.99)
+    # Calculate fractional error
+    df["frac_err"] = abs(df[sig_name] - df[sig_name + "_pred"]) / df[sig_name]
+
+    # Calculate the 99th percentile of the fractional error
+    upper_lim = df["frac_err"].quantile(0.99)
+
+    # df["abs_err"] = abs(df[sig_name] - df[sig_name + "_pred"])
+    # abs_err_percentile = df["abs_err"].quantile(0.99)
 
     sample_counts = df["ecoregion"].value_counts()
     valid_ecoregions = sample_counts[sample_counts >= 100].index
     df_filt = df[df["ecoregion"].isin(valid_ecoregions)].copy()
     df_filt["ecoregion_number"] = df_filt["ecoregion"].str.extract(r"(\d+)").astype(int)
 
-    df_sorted = df_filt.sort_values("ecoregion_number")
+    custom_order = {
+        "11": 0,
+        "1210": 1,
+        "6713": 2,
+        "81": 3,
+        "82": 4,
+        "91": 5,
+        "92": 6,
+    }
+    df_filt["custom_order"] = df_filt["ecoregion_number"].map(custom_order)
+
+    # Sort by the custom order
+    df_sorted = df_filt.sort_values("custom_order")
+    df_sorted = df_sorted.drop(columns=["custom_order"])
+    # df_sorted = df_filt.sort_values("ecoregion_number")
 
     # Plot the boxplot using Seaborn
     ecoregion_colors = [
-        "#9ACDCF",
-        "#5DC05A",
-        "#4DCAC2",
-        "#BBDD90",
-        "#FECE9F",
-        "#FFDB71",
-        "#D1E8BA",
-        "#BBDD90",
+        "#D1E8BA",  # MEDITERRANEAN CALIFORNIA (11)
+        "#FFDB71",  # WESTERN DESERTS (1210)
+        "#5DC05A",  # WESTERN FORESTED MOUNTAINS (6713)
+        "#BBDD90",  # NORTH EASTERN FORESTS (81)
+        "#4DCAC2",  # SOUTH EASTERN FORESTS (82)
+        "#BD9977",  # NORTH GREAT PLAINS (91)
+        "#FECE9F",  # SOUTH GREAT PLAINS (92)
     ]
+
+    # ecoregion_colors = [
+    #     "#9ACDCF",
+    #     "#5DC05A",
+    #     "#4DCAC2",
+    #     "#BBDD90",
+    #     "#FECE9F",
+    #     "#FFDB71",
+    #     "#D1E8BA",
+    #     "#BBDD90",
+    # ]
 
     plt.figure(figsize=(12, 5))
     boxplot = sns.boxplot(
-        x="abs_err",
+        x="frac_err",
         y="ecoregion",
         data=df_sorted,
         palette=ecoregion_colors,
@@ -495,10 +529,10 @@ def plot_err_box(df, sig_name):
     )
 
     # Customize the plot
-    boxplot.set_xlabel(r"$|e|$" + f'{plot_config["unit"]}')
+    boxplot.set_xlabel(r"$|pred-obs|/obs$" + f'{plot_config["unit"]}')
     boxplot.set_ylabel("Ecoregion")
     boxplot.set_title(f"{plot_config['label']}")
-    boxplot.set_xlim([0, abs_err_percentile])
+    boxplot.set_xlim([0, upper_lim])
 
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, f"sigerrbox_{sig_name}.png"))
