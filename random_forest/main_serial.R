@@ -130,82 +130,91 @@ out_var_importance <- list()
 out_sig_predictions <- list()
 
 for(sig in config$sigs_predict){
-  tryCatch({
-    print(paste0("Processing:", sig))
+  # tryCatch({
+  #   print(paste0("Processing:", sig))
     
-    # _______________________________________________________________________________________________________________
-    # TRAINING
-    train_data <- attrs_train %>%
-      right_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
-      select(-gauge_id) %>%
-      drop_na() %>%
-      filter_all(all_vars(!is.infinite(.)))
+  # _______________________________________________________________________________________________________________
+  # TRAINING
+  # # Print dimensions of attrs_train
+  # print(sprintf("attrs_train: %d rows, %d columns", nrow(attrs_train), ncol(attrs_train)))
 
-    forest <- train(
-      # signature to predict
-      formula(paste(sig, "~ .")),
-      # input attribute dataset, includes signature
-      data = train_data,
-      # Random forest method
-      method = "rf",
-      # metric to evaluate model performance
-      metric = config$settings$eval_metric,
-      # Number of trees
-      ntree = config$settings$ntree,
-      # adding the repeated cross validation
-      trControl = kfold_cv,
-      # hyper parameter testing
-      tuneGrid = hyper_grid,
-      # return importance, want %IncMSE data
-      importance = TRUE
-    )
-    
-    print(forest)
-    print(forest$finalModel)
-    
-    # _______________________________________________________________________________________________________________
-    # Save the model to a file
-    
-    # append r2 value
-    if(length(forest$finalModel$rsq) == 0) {
-        out_r2[[sig]] <- NA  # Use NA when no r_squared value is calculated
-      } else {
-        out_r2[[sig]] <- mean(forest$final$rsq)
-      }
-    
-    # Append to larger output list, variable importance
-    if(nrow(importance(forest$finalModel, type = 1, scale = TRUE)) == 0) {
-      out_var_importance[[sig]] <- data.frame(predictor = NA, Importance = NA, sig_name = sig)
+  # # Print dimensions of sigs_train
+  # print(sprintf("sigs_train: %d rows, %d columns", nrow(sigs_train), ncol(sigs_train)))
+
+  train_data <- attrs_train %>%
+    inner_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
+    select(-gauge_id) %>%
+    drop_na() %>%
+    filter_all(all_vars(!is.infinite(.)))
+
+  # print(train_data)
+
+  forest <- train(
+    # signature to predict
+    formula(paste(sig, "~ .")),
+    # input attribute dataset, includes signature
+    data = train_data,
+    # Random forest method
+    method = "rf",
+    # metric to evaluate model performance
+    metric = config$settings$eval_metric,
+    # Number of trees
+    ntree = config$settings$ntree,
+    # adding the repeated cross validation
+    trControl = kfold_cv,
+    # hyper parameter testing
+    tuneGrid = hyper_grid,
+    # return importance, want %IncMSE data
+    importance = TRUE
+  )
+  
+  print(forest)
+  print(forest$finalModel)
+  
+  # _______________________________________________________________________________________________________________
+  # Save the model to a file
+  
+  # append r2 value
+  if(length(forest$finalModel$rsq) == 0) {
+      out_r2[[sig]] <- NA  # Use NA when no r_squared value is calculated
     } else {
-      out_var_importance[[sig]] <- importance(forest$finalModel, type = 1, scale = TRUE) %>%
-        as.data.frame() %>%
-        tibble::rownames_to_column(var = "predictor") %>%
-        dplyr::mutate(sig_name = sig)
+      out_r2[[sig]] <- mean(forest$final$rsq)
     }
-    
-    
-    # _______________________________________________________________________________________________________________
-    # Predict signature value / can be on a test dataset. Currently it is used to simply get predicted signature values from training & validation
-    test_data <- attrs_test %>%
-      drop_na() 
-    
-    predictions <- predict(forest, test_data%>%select(-gauge_id))
-    
-    # Store predictions in the list
-    if(length(predictions) == 0) {
-      out_sig_predictions[[sig]] <- data.frame(gauge_id = NA, prediction = NA, sig_name = sig)
-    } else {
-      out_sig_predictions[[sig]] <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
-    }
-    }, error = function(e) {
-    # Return NA values if an error occurs
-    list(
-      sig_predictions = data.frame(gauge_id = NA, prediction = NA, sig_name = sig),
-      r2 = data.frame(sig_name = sig, r_squared = NA),
-      var_importance = data.frame(predictor = NA, Importance = NA, sig_name = sig)
-    )
-  })
+  
+  # Append to larger output list, variable importance
+  if(nrow(importance(forest$finalModel, type = 1, scale = TRUE)) == 0) {
+    out_var_importance[[sig]] <- data.frame(predictor = NA, Importance = NA, sig_name = sig)
+  } else {
+    out_var_importance[[sig]] <- importance(forest$finalModel, type = 1, scale = TRUE) %>%
+      as.data.frame() %>%
+      tibble::rownames_to_column(var = "predictor") %>%
+      dplyr::mutate(sig_name = sig)
+  }
+  
+  
+  # _______________________________________________________________________________________________________________
+  # Predict signature value / can be on a test dataset. Currently it is used to simply get predicted signature values from training & validation
+  test_data <- attrs_test %>%
+    drop_na() 
+  
+  predictions <- predict(forest, test_data%>%select(-gauge_id))
+  
+  # Store predictions in the list
+  if(length(predictions) == 0) {
+    out_sig_predictions[[sig]] <- data.frame(gauge_id = NA, prediction = NA, sig_name = sig)
+  } else {
+    out_sig_predictions[[sig]] <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
+  }
+  # }, error = function(e) {
+  # print(paste("An error occurred:", e$message))
+  # # Return NA values if an error occurs
+  # list(
+  #   sig_predictions = data.frame(gauge_id = NA, prediction = NA, sig_name = sig),
+  #   r2 = data.frame(sig_name = sig, r_squared = NA),
+  #   var_importance = data.frame(predictor = NA, Importance = NA, sig_name = sig)
+  # )
 }
+
 
 # _______________________________________________________________________________________________________________
 #############################################

@@ -39,6 +39,11 @@ The following gauges are already removed at the stage of calculating attributes:
 - Prepare config files in ```random_forest\configs``` 
     - ```random_forest\configs\generate_config_by_ecoregion.py``` helps to generate config files
 - Run the code ```random_forest\run.bat``` or ```random_forest\run.sh``` depending on the OS
+- For linux, 
+    ```
+    cd random_forest
+    ./run.sh
+    ```
 
 ### 5. Derive process inference
 - Visualize the signature patterns using ```signatures\visualize\plot_sigs_process.py```

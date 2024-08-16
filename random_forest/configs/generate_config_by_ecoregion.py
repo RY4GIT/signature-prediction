@@ -25,7 +25,7 @@ def generate_yaml_files(ecoregions, template_yaml, out_dir):
             yaml.dump(yaml_content, file, default_flow_style=False, sort_keys=False)
 
 
-os_type = "win"  # "linux" or "win"
+os_type = "linux"  # "linux" or "win"
 # List of ecoregions
 ecoregions = [
     "11  MEDITERRANEAN CALIFORNIA",
@@ -63,7 +63,7 @@ elif os_type == "linux":
     home_dir = "/home/raraki/data/signature-prediction"
     rf_out_dir = "/out/rf"
     sigs_file = (
-        "/signatures/caravan_camels_20240609_tunedparams/out_calc_All_custom_filt.csv"
+        "/signatures/caravan_us_20240609_tunedparams/out_calc_All_custom_filt.csv"
     )
     attrs_file = "/derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv"
 

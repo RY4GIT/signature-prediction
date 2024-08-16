@@ -1,0 +1,31 @@
+paths:
+  home_dir: /home/raraki/data/signature-prediction
+  out_dir: /out/rf
+  train:
+    signatures: /signatures/caravan_us_20240609_tunedparams/out_calc_All_custom_filt.csv
+    attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
+  test:
+    attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
+experiment_name: test
+filter_by_ecoregion: 
+  run: true
+  name: 81 North Eastern Forests
+settings:
+  seed: 0
+  ntree: 100
+  num_folds: 3
+  eval_metric: "MSE"
+  # "MSE", "RMSE" etc.. 
+parallel:
+  nCores: 16
+sigs_predict:
+- TotalRR
+- RR_Seasonality
+attrs_of_interest:
+- ele_mt_sav
+- area
+- sgr_dk_sav
+- for_pc_sse
+- crp_pc_sse
+- pst_pc_sse
+- ire_pc_sse

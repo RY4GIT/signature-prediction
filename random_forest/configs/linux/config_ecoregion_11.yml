@@ -2,10 +2,10 @@ paths:
   home_dir: /home/raraki/data/signature-prediction
   out_dir: /out/rf
   train:
-    signatures: /signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv
-    attributes: /derived_attrs/assembled_RA/attrs_cam_hys.csv
+    signatures: /signatures/caravan_us_20240609_tunedparams/out_calc_All_custom_filt.csv
+    attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
   test:
-    attributes: /derived_attrs/assembled_RA/attrs_cam_hys.csv
+    attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
 experiment_name: ecoregion_11
 filter_by_ecoregion:
   run: true
@@ -31,13 +31,13 @@ sigs_predict:
 - VariabilityIndex
 - BFI
 - BaseflowRecessionK
-- IE_effect
-- SE_effect
 - IE_thresh_signif
 - SE_thresh_signif
 - Storage_thresh_signif
 - IE_thresh
 - SE_thresh
+- IE_effect
+- SE_effect
 - Storage_thresh
 - SE_slope
 attrs_of_interest:

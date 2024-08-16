@@ -6,10 +6,10 @@ paths:
     attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
   test:
     attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
-experiment_name: caravan_us
+experiment_name: ecoregion_1210
 filter_by_ecoregion:
-  run: false
-  name: NA
+  run: true
+  name: 1210 Western Deserts
 settings:
   seed: 0
   ntree: 500

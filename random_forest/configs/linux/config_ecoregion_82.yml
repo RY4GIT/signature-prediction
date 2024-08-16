@@ -6,10 +6,10 @@ paths:
     attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
   test:
     attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
-experiment_name: caravan_us
+experiment_name: ecoregion_82
 filter_by_ecoregion:
-  run: false
-  name: NA
+  run: true
+  name: 82 South Eastern Forests
 settings:
   seed: 0
   ntree: 500
