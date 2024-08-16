@@ -12,7 +12,7 @@ import geopandas as gpd
 
 # %%
 ########################## CHANGE HERE #################
-output_date = r"output_20240723"
+output_date = r"output_20240815"
 ########################################################
 
 # ____________________________________________________________________________________
@@ -24,7 +24,7 @@ plot_attrs_config_path = "plot_config_attrs_info.csv"
 plot_sigs_config_path = (
     r"C:\Users\flipl\dev\signature-prediction\signatures\visualize\plot_sigs_config.csv"
 )
-plot_sigs_conig = pd.read_csv(plot_sigs_config_path)
+plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 caravan_attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\attributes"
 attrs_camels_file = os.path.join(
     caravan_attrs_dir,
@@ -56,7 +56,7 @@ ecoregion_numbers = ecoregion_info.keys()
 attrs_colors = read_json_file("plot_config_attrs_colors.json")
 
 _ecoregion_overlay = gpd.read_file(
-    r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\EcoRegions\NA_CEC_Eco_Level1.shp"
+    r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\EcoRegions\NA_CEC_Eco_Hammondv2.shp"  # NA_CEC_Eco_Level1
 )
 _ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
 ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
@@ -266,7 +266,6 @@ df_imp_conus = load_data_incRMSE(
     out_dir_rf, output_date, ecoregion_n, plot_attrs_config_path
 )
 sigs = df_imp_conus["sig_name"].unique()
-# %%
 
 plot_bar_plots(df_imp_conus, sigs, ecoregion_n, ecoregion_name)
 plot_pie_charts(df_imp_conus, sigs, attrs_colors, ecoregion_n, ecoregion_name)
@@ -285,11 +284,11 @@ for ecoregion_n in ecoregion_numbers:
     plot_bar_plots(df_imp, sigs, ecoregion_n, ecoregion_name)
     plot_pie_charts(df_imp, sigs, attrs_colors, ecoregion_n, ecoregion_name)
 
-# %%
-df_imp_conus
+
+# %%___________________________________________________________________________________
+# Compare predicted vs observed signatures
 
 
-# %%
 def load_data_sigpred(output_date, out_dir_rf, ecoregion_info, ecoregion_numbers):
     _dfs = []
 
@@ -329,7 +328,7 @@ df_sigpred, df_conus = load_data_sigpred(
 # sigobs_path = rf_config["paths"]["train"]["signatures"]
 # if sigobs_path.startswith("/"):
 #     sigobs_path = sigobs_path.lstrip("/")
-sigobs_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20240609_tunedparams\out_calc_All_custom.csv"
+sigobs_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20240609_tunedparams\out_calc_All_custom_filt.csv"
 
 # Load the observed signatures
 df_sigobs = pd.read_csv(sigobs_path)
@@ -381,9 +380,9 @@ df_sigs_eco = df_sigs.join(eco_caravan, how="left")
 def plot_sigerr_map(df, sig_name, overlay_layer):
 
     # Get plot config
-    plot_config = plot_sigs_conig.loc[plot_sigs_conig["column_name"] == sig_name].iloc[
-        0
-    ]
+    plot_config = plot_sigs_config.loc[
+        plot_sigs_config["column_name"] == sig_name
+    ].iloc[0]
 
     # Calculate abs diffrences
     frac_err = abs(df[sig_name] - df[sig_name + "_pred"]) / df[sig_name]
@@ -419,8 +418,8 @@ def plot_sigerr_map(df, sig_name, overlay_layer):
 
     # Plotting the filtered data
     scatter = ax.scatter(
-        df["gauge_lon"],
-        df["gauge_lat"],
+        df["gauge_lon_x"],
+        df["gauge_lat_x"],
         c=frac_err,
         cmap="Reds",
         marker="o",
@@ -449,13 +448,15 @@ def plot_sigerr_map(df, sig_name, overlay_layer):
 
 
 # %%
-
-for sigs_name in plot_sigs_conig.column_name:
+for sigs_name in plot_sigs_config.column_name:
     try:
         plot_sigerr_map(df_sigs, sigs_name, ecoregion_overlay)
     except:
         print(f"{sigs_name} is not in the prediction")
-
+# # %%
+# df_sigs.columns
+# # plot_sigerr_map(df_sigs, "TotalRR", ecoregion_overlay)
+# #
 # %%
 # ______________________________________________________________
 # Get the error bar plot per region
@@ -463,9 +464,9 @@ for sigs_name in plot_sigs_conig.column_name:
 
 def plot_err_box(df, sig_name):
 
-    plot_config = plot_sigs_conig.loc[plot_sigs_conig["column_name"] == sig_name].iloc[
-        0
-    ]
+    plot_config = plot_sigs_config.loc[
+        plot_sigs_config["column_name"] == sig_name
+    ].iloc[0]
 
     # Calculate fractional error
     df["frac_err"] = abs(df[sig_name] - df[sig_name + "_pred"]) / df[sig_name]
@@ -539,7 +540,7 @@ def plot_err_box(df, sig_name):
     plt.show()
 
 
-for sigs_name in plot_sigs_conig.column_name:
+for sigs_name in plot_sigs_config.column_name:
     try:
         plot_err_box(df_sigs_eco, sigs_name)
     except Exception as e:
