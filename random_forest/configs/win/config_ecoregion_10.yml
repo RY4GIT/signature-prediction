@@ -3,9 +3,9 @@ paths:
   out_dir: RAraki/out/rf
   train:
     signatures: RAraki/out/signatures/caravan_us_20240609_tunedparams/out_calc_ALL_custom.csv
-    attributes: AHolt/data/derived_attrs/assembled_RA/attrs_cam_hys.csv
+    attributes: AHolt/data/derived_attrs/assembled_RA/attrs_caravan_us_epa.csv
   test:
-    attributes: AHolt/data/derived_attrs/assembled_RA/attrs_cam_hys.csv
+    attributes: AHolt/data/derived_attrs/assembled_RA/attrs_caravan_us_epa.csv
 experiment_name: ecoregion_10
 filter_by_ecoregion:
   run: true

@@ -3,9 +3,9 @@ paths:
   out_dir: /out/rf
   train:
     signatures: /signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv
-    attributes: /derived_attrs/assembled_RA/attrs_cam_hys.csv
+    attributes: /derived_attrs/assembled_RA/attrs_caravan_us_epa.csv
   test:
-    attributes: /derived_attrs/assembled_RA/attrs_cam_hys.csv
+    attributes: /derived_attrs/assembled_RA/attrs_caravan_us_epa.csv
 experiment_name: ecoregion_6
 filter_by_ecoregion:
   run: true
