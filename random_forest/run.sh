@@ -1,3 +1,6 @@
+# Script to execute Random Forest models, predicting hydrologic signatures based on catchment attribute datasets
+# This code runs Random Forest in a parallel computing mode
+
 #!/bin/bash
 
 # cd random_forest/

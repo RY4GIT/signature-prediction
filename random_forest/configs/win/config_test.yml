@@ -1,54 +1,33 @@
 paths:
-  home_dir:  "/home/raraki/data/signature-prediction"
-  # G:/Shared drives/Signatures -- large scale/baseflow
-  # /home/raraki/data/signature-prediction
-  out_dir: "/out/rf"
-  # "RAraki/out/rf"
-  # /out/rf
+  home_dir: "G:/Shared drives/Signatures -- large scale/baseflow"
+  # On Google Drive: G:/Shared drives/Signatures -- large scale/baseflow
+  # On UCSB server: /home/raraki/data/signature-prediction
+  out_dir: "RAraki/out/rf"
+  # On Google Drive: RAraki/out/rf
+  # On UCSB server: /out/rf
   train:
-    signatures: "/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
-    # "RAraki/out/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
-    # "/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
-    attributes: "/derived_attrs/assembled_RA/attrs_camels.csv"
-    # "AHolt/data/derived_attrs/assembled_RA/attrs_camels.csv"
-    #"/derived_attrs/assembled_RA/attrs_camels.csv"
+    signatures: "RAraki/out/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
+    # On Google Drive: "RAraki/out/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
+    # On UCSB server: "/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_camels.csv"
+    # On Google Drive: "RAraki/data/derived_attrs/assembled_RA/attrs_camels.csv"
+    # On UCSB server: "/derived_attrs/assembled_RA/attrs_camels.csv"
   test:
-    attributes: "/derived_attrs/assembled_RA/attrs_camels.csv"
-experiment_name: "ecoregion_5"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_camels.csv"
+experiment_name: "test"
 filter_by_ecoregion: 
   run: true
-  name: "5  NORTHERN FORESTS"
-# 10  NORTH AMERICAN DESERTS
-# 11  MEDITERRANEAN CALIFORNIA
-# 12  SOUTHERN SEMIARID HIGHLANDS
-# 13  TEMPERATE SIERRAS
-# 5  NORTHERN FORESTS
-# 6  NORTHWESTERN FORESTED MOUNTAINS
-# 7  MARINE WEST COAST FOREST
-# 8  EASTERN TEMPERATE FORESTS
-# 9  GREAT PLAINS
+  name: "82 South Eastern Forests"
 settings:
   seed: 0
-  ntree: 500
-  num_folds: 10
-  eval_metric: "MSE"
-  # "MSE", "RMSE" etc.. 
+  ntree: 10
+  num_folds: 3
+  eval_metric: "RMSE"
 parallel:
   nCores: 16
 sigs_predict:
   - TotalRR
   - RR_Seasonality
-  - EventRR
-  - Recession_a_Seasonality
-  - AverageStorage
-  - RecessionParameters_1
-  - RecessionParameters_2
-  - First_Recession_Slope
-  - Mid_Recession_Slope
-  - EventRR_TotalRR_ratio
-  - VariabilityIndex
-  - BFI
-  - BaseflowRecessionK
 attrs_of_interest:
   - ele_mt_sav
   - area
@@ -60,19 +39,3 @@ attrs_of_interest:
   - prm_pc_sse
   - pac_pc_sse
   - isowet_areafrac
-  - cly_pc_sav
-  - slt_pc_sav
-  - soc_th_sav
-  - kar_pc_sse
-  - geol_weighted_ave_age_ma
-  - ppd_pk_sav
-  - gdp_ud_sav
-  - hdi_ix_sav
-  - p_mean
-  - pet_mean
-  - aridity
-  - frac_snow
-  - seasonality
-  - high_prec_freq
-  - low_prec_freq
-  - low_prec_dur
