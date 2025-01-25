@@ -9,8 +9,11 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import yaml
 import geopandas as gpd
-
-# %%
+from matplotlib.colors import ListedColormap
+from matplotlib.patches import Rectangle
+# %% ######################
+# PREPARATION
+##########################
 
 # ____________________________________________________________________________________
 # Config
@@ -37,12 +40,12 @@ caravan_attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki
 attrs_camels_file = os.path.join(
     caravan_attrs_dir,
     "camels",
-    f"attributes_other_camels.csv",
+    "attributes_other_camels.csv",
 )
 attrs_hysets_file = os.path.join(
     caravan_attrs_dir,
     "hysets",
-    f"attributes_other_hysets.csv",
+    "attributes_other_hysets.csv",
 )
 attrs_camels = pd.read_csv(attrs_camels_file, index_col="gauge_id")
 attrs_hysets = pd.read_csv(attrs_hysets_file, index_col="gauge_id")
@@ -69,8 +72,6 @@ wspolygon = pd.concat([wspolygon_camels, wspolygon_hysets], ignore_index=True)
 wspolygon.set_index("gauge_id", inplace=True)
 
 # %%
-len(wspolygon)
-# %%
 df_sigs = wspolygon.join(df_sigs, how="right")
 # %%
 # Get the percentile
@@ -79,10 +80,14 @@ for sigs_name in plot_sigs_config["column_name"]:
     column_data = df_sigs[sigs_name]
 
     # Calculate the percentile rank for each value in the column
-    df_sigs[sigs_name + "_percentile"] = column_data.rank(pct=True) * 100
+    df_sigs[sigs_name + "_perc"] = column_data.rank(pct=True) * 100
 
 
-# %% ________________________________________________
+# %% ######################
+# FUNCTIONS
+##########################
+
+
 def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter"):
     # Get plot config
 
@@ -129,7 +134,7 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
         plot_config = plot_sigs_config.loc[
             plot_sigs_config["column_name"] == sig_name
         ].iloc[0]
-        c_data = df[sig_name + "_percentile"]
+        c_data = df[sig_name + "_perc"]
         llim = 0
         ulim = 100
         cbar_label = "percentile"
@@ -189,6 +194,10 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 
 
 # %%
+# %% ######################
+# Plot signature value map
+##########################
+
 # _____________________________________________________________________________
 # Plot signature value map
 # For testing
@@ -228,9 +237,12 @@ for sigs_name in plot_sigs_config.column_name:
         )
     except:
         print(f"{sigs_name} is not in the prediction")
+
 # %%
-plot_sigs_config
-# %%
+# %% ######################
+# Plot signature-process interpretation map
+##########################
+
 # ______________________________________________________________________________
 # Plot the average percentile per processes
 # process_name = "Baseflow"
@@ -239,9 +251,10 @@ plot_sigs_config
 process_name = "ET impacts on storage and baseflow"
 process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
 process_columns
+
+
 # %%
-
-
+# Recalculate the percentiles based on aggregation
 def recalculate_percentile(column_data, thresh_value):
     new_percentile = column_data.apply(
         lambda x: 0 if x > thresh_value else (1 - (x / thresh_value)) * 100
@@ -254,7 +267,7 @@ percentiles = []
 for _, row in process_columns.iterrows():
     column_name = row["column_name"]
     relationship = row["relationship"]
-    percentile_column = column_name + "_percentile"
+    percentile_column = column_name + "_perc"
 
     if relationship == "pos":
         percentiles.append(df_sigs[percentile_column])
@@ -267,7 +280,7 @@ for _, row in process_columns.iterrows():
             df_sigs[column_name], threshold
         )
         percentiles.append(recalculated_percentile)
-# %%
+
 # Combine the percentiles and calculate the average
 # Do not calculate the median percentile, if there is nan
 df_sigs[process_name + "_medperc"] = pd.concat(percentiles, axis=1).median(
@@ -282,13 +295,10 @@ plot_sig_map(
 plot_sig_map(
     df_sigs, process_name, ecoregion_overlay, stats="process_perc", plot_mode="polygon"
 )
-# %%
-
-# %%
-df_sigs.ecoregion
 
 
-# %%
+# %% ________________________________________
+# Plot error map
 def plot_err_box(df, sig_name):
     sample_counts = df["ecoregion"].value_counts()
     valid_ecoregions = sample_counts[sample_counts >= 100].index
@@ -330,5 +340,142 @@ def plot_err_box(df, sig_name):
 
 
 plot_err_box(df_sigs, process_name)
+
+# %% ________________________________________________________
+# Plot the bivariate map
+process_name = "Baseflow"
+# process_name = "Saturation Excess Overlandflow"  # "Infiltration Excess Overlandflow"
+# process_name = "Storage capacity and retention"  # "Water loss to deep GW or ET"
+# process_name = "ET impacts on storage and baseflow"
+process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
+process_columns
+# %%
+# Get the quantiles of each signatures
+sig2 = process_columns.iloc[0]  # Y variable, BFI
+sig1 = process_columns.iloc[1]  # X variable, Baseflow Recession K
+
+df_sigs_clean = df_sigs.dropna(subset=[sig1.column_name, sig2.column_name]).copy()
+
+labels = [1, 2, 3, 4]
+
+sig1_label = labels
+sig2_label = labels
+
+dir_label = ["low", "", "", "high"]
+
+sig1_dir = dir_label
+sig2_dir = dir_label
+
+df_sigs_clean[sig1.column_name + "_class"] = pd.qcut(
+    df_sigs_clean[sig1.column_name], q=len(sig1_label), labels=sig1_label
+)
+df_sigs_clean[sig2.column_name + "_class"] = pd.qcut(
+    df_sigs_clean[sig2.column_name], q=len(sig2_label), labels=sig2_label
+)
+
+df_sigs_clean["bivariate_class"] = (
+    df_sigs_clean[sig1.column_name + "_class"].astype(str)
+    + "-"
+    + df_sigs_clean[sig2.column_name + "_class"].astype(str)
+)
+
+print(df_sigs_clean["bivariate_class"].unique())
+# %%
+# Step 2: Create a color palette for 16 bivariate classes
+# Define colors from the example (4x4 grid)
+patch_colors = [
+    ["#D3D3D3", "#D6B3A0", "#D9926A", "#DD6A29"],  # Row 1 becomes Row 4
+    ["#9CC4D2", "#9EA69F", "#A08769", "#A36229"],  # Row 2 becomes Row 3
+    ["#5FB2D1", "#60979F", "#617B69", "#635929"],  # Row 3 becomes Row 2
+    ["#159DD0", "#15869E", "#176D68", "#174F28"],  # Row 4 becomes Row 1
+]
+
+
+# Create a function to draw a bivariate legend
+def create_bivariate_legend(colors, x_label, y_label, x_ticks, y_ticks):
+    fig, ax = plt.subplots(figsize=(4, 4))
+
+    # Add colored patches for each bivariate class
+    for i, row in enumerate(colors):
+        for j, color in enumerate(row):
+            # Place the rows in the order they appear (smaller values at the bottom)
+            rect = Rectangle((j, i), 1, 1, facecolor=color, edgecolor="none")
+            ax.add_patch(rect)
+
+    # Set axis labels
+    ax.set_xlabel(x_label, fontsize=12, labelpad=10)
+    ax.set_ylabel(y_label, fontsize=12, labelpad=10)
+
+    # # Set tick positions and labels
+    ax.set_xticks([0.5 + i for i in range(len(colors[0]))])
+    ax.set_xticklabels(x_ticks, fontsize=10)
+    ax.set_yticks([0.5 + i for i in range(len(colors))])
+    ax.set_yticklabels(y_ticks, fontsize=10)  # Reverse order for Y-axis
+
+    # Remove gridlines and spines
+    ax.set_xlim(0, len(colors[0]))
+    ax.set_ylim(0, len(colors))
+    ax.tick_params(left=False, bottom=False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.grid(False)
+
+    # Display the plot
+    plt.tight_layout()
+    plt.show()
+
+
+# Define axis labels and tick labels
+x_label = f"{sig1.label} {sig1.unit}"
+y_label = f"{sig2.label} {sig2.unit}"
+x_ticks = sig1_dir
+y_ticks = sig2_dir
+
+# Create the legend
+create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks)
+
+cmap = ListedColormap(patch_colors)
+# %%
+# Step 3: Map bivariate classes to colors
+df_sigs_clean["color"] = df_sigs_clean["bivariate_class"].apply(
+    lambda x: patch_colors[int(x.split("-")[1]) - 1][int(x.split("-")[0]) - 1]
+)
+
+# Step 4: Plot the bivariate map
+
+# Set up the map
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+
+# Add map features
+df_sigs_clean.plot(ax=ax, color=df_sigs_clean["color"], linewidth=0.2, alpha=0.5)
+
+
+# Add the BORDERS feature first
+ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k", alpha=0.5)
+
+# Add the land feature with edgecolor set to black
+land = cfeature.NaturalEarthFeature(
+    "physical",
+    "land",
+    "50m",
+)
+ax.add_feature(
+    land,
+    facecolor="none",  # Keep facecolor as desired
+    edgecolor="black",  # Set edgecolor to black
+    linewidth=0.5,  # Optionally adjust linewidth for edges
+)
+
+title_label = f"Bivariate map of {sig1.label} vs. {sig2.label}"
+ax.set_title(title_label)
+# Set extent to CONUS
+ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+# Display the plot
+plt.tight_layout()
+# plt.savefig(os.path.join(fig_dir, out_file_name))
+
 
 # %%
