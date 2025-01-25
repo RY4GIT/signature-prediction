@@ -26,7 +26,7 @@ if not os.path.exists(fig_dir):
 # ____________________________________________________________________________________
 # Load overlay layer for plotting
 _ecoregion_overlay = gpd.read_file(
-    r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\EcoRegions\NA_CEC_Eco_Level1.shp"
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\EcoRegions\NA_CEC_Eco_Level1.shp"
 )
 _ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
 ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
@@ -48,18 +48,30 @@ attrs_camels = pd.read_csv(attrs_camels_file, index_col="gauge_id")
 attrs_hysets = pd.read_csv(attrs_hysets_file, index_col="gauge_id")
 attrs_caravan = pd.concat([attrs_camels, attrs_hysets])
 
-eco_camels_file = r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs\EcoRegions\Ecoregion_camels.csv"
-eco_hysets_file = r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs\EcoRegions\Ecoregion_hysets.csv"
+eco_camels_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\EcoRegions\Ecoregion_camels.csv"
+eco_hysets_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\EcoRegions\Ecoregion_hysets.csv"
 eco_camels = pd.read_csv(eco_camels_file, index_col="gauge_id")
 eco_hysets = pd.read_csv(eco_hysets_file, index_col="gauge_id")
 eco_caravan = pd.concat([eco_camels, eco_hysets])
-
+# %%
 _df_sigs = pd.read_csv(
     os.path.join(out_dir, "out_calc_All_custom_filt.csv"), index_col="gauge_id"
 )
 # _df_sigs = _df_sigs.join(attrs_caravan, how="left")
 df_sigs = _df_sigs.join(eco_caravan, how="left")
 
+# %%
+wspolygon_camels_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\shapefiles\camels\camels_basin_shapes.shp"
+wspolygon_camels = gpd.read_file(wspolygon_camels_file).to_crs(epsg=4326)
+wspolygon_hysets_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\shapefiles\hysets\hysets_basin_shapes.shp"
+wspolygon_hysets = gpd.read_file(wspolygon_hysets_file).to_crs(epsg=4326)
+wspolygon = pd.concat([wspolygon_camels, wspolygon_hysets], ignore_index=True)
+wspolygon.set_index("gauge_id", inplace=True)
+
+# %%
+len(wspolygon)
+# %%
+df_sigs = wspolygon.join(df_sigs, how="right")
 # %%
 # Get the percentile
 for sigs_name in plot_sigs_config["column_name"]:
@@ -71,8 +83,7 @@ for sigs_name in plot_sigs_config["column_name"]:
 
 
 # %% ________________________________________________
-def plot_sig_map(df, sig_name, overlay_layer, mode="normal"):
-
+def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter"):
     # Get plot config
 
     # Set up the map
@@ -80,21 +91,21 @@ def plot_sig_map(df, sig_name, overlay_layer, mode="normal"):
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
     # Add a legend
-    overlay_layer.plot(
-        ax=ax,
-        edgecolor="black",
-        facecolor="none",
-        linewidth=0.5,
-        aspect=1.1,
-        zorder=100,
-    )
+    # overlay_layer.plot(
+    #     ax=ax,
+    #     edgecolor="black",
+    #     facecolor="none",
+    #     linewidth=0.5,
+    #     aspect=1.1,
+    #     zorder=100,
+    # )
 
     land = cfeature.NaturalEarthFeature(
         "physical",
         "land",
         "50m",
         edgecolor="face",
-        facecolor="lightgrey",  # Set land color to light gray
+        facecolor="darkgrey",  # Set land color to light gray
     )
     ax.add_feature(land)
 
@@ -104,17 +115,17 @@ def plot_sig_map(df, sig_name, overlay_layer, mode="normal"):
     ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
 
     # Plotting the filtered data
-    if mode == "normal":
+    if stats == "normal":
         plot_config = plot_sigs_config.loc[
             plot_sigs_config["column_name"] == sig_name
         ].iloc[0]
         c_data = df[sig_name]
         llim = plot_config["lower_lim"]
         ulim = plot_config["upper_lim"]
-        cbar_label = f'{plot_config["unit"]}'
-        out_file_name = f"map_{sig_name}.png"
-        title_label = f"{plot_config["label"]}"
-    elif mode == "percentile":
+        cbar_label = f"{plot_config['unit']}"
+        out_file_name = f"map_{sig_name}_{plot_mode}.png"
+        title_label = f"{plot_config['label']}"
+    elif stats == "percentile":
         plot_config = plot_sigs_config.loc[
             plot_sigs_config["column_name"] == sig_name
         ].iloc[0]
@@ -122,34 +133,56 @@ def plot_sig_map(df, sig_name, overlay_layer, mode="normal"):
         llim = 0
         ulim = 100
         cbar_label = "percentile"
-        out_file_name = f"map_perc_{sig_name}.png"
-        title_label = f"{plot_config["label"]}"
-    elif mode == "process_perc":
+        out_file_name = f"map_perc_{sig_name}_{plot_mode}.png"
+        title_label = f"{plot_config['label']}"
+    elif stats == "process_perc":
         c_data = df[sig_name + "_medperc"]
         llim = 0
         ulim = 100
         cbar_label = "Median percentile"
-        out_file_name = f"map_medperc_{sig_name}.png"
+        out_file_name = f"map_medperc_{sig_name}_{plot_mode}.png"
         title_label = sig_name
 
-    scatter = ax.scatter(
-        df["gauge_lon"],
-        df["gauge_lat"],
-        c=c_data,
-        cmap="Blues",
-        marker="o",
-        # edgecolors="grey",
-        s=5,
-        alpha=0.8,
-        zorder=99,
-        vmin=llim,
-        vmax=ulim,
-    )
+    # Create a colormap and normalize
+    cmap = plt.cm.Blues
+    norm = mpl.colors.Normalize(vmin=llim, vmax=ulim)
+
+    if plot_mode == "scatter":
+        plot_obj = ax.scatter(
+            df["gauge_lon"],
+            df["gauge_lat"],
+            c=c_data,
+            cmap=cmap,
+            marker="o",
+            # edgecolors="grey",
+            s=5,
+            alpha=0.8,
+            zorder=99,
+            vmin=llim,
+            vmax=ulim,
+        )
+        cbar = plt.colorbar(plot_obj, ax=ax, shrink=0.5)
+        cbar.set_label(cbar_label, rotation=270, labelpad=30)
+    elif plot_mode == "polygon":
+        plot_obj = df.plot(
+            ax=ax,
+            column=sig_name,
+            cmap=cmap,
+            alpha=0.7,
+            vmin=llim,
+            vmax=ulim,
+            zorder=99,
+        )
+        # Add a colorbar
+        sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm._A = []  # Empty array for ScalarMappable
+        cbar = plt.colorbar(sm, ax=ax, shrink=0.5)
+        cbar.set_label(cbar_label, rotation=270, labelpad=30)
+
     ax.set_title(title_label)
 
     # Adding a colorbar
-    cbar = plt.colorbar(scatter, ax=ax, shrink=0.5)
-    cbar.set_label(cbar_label, rotation=270, labelpad=30)
+
     # Display the plot
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, out_file_name))
@@ -159,11 +192,16 @@ def plot_sig_map(df, sig_name, overlay_layer, mode="normal"):
 # _____________________________________________________________________________
 # Plot signature value map
 # For testing
-# plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, mode="normal")
+# plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, stats="normal", plot_mode="polygon")
 
 for sigs_name in plot_sigs_config.column_name:
     try:
-        plot_sig_map(df_sigs, sigs_name, ecoregion_overlay, mode="normal")
+        plot_sig_map(
+            df_sigs, sigs_name, ecoregion_overlay, stats="normal", plot_mode="scatter"
+        )
+        plot_sig_map(
+            df_sigs, sigs_name, ecoregion_overlay, stats="normal", plot_mode="polygon"
+        )
     except:
         print(f"{sigs_name} is not in the prediction")
 
@@ -171,10 +209,23 @@ for sigs_name in plot_sigs_config.column_name:
 # ______________________________________________________________________________
 # Plot the percentile map
 # For testing
-# plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, mode="normal")
+# plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, stats="normal")
 for sigs_name in plot_sigs_config.column_name:
     try:
-        plot_sig_map(df_sigs, sigs_name, ecoregion_overlay, mode="percentile")
+        plot_sig_map(
+            df_sigs,
+            sigs_name,
+            ecoregion_overlay,
+            stats="percentile",
+            plot_mode="scatter",
+        )
+        plot_sig_map(
+            df_sigs,
+            sigs_name,
+            ecoregion_overlay,
+            stats="percentile",
+            plot_mode="polygon",
+        )
     except:
         print(f"{sigs_name} is not in the prediction")
 # %%
@@ -225,8 +276,12 @@ df_sigs[process_name + "_medperc"] = pd.concat(percentiles, axis=1).median(
 df_sigs
 
 # %%
-plot_sig_map(df_sigs, process_name, ecoregion_overlay, mode="process_perc")
-
+plot_sig_map(
+    df_sigs, process_name, ecoregion_overlay, stats="process_perc", plot_mode="scatter"
+)
+plot_sig_map(
+    df_sigs, process_name, ecoregion_overlay, stats="process_perc", plot_mode="polygon"
+)
 # %%
 
 # %%
@@ -235,7 +290,6 @@ df_sigs.ecoregion
 
 # %%
 def plot_err_box(df, sig_name):
-
     sample_counts = df["ecoregion"].value_counts()
     valid_ecoregions = sample_counts[sample_counts >= 100].index
     df_filt = df[df["ecoregion"].isin(valid_ecoregions)].copy()
