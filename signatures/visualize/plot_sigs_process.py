@@ -343,63 +343,242 @@ plot_err_box(df_sigs, process_name)
 
 # %% ________________________________________________________
 # Plot the bivariate map
-process_name = "Baseflow"
-# process_name = "Saturation Excess Overlandflow"  # "Infiltration Excess Overlandflow"
-# process_name = "Storage capacity and retention"  # "Water loss to deep GW or ET"
-# process_name = "ET impacts on storage and baseflow"
-process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
-process_columns
-# %%
-# Get the quantiles of each signatures
-sig2 = process_columns.iloc[0]  # Y variable, BFI
-sig1 = process_columns.iloc[1]  # X variable, Baseflow Recession K
+# Color map and the idea from Datawim: https://www.datawim.com/post/creating-professional-bivariate-maps-in-r/
 
-df_sigs_clean = df_sigs.dropna(subset=[sig1.column_name, sig2.column_name]).copy()
+# ______________________________________________________
+# Preparation
+patch_colors = [
+    ["#D3D3D3", "#D6B3A0", "#D9926A", "#DD6A29"],
+    ["#9CC4D2", "#9EA69F", "#A08769", "#A36229"],
+    ["#5FB2D1", "#60979F", "#617B69", "#635929"],
+    ["#159DD0", "#15869E", "#176D68", "#174F28"],
+]
+cmap = ListedColormap(patch_colors)
 
+# Labels for quantiles (low-->high)
 labels = [1, 2, 3, 4]
+dir_label = ["low", "", "", "high"]
+
+# Reversed labels for quantiles (high --> low)
+labels_rev = [4, 3, 2, 1]
+dir_label_rev = ["high", "", "", "low"]
+
+# CHANGE HERE ################
+
+process_name = "Baseflow"
+# process_name = "Water loss to deep GW or ET"
+# process_name = "Storage capacity and retention"
+# process_name = "Infiltration Excess Overlandflow"
+# process_name = "Saturation Excess Overlandflow"
+# process_name = "ET impacts on storage and baseflow"
+
+# For checking the items
+process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
+print(process_columns)
+# %%
+# # sig2 = process_columns.iloc[0]  # Y variable, BFI
+# sig1 = process_columns.iloc[1]  # X variable, Baseflow Recession K
+
+sig2 = process_columns.loc[process_columns.label == "BFI"].squeeze()  # Y variable,
+sig1 = process_columns.loc[
+    process_columns.label == "BaseflowRecessionK"
+].squeeze()  # X variable, R
 
 sig1_label = labels
 sig2_label = labels
 
-dir_label = ["low", "", "", "high"]
-
 sig1_dir = dir_label
 sig2_dir = dir_label
 
-df_sigs_clean[sig1.column_name + "_class"] = pd.qcut(
-    df_sigs_clean[sig1.column_name], q=len(sig1_label), labels=sig1_label
-)
-df_sigs_clean[sig2.column_name + "_class"] = pd.qcut(
-    df_sigs_clean[sig2.column_name], q=len(sig2_label), labels=sig2_label
-)
 
-df_sigs_clean["bivariate_class"] = (
-    df_sigs_clean[sig1.column_name + "_class"].astype(str)
-    + "-"
-    + df_sigs_clean[sig2.column_name + "_class"].astype(str)
-)
+def update_column_name(signal):
+    """
+    Updates the column_name attribute of the signal to use percentile, if it is threshold-based signatures
+    Parameters:
+    - signal: An object with `label` and `column_name` attributes.
+    """
+    label_to_column = {"IE_thresh": "IE_thresh_perc", "SE_thresh": "SE_thresh_perc"}
+    if signal.label in label_to_column:
+        signal.column_name = label_to_column[signal.label]
 
-print(df_sigs_clean["bivariate_class"].unique())
+
+# Simplified usage
+update_column_name(sig1)
+update_column_name(sig2)
+
+print(f"Plotting the bivariate map for Y: {sig2.label} & X: {sig1.label}")
+################################
+# For Baseflow plots
+# process_name = "Baseflow"
+# sig2 = process_columns.iloc[0]  # Y variable, BFI
+# sig1 = process_columns.iloc[1]  # X variable, Baseflow Recession K
+# sig1_label = labels
+# sig2_label = labels
+
+# sig1_dir = dir_label
+# sig2_dir = dir_label
+################################
+# For Water loss to deep GW or ET
+
+# process_name = "Water loss to deep GW or ET"
+
+# sig2 = process_columns.iloc[0]  # Y variable, Total RR
+# sig1 = process_columns.iloc[2]  # X variable, RR_Seaonality
+
+# sig1_label = labels
+# sig2_label = labels
+
+# sig1_dir = dir_label
+# sig2_dir = dir_label
+################################
+# For Staoge capacity and retention
+
+# process_name = "Storage capacity and retention"
+
+# sig2 = process_columns.loc[
+#     process_columns.label == "AverageStorage"
+# ].squeeze()  # Y variable, Average Storage
+# sig1 = process_columns.loc[
+#     process_columns.label == "RecessionParameters_b"
+# ].squeeze()  # X variable, RecessionParameters_b
+
+# sig1_label = labels
+# sig2_label = labels
+
+# sig1_dir = dir_label
+# sig2_dir = dir_label
+################################
+# For Infiltration Excess Overlandflow
+# process_name = "Infiltration Excess Overlandflow"
+
+# sig2 = process_columns.loc[
+#     process_columns.label == "IE_thresh"
+# ].squeeze()  # Y variable,
+# sig1 = process_columns.loc[
+#     process_columns.label == "IE_thresh_signif"
+# ].squeeze()  # X variable, R
+
+# sig1_label = labels_rev
+# sig2_label = labels_rev
+
+# sig1_dir = dir_label_rev
+# sig2_dir = dir_label_rev
+################################
+# For Saturation Excess Overlandflow
+# process_name = "Saturation Excess Overlandflow"
+
+# sig2 = process_columns.loc[
+#     process_columns.label == "SE_thresh"
+# ].squeeze()  # Y variable,
+# sig1 = process_columns.loc[
+#     process_columns.label == "SE_thresh_signif"
+# ].squeeze()  # X variable, R
+
+# sig1_label = labels_rev
+# sig2_label = labels_rev
+
+# sig1_dir = dir_label_rev
+# sig2_dir = dir_label_rev
+################################
+# For ET impacts on storage and baseflow
+# process_name = "ET impacts on storage and baseflow"
+
+# sig2 = process_columns.loc[
+#     process_columns.label == "Recession_a_Seasonality"
+# ].squeeze()  # Y variable,
+# sig1 = process_columns.loc[
+#     process_columns.label == "VariabilityIndex"
+# ].squeeze()  # X variable, R
+
+# sig1_label = labels_rev
+# sig2_label = labels
+
+# sig1_dir = dir_label_rev
+# sig2_dir = dir_label
+################################
+
+
+# %% __________________________________________________
+# Get quantile & bivariate classes of data
+def get_bivariate_class(df, sig1, sig2, sig1_label, sig2_label):
+    df_clean = df.dropna(subset=[sig1.column_name, sig2.column_name]).copy()
+
+    df_clean[sig1.column_name + "_class"] = pd.qcut(
+        df_clean[sig1.column_name], q=len(sig1_label), labels=sig1_label
+    )
+    df_clean[sig2.column_name + "_class"] = pd.qcut(
+        df_clean[sig2.column_name], q=len(sig2_label), labels=sig2_label
+    )
+
+    df_clean["bivariate_class"] = (
+        df_clean[sig1.column_name + "_class"].astype(str)
+        + "-"
+        + df_clean[sig2.column_name + "_class"].astype(str)
+    )
+
+    df_clean["color"] = df_clean["bivariate_class"].apply(
+        lambda x: patch_colors[int(x.split("-")[1]) - 1][int(x.split("-")[0]) - 1]
+    )
+
+    return df_clean
+
+
+df_sigs_clean = get_bivariate_class(df_sigs, sig1, sig2, sig1_label, sig2_label)
+# %% __________________________________________________
+# Plot the bivariate map
+
+
+def plot_bivariate_map(df, sig1, sig2, fig_dir):
+    # Set up the map
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+
+    # Add map features
+    df.plot(ax=ax, color=df["color"], linewidth=0.2, alpha=0.5)
+
+    # Add the BORDERS feature first
+    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k", alpha=0.5)
+
+    # Add the land feature with edgecolor set to black
+    land = cfeature.NaturalEarthFeature(
+        "physical",
+        "land",
+        "50m",
+    )
+    ax.add_feature(
+        land,
+        facecolor="none",  # Keep facecolor as desired
+        edgecolor="black",  # Set edgecolor to black
+        linewidth=0.5,  # Optionally adjust linewidth for edges
+    )
+
+    title_label = f"Bivariate map of {sig1.label} vs. {sig2.label}"
+    ax.set_title(title_label)
+    # Set extent to CONUS
+    ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+
+    # Display the plot
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(fig_dir, f"bivar_{sig1.column_name}_{sig2.column_name}.png")
+    )
+    plt.show()
+
+
+plot_bivariate_map(df_sigs_clean, sig1, sig2, fig_dir)
+
+
 # %%
-# Step 2: Create a color palette for 16 bivariate classes
-# Define colors from the example (4x4 grid)
-patch_colors = [
-    ["#D3D3D3", "#D6B3A0", "#D9926A", "#DD6A29"],  # Row 1 becomes Row 4
-    ["#9CC4D2", "#9EA69F", "#A08769", "#A36229"],  # Row 2 becomes Row 3
-    ["#5FB2D1", "#60979F", "#617B69", "#635929"],  # Row 3 becomes Row 2
-    ["#159DD0", "#15869E", "#176D68", "#174F28"],  # Row 4 becomes Row 1
-]
-
-
 # Create a function to draw a bivariate legend
-def create_bivariate_legend(colors, x_label, y_label, x_ticks, y_ticks):
+def create_bivariate_legend(colors, x_label, y_label, x_ticks, y_ticks, fig_dir):
     fig, ax = plt.subplots(figsize=(4, 4))
 
     # Add colored patches for each bivariate class
-    for i, row in enumerate(colors):
-        for j, color in enumerate(row):
+    for j, row in enumerate(colors):
+        for i, color in enumerate(row):
             # Place the rows in the order they appear (smaller values at the bottom)
-            rect = Rectangle((j, i), 1, 1, facecolor=color, edgecolor="none")
+            # Plot the rectangle in the i-th color in the j-th row
+            rect = Rectangle((i, j), 1, 1, facecolor=color, edgecolor="none")
             ax.add_patch(rect)
 
     # Set axis labels
@@ -424,6 +603,9 @@ def create_bivariate_legend(colors, x_label, y_label, x_ticks, y_ticks):
 
     # Display the plot
     plt.tight_layout()
+    plt.savefig(
+        os.path.join(fig_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_legend.png")
+    )
     plt.show()
 
 
@@ -434,48 +616,6 @@ x_ticks = sig1_dir
 y_ticks = sig2_dir
 
 # Create the legend
-create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks)
-
-cmap = ListedColormap(patch_colors)
-# %%
-# Step 3: Map bivariate classes to colors
-df_sigs_clean["color"] = df_sigs_clean["bivariate_class"].apply(
-    lambda x: patch_colors[int(x.split("-")[1]) - 1][int(x.split("-")[0]) - 1]
-)
-
-# Step 4: Plot the bivariate map
-
-# Set up the map
-fig = plt.figure(figsize=(12, 8))
-ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
-
-# Add map features
-df_sigs_clean.plot(ax=ax, color=df_sigs_clean["color"], linewidth=0.2, alpha=0.5)
-
-
-# Add the BORDERS feature first
-ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k", alpha=0.5)
-
-# Add the land feature with edgecolor set to black
-land = cfeature.NaturalEarthFeature(
-    "physical",
-    "land",
-    "50m",
-)
-ax.add_feature(
-    land,
-    facecolor="none",  # Keep facecolor as desired
-    edgecolor="black",  # Set edgecolor to black
-    linewidth=0.5,  # Optionally adjust linewidth for edges
-)
-
-title_label = f"Bivariate map of {sig1.label} vs. {sig2.label}"
-ax.set_title(title_label)
-# Set extent to CONUS
-ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
-# Display the plot
-plt.tight_layout()
-# plt.savefig(os.path.join(fig_dir, out_file_name))
-
+create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
 
 # %%
