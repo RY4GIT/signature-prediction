@@ -1,5 +1,7 @@
 name: geo
 channels:
+  - anaconda
+  - defaults
   - conda-forge
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
@@ -34,11 +36,11 @@ dependencies:
   - brotli-python=1.1.0
   - bzip2=1.0.8
   - c-ares=1.28.1
-  - ca-certificates=2024.6.2
+  - ca-certificates=2024.12.31
   - cachetools=5.3.3
   - cairo=1.18.0
   - cartopy=0.23.0
-  - certifi=2024.6.2
+  - certifi=2024.12.14
   - cfitsio=4.4.0
   - cftime=1.6.4
   - charset-normalizer=3.3.2
@@ -57,6 +59,7 @@ dependencies:
   - debugpy=1.8.1
   - decorator=5.1.1
   - distributed=2024.5.2
+  - et_xmlfile=1.1.0
   - exceptiongroup=1.2.0
   - executing=2.0.1
   - expat=2.6.2
@@ -182,6 +185,7 @@ dependencies:
   - odc-geo=0.4.6
   - odc-stac=0.3.9
   - openjpeg=2.5.2
+  - openpyxl=3.1.5
   - openssl=3.3.1
   - orc=2.0.1
   - packaging=24.0
@@ -288,3 +292,4 @@ dependencies:
   - pip:
       - fast-histogram==0.14
       - mpl-scatter-density==0.7
+prefix: C:\Users\flipl\miniconda3\envs\geo
