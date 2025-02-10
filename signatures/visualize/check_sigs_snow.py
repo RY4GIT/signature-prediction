@@ -39,6 +39,7 @@ print(west_coast_gauges.head())
 out_dir = (
     r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\temp"
 )
+# %%
 select_columns = [
     "IE_thresh",
     "SE_thresh",
@@ -51,6 +52,13 @@ select_columns = [
     "gauge_name",
     "area",
 ]
+# %%
 west_coast_gauges[select_columns].to_csv(os.path.join(out_dir, "IESE_westcoast.csv"))
 
+# %%
+not_signif_gages = df_sigs[
+    (df_sigs["IE_thresh_signif"] > 0.05)
+]
+# %%
+not_signif_gages[select_columns].to_csv(os.path.join(out_dir, "IESE_nonsignif.csv"))
 # %%

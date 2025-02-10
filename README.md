@@ -41,7 +41,8 @@ Skip this step if you have downloaded pre-caluclated signature values from GDriv
     ```
     git clone https:\\github.com\RY4GIT\TOSSH
     ```
-- Calculate signatures using ```.\signatures\main.m```
+- Calculate signatures using ```.\signatures\main_caravan.m``` for Caravan datasets (CAMELS + HYSETS gauges)
+- Calculate signatures using ```.\signatures\main_gages2.m``` for GAGES2 catchments overlapping with CAMELS + HYSETS, with surface water input data from [Hammond, 2024](https://www.sciencebase.gov/catalog/item/6494515fd34ef77fcb014eb0)
 
 ### 3. Run RF experiment (R script)
 #### To start off some small-scale experiment or implement debug

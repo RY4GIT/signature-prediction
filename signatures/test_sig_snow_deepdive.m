@@ -19,7 +19,7 @@ caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
-caravan_data = 'hysets'; %'camels', 'hysets';
+caravan_data = 'camels'; %'camels', 'hysets';
 
 %___________________________________________________________________________________
 % Read metadata
@@ -37,7 +37,7 @@ numGauges = height(us_gauges);
 %___________________________________________________________________________________
 % Data preparation
 % Specify the gauge id
-gauge_id = 'hysets_0163626650';
+gauge_id = 'camels_04015330';
 
 % Load data and convert it to datetime table
 file_path = fullfile(data_dir, caravan_dir, timeseries_dir,data_type, caravan_data, [gauge_id '.' data_type]);
