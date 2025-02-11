@@ -42,7 +42,7 @@ Sys.setenv(R_CONFIG_ACTIVE = "default")
 # _______________________________________________________________________________________________________________
 # (1) Load configuration from a file path
 # Set the configuration file path directly
-config_file <- "./random_forest/configs/win/config_test.yml"
+config_file <- "./random_forest/configs/win/config_gages2exp_surfacewater.yml"
 
 # Check if the file exists to avoid runtime errors
 if (!file.exists(config_file)) {

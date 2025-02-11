@@ -121,3 +121,18 @@ for _, plot_config in plot_configs.iterrows():
     plot_scatter_comparison(merged_df, plot_config, save_path=save_path)
 
 # %%
+common_gages = merged_df.index
+
+filtered_caravan_us = caravan_us.loc[common_gages]
+filtered_gages2_us = gages2_us.loc[common_gages]
+
+# %%
+
+filtered_caravan_us.to_csv(
+    os.path.join(sig_dir, origin_caravan_dir, "out_calc_All_custom_gages2subset.csv")
+)
+# %%
+filtered_gages2_us.to_csv(
+    os.path.join(sig_dir, out_dir, "out_calc_All_custom_caravanoverlap.csv")
+)
+# %%

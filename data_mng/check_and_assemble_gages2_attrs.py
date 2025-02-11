@@ -99,7 +99,7 @@ print(f"Gauges unique to attrs_caravan_epa: {len(unique_to_caravan)}")
 print(unique_to_caravan)
 print(f"Gauges common to both: {len(common_gauges)}")
 print(common_gauges)
-
+# %%
 # Return the lists (if needed in a function)
 # Write results to text files
 with open(
@@ -140,4 +140,29 @@ common_gauges.set_index("gauge_id", inplace=True)
 common_gauges.to_csv(
     os.path.join(assembled_attrs_dir, f"attrs_gages2_{ecoregion_ver}.csv")
 )
+
+# %%
+# %% #########################################################################
+#
+# Join the Caravan and GAGES2 attributes
+#
+##############################################################################
+attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA"
+ecoregion_name = "epa"
+
+caravan_filename = f"attrs_caravan_us_{ecoregion_name}.csv"
+gages2_filename = f"attrs_gages2_{ecoregion_name}.csv"
+out_filename = f"attrs_cara_and_gages2_{ecoregion_name}.csv"
+
+attrs_caravan = pd.read_csv(
+    os.path.join(attrs_dir, caravan_filename), index_col="gauge_id"
+)
+attrs_gages2 = pd.read_csv(
+    os.path.join(attrs_dir, gages2_filename), index_col="gauge_id"
+)
+
+
+merged_attrs = attrs_caravan.combine_first(attrs_gages2)
+merged_attrs.to_csv(os.path.join(attrs_dir, out_filename))
+
 # %%
