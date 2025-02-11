@@ -59,7 +59,7 @@ us_gauges = attrs_geo(strcmp(attrs_geo.country, 'United States of America'), :);
 % disp(head(us_gauges));
 
 % Number of gauges
-numGauges = 10; %height(us_gauges);
+numGauges = height(us_gauges);
 
 % Parameter config
 config_OF = readtable('config_overlandflow.csv');
