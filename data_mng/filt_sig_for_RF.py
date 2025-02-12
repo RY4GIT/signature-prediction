@@ -8,9 +8,13 @@ import numpy as np
 shared_drive = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 
 sig_outdir = os.path.join(shared_drive, "out", "signatures")
-out_dir = os.path.join(sig_outdir, "caravan_us_20240609_tunedparams")
+
 hys_dir = "caravan_hysets_20240609_tunedparams"
 camels_dir = "caravan_camels_20240609_tunedparams"
+caravan_dir = "gages2_caravan_us_20250211"  # "caravan_us_20240609_tunedparams"
+
+out_dir = os.path.join(sig_outdir, caravan_dir)
+
 attrs_dir = os.path.join(shared_drive, "data", "Caravan1.4", "attributes")
 derived_attrs_dir = (
     r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs"
@@ -54,7 +58,7 @@ qa_hys["qf_subset_nan_fraction"] = (
 qa_hys["qf_overall"] = qa_hys["qf_subset_nan_fraction"] & qa_hys["qf_duration"]
 
 print(
-    f"{qa_hys['qf_overall'].sum()} gauges passed the criteria ({qa_hys['qf_overall'].sum()/len(qa_hys['qf_overall'])*100:.1f} percent)"
+    f"{qa_hys['qf_overall'].sum()} gauges passed the criteria ({qa_hys['qf_overall'].sum() / len(qa_hys['qf_overall']) * 100:.1f} percent)"
 )
 
 # Get the filtered dataset
@@ -128,7 +132,14 @@ attrs_caravan_camels = pd.read_csv(
 )
 attrs_caravan = pd.concat([attrs_caravan_hys, attrs_caravan_camels])
 
+# Alternatively, just load the sigs and mask
+# sigs = pd.read_csv(
+#     os.path.join(sig_outdir, caravan_dir, "out_calc_All_custom_caravanoverlap.csv"),
+#     index_col="gauge_id",
+# )
+
 sigs_fs = sigs.join(attrs_caravan.frac_snow, how="left")
+
 # %%
 frac_snow_thresh = 0.2
 row_mask_idx = sigs_fs["frac_snow"] > frac_snow_thresh
@@ -148,11 +159,11 @@ columns_mask = [
 sigs.loc[row_mask_idx, columns_mask] = np.nan
 # %%
 print(
-    f"{(~pd.isna(sigs.IE_effect)).sum()} survived ({(~pd.isna(sigs.IE_effect)).sum()/len(sigs)*100:.1f} %)"
+    f"{(~pd.isna(sigs.IE_effect)).sum()} survived ({(~pd.isna(sigs.IE_effect)).sum() / len(sigs) * 100:.1f} %)"
 )
 # %%  ____________________________________________________________
 # Save
-sigs.to_csv(os.path.join(out_dir, f"out_calc_All_custom_filt.csv"))
+sigs.to_csv(os.path.join(out_dir, f"{filename}_filt.csv"))
 
 # %%
 

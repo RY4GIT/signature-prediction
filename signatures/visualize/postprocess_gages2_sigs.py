@@ -10,6 +10,7 @@ gages2_camels_dir = "gages2_camels_20250210"
 gages2_hysets_dir = "gages2_hysets_20250211"
 out_filename = "out_calc_All_custom.csv"
 out_dir = "gages2_caravan_us_20250211"
+origin_caravan_dir = "caravan_us_20240609_tunedparams"
 
 try:
     os.makedirs(os.path.join(sig_dir, out_dir))
@@ -26,16 +27,16 @@ gages2_hysets = pd.read_csv(
     os.path.join(sig_dir, gages2_hysets_dir, out_filename), index_col="gauge_id"
 )
 gages2_hysets.dropna(subset=["TotalRR"], inplace=True)
+gages2_us = pd.concat([gages2_camels, gages2_hysets])
 # %%
 
-gages2_us = pd.concat([gages2_camels, gages2_hysets])
 gages2_us.to_csv(os.path.join(sig_dir, out_dir, out_filename))
 
 # %% ################################################################
 # COMPARE THE RESULTS WITH CARAVAN (ERA-5)
 #####################################################################
 
-origin_caravan_dir = "caravan_us_20240609_tunedparams"
+
 caravan_us = pd.read_csv(
     os.path.join(sig_dir, origin_caravan_dir, out_filename), index_col="gauge_id"
 )
@@ -135,4 +136,32 @@ filtered_caravan_us.to_csv(
 filtered_gages2_us.to_csv(
     os.path.join(sig_dir, out_dir, "out_calc_All_custom_caravanoverlap.csv")
 )
+# %%
+# %% ################################################################
+# COMPARE THE RESULTS WITH CARAVAN (ERA-5) with low-snow catchments
+#####################################################################
+
+
+caravan_us_filtsnow = pd.read_csv(
+    os.path.join(sig_dir, origin_caravan_dir, "out_calc_All_custom_filt.csv"),
+    index_col="gauge_id",
+)
+
+
+# %%
+merged_df = gages2_us.merge(
+    caravan_us_filtsnow, on="gauge_id", suffixes=("_gages2", "_caravan")
+)
+common_gages = merged_df.index
+filtered_caravan_us_lowsnow = caravan_us_filtsnow.loc[common_gages]
+filtered_gages2_us = gages2_us.loc[common_gages]
+
+# %%
+
+filtered_caravan_us_lowsnow.to_csv(
+    path_or_buf=os.path.join(
+        sig_dir, origin_caravan_dir, "out_calc_All_custom_filt_gages2subset.csv"
+    )
+)
+
 # %%
