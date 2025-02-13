@@ -3,10 +3,10 @@ import pandas as pd
 import os
 
 # %%
-gauge_id = "04015330"
+gauge_id = "10329500"
 
 
-surface_input_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\surface_water_input_Hammond\preprocessed"
+surface_input_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\surface_water_input\preprocessed"
 caravan_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\timeseries\csv"
 hysets_dir = os.path.join(caravan_dir, "hysets")
 camels_dir = os.path.join(caravan_dir, "camels")
@@ -56,7 +56,7 @@ custom_colors = {
     "total_precipitation_sum": "#fb6a4a",
 }
 
-start_year = 2009
+start_year = 2007
 start_date = f"{start_year}-10-01"
 end_date = f"{start_year + 1}-09-30"
 # Plot each column separately with custom colors

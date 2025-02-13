@@ -55,6 +55,11 @@ gages2exp_types = gages2exp_info.keys()
 
 attrs_colors = read_json_file("plot_config_attrs_colors.json")
 
+sigs_config = pd.read_csv(
+    r"C:\Users\flipl\dev\signature-prediction\signatures\visualize\plot_sigs_config.csv"
+)
+sigs = sigs_config.column_name
+
 # %%
 
 ######################################################
@@ -135,11 +140,8 @@ plot_average_r2(dfs_r2, gages2exp_info)
 
 
 # Function to load data
-def load_data_incRMSE(out_dir_rf, output_date, exp_n, plot_config_path):
-    if not isinstance(exp_n, (int, float)):
-        output_dir = f"{output_date}_{exp_n}"
-    else:
-        output_dir = f"{output_date}_ecoregion_{exp_n}"
+def load_data_incRMSE(out_dir_rf, output_date, exp_info, plot_config_path):
+    output_dir = f"{output_date}_gages2exp_{exp_info['shortname']}"
 
     _df_imp = pd.read_csv(os.path.join(out_dir_rf, output_dir, "var_importance.csv"))
     df_plot_config = pd.read_csv(plot_config_path)
@@ -162,7 +164,7 @@ def create_color_dict(df_imp):
 
 
 # Function to plot bar plots
-def plot_bar_plots(df, sigs, exp_n, exp_name):
+def plot_bar_plots(df, sigs, exp_info, exp_name):
     color_dict = create_color_dict(df)
 
     n_cols = 4
@@ -192,11 +194,13 @@ def plot_bar_plots(df, sigs, exp_n, exp_name):
         axes[j].set_visible(False)
 
     fig.suptitle(exp_name, fontsize=32)
-    fig.savefig(os.path.join(fig_dir, f"var_importance_bar_{exp_n}.png"))
+    fig.savefig(
+        os.path.join(fig_dir, f"var_importance_bar_{exp_info['shortname']}.png")
+    )
 
 
 # Function to plot pie charts
-def plot_pie_charts(df, sigs, color_mapping, exp_n, exp_name):
+def plot_pie_charts(df, sigs, color_mapping, exp_info, exp_name):
     n_cols = 4
     n_rows = (len(sigs) + n_cols - 1) // n_cols
 
@@ -231,33 +235,30 @@ def plot_pie_charts(df, sigs, color_mapping, exp_n, exp_name):
         axes[j].set_visible(False)
 
     fig.suptitle(exp_name, fontsize=32)
-    fig.savefig(os.path.join(fig_dir, f"var_importance_pie_{exp_n}.png"))
+    fig.savefig(
+        os.path.join(fig_dir, f"var_importance_pie_{exp_info['shortname']}.png")
+    )
 
     return axes
 
 
-# __________________________________________________________
-# Conus- wide
-exp_n = "caravan_us"
-exp_name = "CONUS-wide"
-print(f"Processing {exp_name}...")
-df_imp_conus = load_data_incRMSE(out_dir_rf, output_date, exp_n, plot_attrs_config_path)
-sigs = df_imp_conus["sig_name"].unique()
-
-plot_bar_plots(df_imp_conus, sigs, exp_n, exp_name)
-plot_pie_charts(df_imp_conus, sigs, attrs_colors, exp_n, exp_name)
 # %%
 # ____________________________________________________________
-# Per ecoregion
+# Per Experiment
 
-# Main function to loop through ecoregions
+# Main function to loop through # Per Experiment
+
 for exp_n in gages2exp_types:
     exp_name = f"{exp_n} - {gages2exp_info[exp_n]['name']}"
     print(f"Processing {exp_name}...")
 
-    df_imp = load_data_incRMSE(out_dir_rf, output_date, exp_n, plot_attrs_config_path)
-    plot_bar_plots(df_imp, sigs, exp_n, exp_name)
-    plot_pie_charts(df_imp, sigs, attrs_colors, exp_n, exp_name)
+    exp_info = gages2exp_info[exp_n]
+
+    df_imp = load_data_incRMSE(
+        out_dir_rf, output_date, exp_info, plot_attrs_config_path
+    )
+    plot_bar_plots(df_imp, sigs, exp_info, exp_name)
+    plot_pie_charts(df_imp, sigs, attrs_colors, exp_info, exp_name)
 
 
 # %%___________________________________________________________________________________

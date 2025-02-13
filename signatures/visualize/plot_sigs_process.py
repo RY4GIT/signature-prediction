@@ -18,7 +18,7 @@ from matplotlib.patches import Rectangle
 # ____________________________________________________________________________________
 # Config
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\signatures\visualize")
-out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20240609_tunedparams"
+out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\gages2_caravan_us_20250211"
 plot_sigs_config_path = "plot_sigs_config.csv"
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
@@ -56,12 +56,6 @@ eco_hysets_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\d
 eco_camels = pd.read_csv(eco_camels_file, index_col="gauge_id")
 eco_hysets = pd.read_csv(eco_hysets_file, index_col="gauge_id")
 eco_caravan = pd.concat([eco_camels, eco_hysets])
-# %%
-_df_sigs = pd.read_csv(
-    os.path.join(out_dir, "out_calc_All_custom_filt.csv"), index_col="gauge_id"
-)
-# _df_sigs = _df_sigs.join(attrs_caravan, how="left")
-df_sigs = _df_sigs.join(eco_caravan, how="left")
 
 # %%
 wspolygon_camels_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\shapefiles\camels\camels_basin_shapes.shp"
@@ -72,8 +66,16 @@ wspolygon = pd.concat([wspolygon_camels, wspolygon_hysets], ignore_index=True)
 wspolygon.set_index("gauge_id", inplace=True)
 
 # %%
-df_sigs = wspolygon.join(df_sigs, how="right")
 # %%
+_df_sigs = pd.read_csv(
+    os.path.join(out_dir, "out_calc_All_custom.csv"), index_col="gauge_id"
+)
+_df_sigs = _df_sigs.join(attrs_caravan, how="left")
+df_sigs = _df_sigs.join(eco_caravan, how="left")
+
+df_sigs = wspolygon.join(df_sigs, how="right")
+
+
 # Get the percentile
 for sigs_name in plot_sigs_config["column_name"]:
     # Get df[sigs_name]
@@ -208,11 +210,11 @@ for sigs_name in plot_sigs_config.column_name:
         plot_sig_map(
             df_sigs, sigs_name, ecoregion_overlay, stats="normal", plot_mode="scatter"
         )
-        plot_sig_map(
-            df_sigs, sigs_name, ecoregion_overlay, stats="normal", plot_mode="polygon"
-        )
-    except:
-        print(f"{sigs_name} is not in the prediction")
+        # plot_sig_map(
+        #     df_sigs, sigs_name, ecoregion_overlay, stats="normal", plot_mode="polygon"
+        # )
+    except Exception as e:
+        print(f"{sigs_name}: {e}")
 
 # %%
 # ______________________________________________________________________________
@@ -228,15 +230,15 @@ for sigs_name in plot_sigs_config.column_name:
             stats="percentile",
             plot_mode="scatter",
         )
-        plot_sig_map(
-            df_sigs,
-            sigs_name,
-            ecoregion_overlay,
-            stats="percentile",
-            plot_mode="polygon",
-        )
-    except:
-        print(f"{sigs_name} is not in the prediction")
+        # plot_sig_map(
+        #     df_sigs,
+        #     sigs_name,
+        #     ecoregion_overlay,
+        #     stats="percentile",
+        #     plot_mode="polygon",
+        # )
+    except Exception as e:
+        print(f"{sigs_name}: {e}")
 
 # %%
 # %% ######################
@@ -365,30 +367,109 @@ dir_label_rev = ["high", "", "", "low"]
 
 # CHANGE HERE ################
 
-process_name = "Baseflow"
+# process_name = "Baseflow"
 # process_name = "Water loss to deep GW or ET"
 # process_name = "Storage capacity and retention"
 # process_name = "Infiltration Excess Overlandflow"
-# process_name = "Saturation Excess Overlandflow"
+process_name = "Saturation Excess Overlandflow"
 # process_name = "ET impacts on storage and baseflow"
 
 # For checking the items
 process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
 print(process_columns)
-# %%
-# # sig2 = process_columns.iloc[0]  # Y variable, BFI
-# sig1 = process_columns.iloc[1]  # X variable, Baseflow Recession K
 
-sig2 = process_columns.loc[process_columns.label == "BFI"].squeeze()  # Y variable,
-sig1 = process_columns.loc[
-    process_columns.label == "BaseflowRecessionK"
-].squeeze()  # X variable, R
+###############################
 
-sig1_label = labels
-sig2_label = labels
+# For Baseflow plots
+if process_name == "Baseflow":
+    sig2 = process_columns.iloc[0]  # Y variable, BFI
+    sig1 = process_columns.iloc[1]  # X variable, Baseflow Recession K
+    sig1_label = labels
+    sig2_label = labels
 
-sig1_dir = dir_label
-sig2_dir = dir_label
+    sig1_dir = dir_label
+    sig2_dir = dir_label
+###############################
+# For Water loss to deep GW or ET
+
+if process_name == "Water loss to deep GW or ET":
+    sig2 = process_columns.iloc[0]  # Y variable, Total RR
+    sig1 = process_columns.iloc[2]  # X variable, RR_Seaonality
+
+    sig1_label = labels
+    sig2_label = labels
+
+    sig1_dir = dir_label
+    sig2_dir = dir_label
+###############################
+# For Staoge capacity and retention
+
+if process_name == "Storage capacity and retention":
+    sig2 = process_columns.loc[
+        process_columns.label == "AverageStorage"
+    ].squeeze()  # Y variable, Average Storage
+    sig1 = process_columns.loc[
+        process_columns.label == "RecessionParameters_b"
+    ].squeeze()  # X variable, RecessionParameters_b
+
+    sig1_label = labels
+    sig2_label = labels
+
+    sig1_dir = dir_label
+    sig2_dir = dir_label
+
+###############################
+# For Infiltration Excess Overlandflow
+
+if process_name == "Infiltration Excess Overlandflow":
+    sig2 = process_columns.loc[
+        process_columns.label == "IE_thresh"
+    ].squeeze()  # Y variable,
+    sig1 = process_columns.loc[
+        process_columns.label == "IE_thresh_signif"
+    ].squeeze()  # X variable, R
+
+    sig1_label = labels_rev
+    sig2_label = labels
+
+    sig1_dir = dir_label_rev
+    sig2_dir = dir_label
+
+###############################
+
+# For Saturation Excess Overlandflow
+
+if process_name == "Saturation Excess Overlandflow":
+    sig2 = process_columns.loc[
+        process_columns.label == "SE_thresh"
+    ].squeeze()  # Y variable,
+    sig1 = process_columns.loc[
+        process_columns.label == "SE_thresh_signif"
+    ].squeeze()  # X variable, R
+
+    sig1_label = labels_rev
+    sig2_label = labels
+
+    sig1_dir = dir_label_rev
+    sig2_dir = dir_label
+
+###############################
+
+# For ET impacts on storage and baseflow
+if process_name == "ET impacts on storage and baseflow":
+    sig2 = process_columns.loc[
+        process_columns.label == "Recession_a_Seasonality"
+    ].squeeze()  # Y variable,
+    sig1 = process_columns.loc[
+        process_columns.label == "VariabilityIndex"
+    ].squeeze()  # X variable, R
+
+    sig1_label = labels_rev
+    sig2_label = labels
+
+    sig1_dir = dir_label_rev
+    sig2_dir = dir_label
+###############################
 
 
 def update_column_name(signal):
@@ -407,95 +488,6 @@ update_column_name(sig1)
 update_column_name(sig2)
 
 print(f"Plotting the bivariate map for Y: {sig2.label} & X: {sig1.label}")
-################################
-# For Baseflow plots
-# process_name = "Baseflow"
-# sig2 = process_columns.iloc[0]  # Y variable, BFI
-# sig1 = process_columns.iloc[1]  # X variable, Baseflow Recession K
-# sig1_label = labels
-# sig2_label = labels
-
-# sig1_dir = dir_label
-# sig2_dir = dir_label
-################################
-# For Water loss to deep GW or ET
-
-# process_name = "Water loss to deep GW or ET"
-
-# sig2 = process_columns.iloc[0]  # Y variable, Total RR
-# sig1 = process_columns.iloc[2]  # X variable, RR_Seaonality
-
-# sig1_label = labels
-# sig2_label = labels
-
-# sig1_dir = dir_label
-# sig2_dir = dir_label
-################################
-# For Staoge capacity and retention
-
-# process_name = "Storage capacity and retention"
-
-# sig2 = process_columns.loc[
-#     process_columns.label == "AverageStorage"
-# ].squeeze()  # Y variable, Average Storage
-# sig1 = process_columns.loc[
-#     process_columns.label == "RecessionParameters_b"
-# ].squeeze()  # X variable, RecessionParameters_b
-
-# sig1_label = labels
-# sig2_label = labels
-
-# sig1_dir = dir_label
-# sig2_dir = dir_label
-################################
-# For Infiltration Excess Overlandflow
-# process_name = "Infiltration Excess Overlandflow"
-
-# sig2 = process_columns.loc[
-#     process_columns.label == "IE_thresh"
-# ].squeeze()  # Y variable,
-# sig1 = process_columns.loc[
-#     process_columns.label == "IE_thresh_signif"
-# ].squeeze()  # X variable, R
-
-# sig1_label = labels_rev
-# sig2_label = labels_rev
-
-# sig1_dir = dir_label_rev
-# sig2_dir = dir_label_rev
-################################
-# For Saturation Excess Overlandflow
-# process_name = "Saturation Excess Overlandflow"
-
-# sig2 = process_columns.loc[
-#     process_columns.label == "SE_thresh"
-# ].squeeze()  # Y variable,
-# sig1 = process_columns.loc[
-#     process_columns.label == "SE_thresh_signif"
-# ].squeeze()  # X variable, R
-
-# sig1_label = labels_rev
-# sig2_label = labels_rev
-
-# sig1_dir = dir_label_rev
-# sig2_dir = dir_label_rev
-################################
-# For ET impacts on storage and baseflow
-# process_name = "ET impacts on storage and baseflow"
-
-# sig2 = process_columns.loc[
-#     process_columns.label == "Recession_a_Seasonality"
-# ].squeeze()  # Y variable,
-# sig1 = process_columns.loc[
-#     process_columns.label == "VariabilityIndex"
-# ].squeeze()  # X variable, R
-
-# sig1_label = labels_rev
-# sig2_label = labels
-
-# sig1_dir = dir_label_rev
-# sig2_dir = dir_label
-################################
 
 
 # %% __________________________________________________
@@ -566,6 +558,10 @@ def plot_bivariate_map(df, sig1, sig2, fig_dir):
 
 
 plot_bivariate_map(df_sigs_clean, sig1, sig2, fig_dir)
+# # %%
+# df_sigs_clean.columns
+# # %%
+# df_sigs_clean[["IE_thresh", "IE_signif_perc", "bivariate_class"]]
 
 
 # %%

@@ -46,7 +46,7 @@ def load_surface_water_input_data(surface_dir, filename, nrows=10):
 # %% #########################################################################
 # Config
 #############################################################################
-surface_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\surface_water_input_Hammond"
+surface_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\surface_water_input"
 surface_melt_csv = "melt_surface_water_input_WYs_1991_2023.csv"
 surface_mix_csv = "mix_surface_water_input_WYs_1991_2023.csv"
 surface_rain_csv = "rain_surface_water_input_WYs_1991_2023.csv"

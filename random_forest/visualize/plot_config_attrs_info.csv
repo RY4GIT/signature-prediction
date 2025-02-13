@@ -25,3 +25,20 @@ Climate,"Moisture index seasonality in range [0, 2], where 0 indicates no change
 Climate,"Frequency of high precipitation days, where precipitation ≥5 times mean daily precipitation",high_prec_freq,-
 Climate,"Frequency of low precipitation days, where precipitation <1 mm/day",low_prec_freq,-
 Climate,Average duration of low precipitation events (number of consecutive days where precipitation <1 mm/day),low_prec_dur,days
+Land Cover,,FORESTNLCD06,
+Soils & Geology,,SILTAVE,
+Climate,,SNOWICENLCD06,
+Topography,,SLOPE_PCT,
+Land Cover,,PCT_IRRIG_AG,
+Soils & Geology,,CLAYAVE,
+Land Cover,,PASTURENLCD06,
+Climate,,PPTAVG_BASIN,
+Land Cover,,DEVNLCD06,
+Topography,,ELEV_MEAN_M_BASIN,
+Land Cover,,CROPSNLCD06,
+Climate,,PRECIP_SEAS_IND,
+Land Cover,,PDEN_2000_BLOCK,
+Soils & Geology,,OMAVE,
+Climate,,SNOW_PCT_PRECIP,
+Topography,,DRAIN_SQKM,
+Climate,,PET,
