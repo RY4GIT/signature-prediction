@@ -16,7 +16,7 @@ settings:
   num_folds: 10
   eval_metric: MSE
 parallel:
-  nCores: 8
+  nCores: 16
 sigs_predict:
 - TotalRR
 - RR_Seasonality

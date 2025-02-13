@@ -20,7 +20,7 @@ output_path = os.path.join(
 df1 = pd.read_csv(path1)
 print(f"Caravan 1.2 has {len(df1)} gauges")
 df2 = pd.read_csv(path2)
-print(f"Caravan 1.4 has {len(df2)} gauges ({len(df2)-len(df1)} more than 1.2)")
+print(f"Caravan 1.4 has {len(df2)} gauges ({len(df2) - len(df1)} more than 1.2)")
 
 # Perform an outer merge on gauge_id
 merged_df = pd.merge(df1, df2, on="gauge_id", how="outer", indicator=True)
@@ -39,7 +39,7 @@ print(unique_df2.head())
 unique_df2.set_index("gauge_id", inplace=True)
 unique_df2.to_csv(output_path)
 # %%
-print(f'{sum(unique_df2["country_y"]=="United States of America")}')
-print(f'{sum(df1["country"]=="United States of America")}')
-print(f'{sum(df2["country"]=="United States of America")}')
+print(f"{sum(unique_df2['country_y'] == 'United States of America')}")
+print(f"{sum(df1['country'] == 'United States of America')}")
+print(f"{sum(df2['country'] == 'United States of America')}")
 # %%

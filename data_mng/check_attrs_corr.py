@@ -4,17 +4,17 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
-!pip install openpyxl
+
 # %%
 derived_attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs\assembled_RA"
 out_dir = os.path.join(derived_attrs_dir, "figs")
 
-def plot_corr_heatmap(corr_matrix, fig_title):
 
+def plot_corr_heatmap(corr_matrix, fig_title):
     # Create a mask to hide the upper triangle
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
 
-    # Plot 
+    # Plot
     fig, ax = plt.subplots(figsize=(20, 20))  # Use plt.subplots() to create fig and ax
     sns.heatmap(
         corr_matrix,
@@ -24,30 +24,35 @@ def plot_corr_heatmap(corr_matrix, fig_title):
         vmin=-1,
         vmax=1,
         mask=mask,
-        ax=ax
+        ax=ax,
     )
-    ax.set_title(f"Spearman Correlation ({fig_title})")  # Set the title using ax.set_title()
+    ax.set_title(
+        f"Spearman Correlation ({fig_title})"
+    )  # Set the title using ax.set_title()
     fig.tight_layout()
     plt.show()  # Use plt.show() to display the plot
     return fig
 
 
-
 def strong_correlations(corr_matrix, threshold=0.8):
     strong_pairs = []
-    
+
     # Iterate through the correlation matrix
     for i in range(len(corr_matrix.columns)):
-        for j in range(i+1, len(corr_matrix.columns)):
+        for j in range(i + 1, len(corr_matrix.columns)):
             corr_value = corr_matrix.iloc[i, j]
             if abs(corr_value) > threshold:
-                strong_pairs.append((corr_matrix.columns[i], corr_matrix.columns[j], corr_value))
-    
+                strong_pairs.append(
+                    (corr_matrix.columns[i], corr_matrix.columns[j], corr_value)
+                )
+
     # Print the strong correlations
     for pair in strong_pairs:
         print(f"Correlation between {pair[0]} and {pair[1]}: {pair[2]:.2f}")
-        
+
     return strong_pairs
+
+
 # %%___________________________________________________________________________
 # Checking Caravan attributes
 target_attrs_file = "attrs_cam_hys.csv"

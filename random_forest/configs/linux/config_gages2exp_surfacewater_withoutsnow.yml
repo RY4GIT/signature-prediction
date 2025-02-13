@@ -2,11 +2,11 @@ paths:
   home_dir: /home/raraki/data/signature-prediction
   out_dir: /out/rf
   train:
-    signatures: /signatures/caravan_us_20240609_tunedparams/out_calc_All_custom_gages2subset.csv
+    signatures: /signatures/gages2_caravan_us_20250211/out_calc_All_custom_caravanoverlap_filt.csv
     attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
   test:
     attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
-experiment_name: gages2exp_baseline
+experiment_name: gages2exp_surfacewater
 filter_by_ecoregion:
   run: false
   name: NA

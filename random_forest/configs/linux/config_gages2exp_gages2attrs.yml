@@ -2,7 +2,7 @@ paths:
   home_dir: /home/raraki/data/signature-prediction
   out_dir: /out/rf
   train:
-    signatures: /signatures/caravan_us_20240609_tunedparams/out_calc_All_custom_gages2subset.csv
+    signatures: /signatures/caravan_us_20240609_tunedparams/out_calc_All_custom_filt_gages2subset.csv
     attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2_hammondv2.csv
   test:
     attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2_hammondv2.csv
@@ -16,7 +16,7 @@ settings:
   num_folds: 10
   eval_metric: MSE
 parallel:
-  nCores: 8
+  nCores: 16
 sigs_predict:
 - TotalRR
 - RR_Seasonality
