@@ -43,6 +43,12 @@ Skip this step if you have downloaded pre-caluclated signature values from GDriv
     ```
 - Calculate signatures using ```.\signatures\main_caravan.m``` for Caravan datasets (CAMELS + HYSETS gauges)
 - Calculate signatures using ```.\signatures\main_gages2.m``` for GAGES2 catchments overlapping with CAMELS + HYSETS, with surface water input data from [Hammond, 2024](https://www.sciencebase.gov/catalog/item/6494515fd34ef77fcb014eb0)
+- Make sure to filter out some signatures using scripts in ```.\signatures\postprocess\```
+    - `postprocess_caravan_sigs_for_RF.py` filter out some signatures based on the following conditions. This script output signature files with extension `_filt_qc.csv` (for meeting conditions 1 & 2), and `_filt_qc_snow.csv` (for meeting conditions 1 & 2 & 3)
+        1. Exclude Hysets watersheds with bad data quality (less than 5 years of record & for the period where data is available, >30\% record is NaN)
+        2. Exclude Hysets watersheds overlapping with CAMELS gages
+        3. Event-based overlandflow signatures, exclude Hysets watersheds dominated with snow with `frac_snow` >20\%
+    - In addition to the above conditions, `postprocess_gages2_sigs_for_RF.py` get the subset of gages that are overlapping between Caravan and GAGES2 (still in progress). 
 
 ### 3. Run RF experiment (R script)
 #### To start off some small-scale experiment or implement debug

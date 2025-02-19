@@ -20,7 +20,7 @@ diary('log.txt');
 % Declare signature function/category to use
 sig_cat = 'calc_All_custom';
 % Choose which Caravan gaguges to run: 'hysets' or 'camels'
-caravan_data_cat = 'hysets';
+caravan_data_cat = 'camels';
 
 %___________________________________________________________________________________
 % Add TOSSH toolbox to the path
@@ -232,7 +232,7 @@ parfor idx = 1:numGauges
             'Q_CoV', 'Q_CoV_error_str', 'Q_mean', 'Q_mean_error_str', 'Q_mean_monthly', ...
             'Q_mean_monthly_error_str', 'Q_7_day_max', 'Q_7_day_max_error_str', 'Q_7_day_min', ...
             'Q_7_day_min_error_str', 'Q_skew', 'Q_skew_error_str', 'Q_var', 'Q_var_error_str', ...
-            'QP_elasticity', 'QP_elasticity_error_str', 'RecessionParameters', 'RecessionParameters_error_str', ...
+            'QP_elasticity', 'QP_elasticity_error_str', 'RecessionParameters_a', 'RecessionParameters_b', 'RecessionParameters_T0', 'RecessionParameters_error_str', ...
             'RecessionK_early', 'RecessionK_early_error_str', 'Spearmans_rho', 'Spearmans_rho_error_str', ...
             'ResponseTime', 'ResponseTime_error_str', 'RLD', 'RLD_error_str', 'RR_Seasonality', ...
             'RR_Seasonality_error_str', 'SeasonalTranslation', 'SeasonalTranslation_error_str', ...
@@ -259,8 +259,10 @@ parfor idx = 1:numGauges
                 signatures.(fieldNames{i}) = {NaN(1, 2), NaN(1,2)};
             elseif strcmp(fieldNames{i}, 'PQ_Curve') % Ensure MRC_SlopeChanges is an array of length 2
                 signatures.(fieldNames{i}) = NaN(1, 4);
-            elseif strcmp(fieldNames{i}, 'RecessionParameters') % Ensure MRC_SlopeChanges is an array of length 2
-                signatures.(fieldNames{i}) = NaN(1, 2);
+            % elseif strcmp(fieldNames{i}, 'RecessionParameters') % Ensure
+            % MRC_SlopeChanges is an array of length 2 ... when the first
+            % is for entire (non-individual) flow duration curve
+            %     signatures.(fieldNames{i}) = NaN(1, 2);
             elseif strcmp(fieldNames{i}, 'SeasonalTranslation') % Ensure MRC_SlopeChanges is an array of length 2
                 signatures.(fieldNames{i}) = NaN(1, 2);
             elseif strcmp(fieldNames{i}, 'StorageFraction') % Ensure MRC_SlopeChanges is an array of length 2

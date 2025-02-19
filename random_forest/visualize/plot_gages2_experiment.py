@@ -9,6 +9,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import yaml
 import geopandas as gpd
+import yaml
 
 # %%
 ########################## CHANGE HERE #################
@@ -268,16 +269,10 @@ for exp_n in gages2exp_types:
 def load_data_sigpred(output_date, out_dir_rf, gages2exp_info, gages2exp_types):
     _dfs = []
 
-    # Read CONUS
-    output_dir = f"{output_date}_caravan_us"
-    file_path = os.path.join(out_dir_rf, output_dir, "predicted_signatures.csv")
-    df_conus = pd.read_csv(file_path, index_col="gauge_id")
-    df_conus["region"] = "CONUS-wide"
-    _dfs.append(df_conus)
-
-    # Read by ecoregion
+    # Read by gages 2experiment
     for exp_n in gages2exp_types:
-        output_dir = f"{output_date}_ecoregion_{exp_n}"
+        exp_shortname = gages2exp_info[exp_n]["shortname"]
+        output_dir = f"{output_date}_gages2exp_{exp_shortname}"
         file_path = os.path.join(out_dir_rf, output_dir, "predicted_signatures.csv")
         if os.path.exists(file_path):
             df_temp = pd.read_csv(file_path, index_col="gauge_id")
@@ -287,12 +282,40 @@ def load_data_sigpred(output_date, out_dir_rf, gages2exp_info, gages2exp_types):
             print(f"File not found: {file_path}")
 
     dfs = pd.concat(_dfs, axis=0)
-    return dfs, df_conus
+    return dfs
 
 
-df_sigpred, df_conus = load_data_sigpred(
-    output_date, out_dir_rf, gages2exp_info, gages2exp_types
-)
+df_sigpred = load_data_sigpred(output_date, out_dir_rf, gages2exp_info, gages2exp_types)
+
+# %%
+# Check the sample size of RF experiment based on the signature data file
+# Used in the config
+
+for exp_n in gages2exp_types:
+    # Get some info
+    exp_shortname = gages2exp_info[exp_n]["shortname"]
+    exp_longname = gages2exp_info[exp_n]["name"]
+    output_dir = f"{output_date}_gages2exp_{exp_shortname}"
+
+    # Read the YAML config file
+    config_file = os.path.join(out_dir_rf, output_dir, "config.yaml")
+
+    with open(config_file, "r") as file:
+        config_exp = yaml.safe_load(file)
+        print(config_exp["paths"]["train"]["signatures"])
+
+    # Read the signature file
+    sig_file = out_dir + config_exp["paths"]["train"]["signatures"]
+    sig_obs_df = pd.read_csv(sig_file)
+
+    # Count the data
+    print(f"{exp_n} - {exp_longname}")
+    print(f"Signature sample   : {len(sig_obs_df)}")
+    print(
+        f"IE Signature sample: {len(sig_obs_df) - sig_obs_df['IE_thresh'].isna().sum()}"
+    )
+    print("\n")
+
 # %%__________________________________________________________________________________
 # LOAD OBSERVED AND PREDICTED SIGNAUTURES
 

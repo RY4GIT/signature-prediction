@@ -13,9 +13,15 @@ diary('log.txt');
 
 %___________________________________________________________________________________
 % CHANGE HERE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Declare signature function/category to use
 sig_cat = 'calc_All_custom';
 % 'calc_All', 'calc_All_custom', 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater',
 % 'calc_Addor', 'calc_Sawicz', 'calc_Euser',  'calc_BasicSet'
+
+% Choose which Caravan gaguges to run: 'hysets' or 'camels'
+caravan_data = 'hysets';
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %___________________________________________________________________________________
@@ -31,7 +37,6 @@ caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
-caravan_data = 'hysets';
 
 currentDate = datestr(now, 'yyyymmdd');
 out_dir = fullfile(home_dir, 'out', 'signatures', ['caravan_', caravan_data, '_', currentDate]);
@@ -66,7 +71,7 @@ plot_results = false;
 % Prepare parallel pool
 %
 % Specify the number of workers
-numWorkers = 12;  % Adjust based on your system capabilities
+numWorkers = 6;  % Adjust based on your system capabilities
 
 % Set up the parallel pool
 pool = gcp('nocreate');
