@@ -26,12 +26,12 @@ caravan_data = 'hysets';
 
 %___________________________________________________________________________________
 % Add TOSSH toolbox to the path
-baseDir = 'C:\Users\flipl\dev';
+baseDir = 'C:\Users\flipl\dev'; % 'G:\Araki\proj' on lab computer
 TOSSHDir = 'TOSSH\TOSSH_code';
 addpath(genpath(fullfile(baseDir, TOSSHDir)));
 
 % Define directories and file type
-home_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki';
+home_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki'; % 'G:\Araki' on lab computer
 data_dir = fullfile(home_dir, 'data');
 caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
@@ -140,7 +140,6 @@ parfor idx = 1:numGauges
             case 'calc_All'
                 signatures = calc_All(Q, t, P, PET, T);
             case 'calc_All_custom'
-                try
                     signatures = calc_All_custom(Q, t, P, PET, T,...
                         'min_termination', OF_param.min_termination, ...
                         'min_duration', OF_param. min_duration, ...
@@ -151,10 +150,6 @@ parfor idx = 1:numGauges
                         'eps', recession_param.eps, ...
                         'plot_results', plot_results ...
                         );
-                catch ME
-                    fprintf('Error at index %d: %s\n', idx, ME.message);
-                    signatures = calc_All(Q, t, P, PET, T);
-                end
             case 'calc_McMillan_Groundwater'
                 signatures = calc_McMillan_Groundwater(Q, t, P, PET);
             case 'calc_McMillan_OverlandFlow'
@@ -181,6 +176,63 @@ parfor idx = 1:numGauges
         
     catch ME
         fprintf('Error at index %d: %s\n', idx, ME.message);
+
+        % Create an empty output
+        fieldNames = {
+            'AC1', 'AC1_error_str', 'BaseflowRecessionK', 'BaseflowRecessionK_error_str', ...
+            'BaseflowMagnitude', 'BaseflowMagnitude_error_str', 'BFI', 'BFI_error_str', ...
+            'EventGraphThresholds', 'EventGraphThresholds_error_str', 'EventRR', 'EventRR_error_str', ...
+            'FDC', 'FDC_error_str', 'FDC_slope', 'FDC_slope_error_str', ...
+            'FlashinessIndex', 'FlashinessIndex_error_str', 'HFD_mean', 'HFD_mean_error_str', ...
+            'HFI_mean', 'HFI_mean_error_str', 'MRC_SlopeChanges', 'MRC_SlopeChanges_error_str', ...
+            'PeakDistribution', 'PeakDistribution_error_str', 'PQ_Curve', 'PQ_Curve_error_str', ...
+            'Q_CoV', 'Q_CoV_error_str', 'Q_mean', 'Q_mean_error_str', 'Q_mean_monthly', ...
+            'Q_mean_monthly_error_str', 'Q_7_day_max', 'Q_7_day_max_error_str', 'Q_7_day_min', ...
+            'Q_7_day_min_error_str', 'Q_skew', 'Q_skew_error_str', 'Q_var', 'Q_var_error_str', ...
+            'QP_elasticity', 'QP_elasticity_error_str', 'RecessionParameters_a', 'RecessionParameters_b', 'RecessionParameters_T0', 'RecessionParameters_error_str', ...
+            'RecessionK_early', 'RecessionK_early_error_str', 'Spearmans_rho', 'Spearmans_rho_error_str', ...
+            'ResponseTime', 'ResponseTime_error_str', 'RLD', 'RLD_error_str', 'RR_Seasonality', ...
+            'RR_Seasonality_error_str', 'SeasonalTranslation', 'SeasonalTranslation_error_str', ...
+            'Recession_a_Seasonality', 'Recession_a_Seasonality_error_str', 'SnowDayRatio', ...
+            'SnowDayRatio_error_str', 'SnowStorage', 'SnowStorage_error_str', 'StorageFraction', ...
+            'StorageFraction_error_str', 'StorageFromBaseflow', 'StorageFromBaseflow_error_str', ...
+            'TotalRR', 'TotalRR_error_str', 'VariabilityIndex', 'VariabilityIndex_error_str', ...
+            'Q95', 'Q95_error_str', 'high_Q_duration', 'high_Q_duration_error_str', ...
+            'high_Q_frequency', 'high_Q_frequency_error_str', 'IE_effect', 'SE_effect', ...
+            'IE_thresh_signif', 'SE_thresh_signif', 'IE_thresh', 'SE_thresh', 'SE_slope', ...
+            'Storage_thresh_signif', 'Storage_thresh', 'min_Qf_perc', 'OF_error_str', ...
+            'AverageStorage', 'MRC_num_segments', 'MRC_num_segments_error_str', ...
+            'First_Recession_Slope', 'Mid_Recession_Slope', 'EventRR_TotalRR_ratio'
+        };
+        
+        % Initialize the struct dynamically
+        signatures = struct(); 
+        for i = 1:numel(fieldNames)
+            if contains(fieldNames{i}, '_error_str')  % If field is an error string field
+                signatures.(fieldNames{i}) = "";         % Assign empty string
+            elseif strcmp(fieldNames{i}, 'EventGraphThresholds') % Ensure EventGraphThresholds is an array of length 10
+                signatures.(fieldNames{i}) = NaN(1, 10);
+            elseif strcmp(fieldNames{i}, 'MRC_SlopeChanges') % Ensure MRC_SlopeChanges is an array of length 2
+                signatures.(fieldNames{i}) = {NaN(1, 2), NaN(1,2)};
+            elseif strcmp(fieldNames{i}, 'PQ_Curve') % Ensure MRC_SlopeChanges is an array of length 2
+                signatures.(fieldNames{i}) = NaN(1, 4);
+            % elseif strcmp(fieldNames{i}, 'RecessionParameters') % Ensure
+            % MRC_SlopeChanges is an array of length 2 ... when the first
+            % is for entire (non-individual) flow duration curve
+            %     signatures.(fieldNames{i}) = NaN(1, 2);
+            elseif strcmp(fieldNames{i}, 'SeasonalTranslation') % Ensure MRC_SlopeChanges is an array of length 2
+                signatures.(fieldNames{i}) = NaN(1, 2);
+            elseif strcmp(fieldNames{i}, 'StorageFraction') % Ensure MRC_SlopeChanges is an array of length 2
+                signatures.(fieldNames{i}) = NaN(1, 3);
+            else
+                signatures.(fieldNames{i}) = NaN(1, 1);        % Assign NaN for numerical values
+            end
+        end
+        
+        % Make table
+        signatures = struct2table(signatures);
+        resultsCell{idx} = signatures;
+
     end
 end
 

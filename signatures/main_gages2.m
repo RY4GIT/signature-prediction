@@ -24,12 +24,12 @@ caravan_data_cat = 'camels';
 
 %___________________________________________________________________________________
 % Add TOSSH toolbox to the path
-baseDir = 'C:\Users\flipl\dev';
+baseDir = 'C:\Users\flipl\dev'; % 'G:\Araki\proj' on lab computer
 TOSSHDir = 'TOSSH\TOSSH_code';
 addpath(genpath(fullfile(baseDir, TOSSHDir)));
 
 % Define directories and file type
-home_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki';
+home_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki'; % 'G:\Araki' on lab computer
 data_dir = fullfile(home_dir, 'data');
 caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
