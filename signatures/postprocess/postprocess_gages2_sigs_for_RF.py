@@ -6,11 +6,10 @@ import matplotlib.pyplot as plt
 # %%
 sig_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures"
 
-gages2_camels_dir = "gages2_camels_20250210"
-gages2_hysets_dir = "gages2_hysets_20250211"
-out_filename = "out_calc_All_custom.csv"
-out_dir = "gages2_caravan_us_20250211"
-origin_caravan_dir = "caravan_us_20240609_tunedparams"
+gages2_camels_dir = "gages2_camels_20250219"
+gages2_hysets_dir = "gages2_hysets_20250219"
+out_dir = "gages2_caravan_us_20250219"
+origin_caravan_dir = "caravan_us_20250219"
 
 try:
     os.makedirs(os.path.join(sig_dir, out_dir))
@@ -20,25 +19,45 @@ except Exception as e:
 # %% ################################################################
 # CONCAT HYSETS AND CAMELS RESULTS FOR GAGES 2
 #####################################################################
+
+out_base_filename = "out_calc_All_custom.csv"
 gages2_camels = pd.read_csv(
-    os.path.join(sig_dir, gages2_camels_dir, out_filename), index_col="gauge_id"
+    os.path.join(sig_dir, gages2_camels_dir, out_base_filename), index_col="gauge_id"
 )
 gages2_hysets = pd.read_csv(
-    os.path.join(sig_dir, gages2_hysets_dir, out_filename), index_col="gauge_id"
+    os.path.join(sig_dir, gages2_hysets_dir, out_base_filename), index_col="gauge_id"
 )
 gages2_hysets.dropna(subset=["TotalRR"], inplace=True)
-gages2_us = pd.concat([gages2_camels, gages2_hysets])
-# %%
 
-gages2_us.to_csv(os.path.join(sig_dir, out_dir, out_filename))
+# %%
+# Output the concat
+gages2_us = pd.concat([gages2_camels, gages2_hysets])
+gages2_us.to_csv(os.path.join(sig_dir, out_dir, out_base_filename))
+print(
+    f"gages2 (CARAVAN {len(gages2_camels)}+ HYSETS {len(gages2_hysets)}) has {len(gages2_us)} gages"
+)
 
 # %% ################################################################
 # COMPARE THE RESULTS WITH CARAVAN (ERA-5)
 #####################################################################
 
+# Get the caravan signatures afterQA
+caravan_us_afterQA = pd.read_csv(
+    os.path.join(sig_dir, origin_caravan_dir, "out_calc_All_custom_filt_qc.csv"),
+    index_col="gauge_id",
+)
+print(
+    f"CARAVAN after removing gages with bad-quality Q, including snowy catchments: {len(caravan_us_afterQA)}"
+)
 
-caravan_us = pd.read_csv(
-    os.path.join(sig_dir, origin_caravan_dir, out_filename), index_col="gauge_id"
+caravan_us_afterQA_excluSnow = pd.read_csv(
+    filepath_or_buffer=os.path.join(
+        sig_dir, origin_caravan_dir, "out_calc_All_custom_filt_qc_snow.csv"
+    ),
+    index_col="gauge_id",
+)
+print(
+    f"Excluding snowy catchments for Event signatures: {caravan_us_afterQA_excluSnow['IE_thresh'].notna().sum()}"
 )
 
 # %%
@@ -49,11 +68,19 @@ except Exception as e:
     print(e)
 
 # %%
-merged_df = gages2_us.merge(caravan_us, on="gauge_id", suffixes=("_gages2", "_caravan"))
-merged_df
+merged_df = gages2_us.merge(
+    caravan_us_afterQA, on="gauge_id", suffixes=("_gages2", "_caravan"), how="inner"
+)
+print(f"Caravan after QA: {len(caravan_us_afterQA)}")
+print(f"GAGES2: {len(gages2_us)}")
+print(f"Joined left on GAGES2: {len(merged_df)}")
+print("<- this should be equal or smaller than Caravan or GAGES2 gage numbers")
 
 # %%
-plot_configs = pd.read_csv("plot_sigs_config.csv")
+plot_config_path = (
+    r"C:\Users\flipl\dev\signature-prediction\signatures\visualize\plot_sigs_config.csv"
+)
+plot_configs = pd.read_csv(plot_config_path)
 plot_configs
 
 # %%
@@ -98,8 +125,8 @@ def plot_scatter_comparison(df, plot_config, save_path=None):
     )
 
     # if col_name.endswith("_thresh"):
-    ax.set_xlim(plot_config["lower_lim"], plot_config["upper_lim"])
-    ax.set_ylim(plot_config["lower_lim"], plot_config["upper_lim"])
+    # ax.set_xlim(plot_config["lower_lim"], plot_config["upper_lim"])
+    # ax.set_ylim(plot_config["lower_lim"], plot_config["upper_lim"])
 
     # Labels and title
     ax.set_xlabel("GAGES II (gridMET)")
@@ -124,44 +151,58 @@ for _, plot_config in plot_configs.iterrows():
 # %%
 common_gages = merged_df.index
 
-filtered_caravan_us = caravan_us.loc[common_gages]
-filtered_gages2_us = gages2_us.loc[common_gages]
+filtered_caravan_us_afterQA = caravan_us_afterQA.loc[common_gages]
+filtered_gages2_us_afterQA = gages2_us.loc[common_gages]
 
 # %%
 
-filtered_caravan_us.to_csv(
-    os.path.join(sig_dir, origin_caravan_dir, "out_calc_All_custom_gages2subset.csv")
+filtered_caravan_us_afterQA.to_csv(
+    os.path.join(
+        sig_dir, origin_caravan_dir, "out_calc_All_custom_filt_qc_gages2subset.csv"
+    )
 )
 # %%
-filtered_gages2_us.to_csv(
-    os.path.join(sig_dir, out_dir, "out_calc_All_custom_caravanoverlap.csv")
+filtered_gages2_us_afterQA.to_csv(
+    os.path.join(sig_dir, out_dir, "out_calc_All_custom_filt_qc_caravanoverlap.csv")
 )
-# %%
+
 # %% ################################################################
-# COMPARE THE RESULTS WITH CARAVAN (ERA-5) with low-snow catchments
+# Repeat the same for the low-snow catchments
 #####################################################################
 
 
-caravan_us_filtsnow = pd.read_csv(
-    os.path.join(sig_dir, origin_caravan_dir, "out_calc_All_custom_filt.csv"),
-    index_col="gauge_id",
+merged_df_lowsnow = gages2_us.merge(
+    caravan_us_afterQA_excluSnow,
+    on="gauge_id",
+    suffixes=("_gages2", "_caravan"),
+    how="inner",
 )
 
 
 # %%
-merged_df = gages2_us.merge(
-    caravan_us_filtsnow, on="gauge_id", suffixes=("_gages2", "_caravan")
-)
-common_gages = merged_df.index
-filtered_caravan_us_lowsnow = caravan_us_filtsnow.loc[common_gages]
-filtered_gages2_us = gages2_us.loc[common_gages]
-
-# %%
+common_gages_lowsnow = merged_df_lowsnow.index
+filtered_caravan_us_lowsnow = merged_df_lowsnow.loc[common_gages_lowsnow]
+filtered_gages2_us_lowsnow = gages2_us.loc[common_gages_lowsnow]
 
 filtered_caravan_us_lowsnow.to_csv(
     path_or_buf=os.path.join(
-        sig_dir, origin_caravan_dir, "out_calc_All_custom_filt_gages2subset.csv"
+        sig_dir, origin_caravan_dir, "out_calc_All_custom_filt_qc_snow_gages2subset.csv"
     )
 )
 
-# %%
+filtered_gages2_us_lowsnow.to_csv(
+    path_or_buf=os.path.join(
+        sig_dir, out_dir, "out_calc_All_custom_filt_qc_snow_caravanoverlap.csv"
+    )
+)
+
+print(f"Caravan after QA and snow: {len(caravan_us_afterQA_excluSnow)}")
+print(f"GAGES2: {len(gages2_us)}")
+print(f"Joined left on GAGES2: {len(merged_df_lowsnow)}")
+print(f"<- this should be equal or smaller than Caravan or GAGES2 gage numbers")
+print(
+    f"<- the value should equal to {len(filtered_caravan_us_lowsnow)} and {len(filtered_gages2_us_lowsnow)}"
+)
+print(
+    f"Event signatures are only available at: {filtered_gages2_us_lowsnow['IE_thresh'].notna().sum()}"
+)

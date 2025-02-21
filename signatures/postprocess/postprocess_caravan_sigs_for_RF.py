@@ -10,15 +10,16 @@ shared_drive = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 
 sig_outdir = os.path.join(shared_drive, "out", "signatures")
 
-hys_dir = "caravan_hysets_20240609_tunedparams"
-camels_dir = "caravan_camels_20240609_tunedparams"
-caravan_dir = "caravan_us_20240609_tunedparams"  # "caravan_us_20240609_tunedparams" "gages2_caravan_us_20250211"
+hys_dir = "caravan_hysets_20250219"
+camels_dir = "caravan_camels_20250219"
+caravan_dir = "caravan_us_20250219"  # "caravan_us_20240609_tunedparams" "gages2_caravan_us_20250211"
 
 out_dir = os.path.join(sig_outdir, caravan_dir)
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
-filename = "out_calc_All_custom.csv"
+results_filename = "out_calc_All_custom"
+results_file = f"{results_filename}.csv"
 
 attrs_dir = os.path.join(shared_drive, "data", "Caravan1.4", "attributes")
 derived_attrs_dir = (
@@ -47,12 +48,14 @@ frac_snow_thresh = 0.2  # in fraction (-)
 # Load signatures
 
 # Hysets
-_sigs_hys = pd.read_csv(os.path.join(sig_outdir, hys_dir, filename))
+_sigs_hys = pd.read_csv(os.path.join(sig_outdir, hys_dir, results_file))
 attrs_hys = pd.read_csv(
     os.path.join(attrs_dir, "hysets", "attributes_other_hysets.csv")
 )
 sigs_hys = _sigs_hys.merge(attrs_hys, on="gauge_id")
-print(len(sigs_hys), len(sigs_hys.columns))
+print(
+    f"Hysets signature result has {len(sigs_hys)} rows, {len(sigs_hys.columns)} columns"
+)
 
 # Get quality control statistics of Hysets
 qa_hys = pd.read_csv(hys_qa_file)
@@ -82,23 +85,23 @@ print(
 sigs_hys_qf = sigs_hys.merge(qa_hys, on="gauge_id")
 sigs_hys_filt = sigs_hys[sigs_hys_qf["qf_overall"]]
 
-print(f"{len(sigs_hys_filt)}")
+print(f"{len(sigs_hys_filt)} Hysets watershed left after Quality Assessment")
 
 # %%
 # Camels (CAMELS data have good data quality in general, so apply no filtering)
-_sigs_camels = pd.read_csv(os.path.join(sig_outdir, camels_dir, filename))
+_sigs_camels = pd.read_csv(os.path.join(sig_outdir, camels_dir, results_file))
 attrs_camels = pd.read_csv(
     os.path.join(attrs_dir, "camels", "attributes_other_camels.csv")
 )
 sigs_camels = _sigs_camels.merge(attrs_camels, on="gauge_id")
-print(len(sigs_camels), len(sigs_camels.columns))
-
-# sigs = pd.concat([sigs_camels, sigs_hys], axis=0).reset_index(drop=True)
-# print(len(sigs), len(sigs.columns))
+print(
+    f"Camels signature result has {len(sigs_camels)} rows, {len(sigs_camels.columns)} columns"
+)
 
 # %% ____________________________________________________________
 # Filter out the Hysets gauge_id that are overlapping with CAMELS
 
+# get the USGS gauge number from gauge ID
 # get gauge_num in each df by getting the second element of gauge_id, deliminating it with _ (underscore)
 sigs_hys_filt["gauge_num"] = sigs_hys_filt["gauge_id"].apply(lambda x: x.split("_")[1])
 sigs_camels["gauge_num"] = sigs_camels["gauge_id"].apply(lambda x: x.split("_")[1])
@@ -107,8 +110,9 @@ sigs_camels["gauge_num"] = sigs_camels["gauge_id"].apply(lambda x: x.split("_")[
 overlapping_gauges = set(sigs_camels["gauge_num"]).intersection(
     set(sigs_hys_filt["gauge_num"])
 )
+print(f"There are {len(overlapping_gauges)} overlapping CAMELS and HYSETS gages")
 print(overlapping_gauges)
-print(len(overlapping_gauges))
+
 
 # Check where gauge_lat and gauge_lon overlaps (if it's the same set as above)
 overlapping_gauges_latlon = sigs_camels[
@@ -122,7 +126,7 @@ print(len(overlapping_gauges_latlon))  # This should return zero
 
 # %% ____________________________________________________________
 # Join camels + hysets. Prioritize camels if hysets gauge overlaps
-# Prioritize camels if both hysets and camels gauge exist
+
 sigs = (
     sigs_camels.set_index("gauge_num")
     .combine_first(sigs_hys_filt.set_index("gauge_num"))
@@ -132,12 +136,15 @@ sigs.set_index("gauge_id", inplace=True)
 sigs.head()
 
 print(
-    f"{len(sigs)} survived, after combining CAMELS {len(sigs_camels)} + HYSETS {len(sigs_hys_filt)} - OVERLAP {len(overlapping_gauges)}, which should be equal to {len(sigs_camels) + len(sigs_hys_filt) - len(overlapping_gauges)}"
+    f"{len(sigs)} survived, after combining CAMELS {len(sigs_camels)} + HYSETS {len(sigs_hys_filt)} - OVERLAP {len(overlapping_gauges)}"
+)
+print(
+    f", which should be equal to {len(sigs_camels) + len(sigs_hys_filt) - len(overlapping_gauges)}"
 )
 
 # ___________________________________________________________
 # Save
-sigs.to_csv(os.path.join(out_dir, f"{filename}_filt_qc.csv"))
+sigs.to_csv(os.path.join(out_dir, f"{results_filename}_filt_qc.csv"))
 
 # %% ____________________________________________________________
 # Mask overland flow signature calculated for snowy area, use "frac_snow_thresh"
@@ -181,41 +188,4 @@ print(
 )
 # %%  ____________________________________________________________
 # Save
-sigs.to_csv(os.path.join(out_dir, f"{filename}_filt_qc_snow.csv"))
-
-# %%
-
-# %%
-# %%
-# import netCDF4 as nc
-# import xarray as xr
-
-# hydroclimate_file = r"G:\Shared drives\Perceptual model review\plot_climates\HydrologicClimateClassification.nc"
-
-# ds_climate = nc.Dataset(hydroclimate_file, "r")
-# fs = ds_climate.variables["array_annualSnowFraction_fs"][:][0]
-# fd_lat = ds_climate.variables["array_latitude"][:][0]
-# fd_lon = ds_climate.variables["array_longitude"][:][0]
-
-# df_climate = pd.DataFrame({"SnowFraction": fs, "lat": fd_lat, "lon": fd_lon})
-# # %%
-# # Example reshaping
-
-# # %%
-# # Reshape the data (assuming fs is the flat data arra
-# # Plot using imshow
-# import matplotlib.pyplot as plt
-
-# # Create scatter plot
-# plt.figure(figsize=(10, 6))
-# snow_idx = fs > 0.2
-# sc = plt.scatter(
-#     fd_lon[snow_idx], fd_lat[snow_idx], c=fs[snow_idx], cmap="viridis", s=10, alpha=0.6, edgecolor="none"
-# )  # Adjust size 's' and transparency 'alpha' as needed
-# plt.colorbar(sc, label="Snow Fraction")  # Add a color bar with a label
-# plt.xlabel("Longitude")
-# plt.ylabel("Latitude")
-# plt.title("Geographic Distribution of Annual Snow Fraction")
-# plt.grid(True)  # Optional: add a grid for better orientation
-# plt.show()
-#
+sigs.to_csv(os.path.join(out_dir, f"{results_filename}_filt_qc_snow.csv"))

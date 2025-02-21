@@ -3,8 +3,8 @@ TotalRR,TotalRR,[-],0,1,groundwater,Water loss to deep GW or ET,neg
 EventRR,EventRR,[-],0,1,groundwater,Water loss to deep GW or ET,neg
 RR_Seasonality,RR_Seasonality,[-],0,4,groundwater,Water loss to deep GW or ET,pos
 AverageStorage,AverageStorage,[mm],0,600,groundwater,Storage capacity and retention,pos
-RecessionParameters_1,RecessionParameters_b,[-],0,1,groundwater,Storage capacity and retention,neg
-RecessionParameters_2,RecessionParameters_T0,[d],0,2,groundwater,Storage capacity and retention,pos
+RecessionParameters_b,RecessionParameters_b,[-],0,5,groundwater,Storage capacity and retention,neg
+RecessionParameters_T0,RecessionParameters_T0,[d],0.5,30,groundwater,Storage capacity and retention,pos
 First_Recession_Slope,First_Recession_Slope,[1/d],0,1.5,groundwater,Storage capacity and retention,neg
 Mid_Recession_Slope,Mid_Recession_Slope,[1/d],0,0.6,groundwater,Storage capacity and retention,neg
 EventRR_TotalRR_ratio,EventRR_TotalRR_ratio,[-],0,1,groundwater,Storage capacity and retention,neg
