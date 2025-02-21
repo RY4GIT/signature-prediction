@@ -19,7 +19,7 @@ caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
-caravan_data = 'camels'; %'camels', 'hysets';
+caravan_data = 'hysets'; %'camels', 'hysets';
 
 %___________________________________________________________________________________
 % Read metadata
@@ -37,7 +37,37 @@ numGauges = height(us_gauges);
 %___________________________________________________________________________________
 % Data preparation
 % Specify the gauge id
-gauge_id = 'camels_04015330';
+gauge_id = 'hysets_07360501';
+
+% IE_thresh is ridiculously high for 
+% hysets_07156100
+% hysets_09387300
+% hysets_09415850
+% hysets_09518500
+% hysets_09520280
+% hysets_10257800
+% hysets_10261800
+% hysets_10264590
+% hysets_11413517
+
+% SE_thresh is ridiculously high for 
+% hysets_07156100
+% hysets_09415850
+% hysets_09518500
+% hysets_09520280
+
+% SE_slope is ridiculously high for 
+% hysets_0208423100	
+% hysets_10250600	
+
+% Total RR > 5
+% hysets_0208423100
+% hysets_0208735012	
+% hysets_02110704	
+% hysets_02231254	
+% hysets_03401428	
+% hysets_03401450	
+% hysets_06400497	
 
 % Load data and convert it to datetime table
 file_path = fullfile(data_dir, caravan_dir, timeseries_dir,data_type, caravan_data, [gauge_id '.' data_type]);
@@ -53,6 +83,7 @@ t = subset_data.date;
 P = subset_data.total_precipitation_sum;
 PET = subset_data.potential_evaporation_sum;
 T = subset_data.temperature_2m_mean;
+
 
 %___________________________________________________________________________________
 %___________________________________________________________________________________
@@ -88,13 +119,23 @@ plot_results = true;
 %___________________________________________________________________________________
 % Event separation & IE SE signatures
 
-[IE_effect, SE_effect, IE_thresh_signif, IE_thresh, ...
-    SE_thresh_signif, SE_thresh, SE_slope, ...
-    Storage_thresh, Storage_thresh_signif, min_Qf_perc, ...
-    ~, ~, fig_event] = sig_EventGraphThresholds(Q,t,P,...
-    'min_termination', min_termination, ...
-    'min_duration', min_duration, ...
-    'min_intensity_day', min_intensity_day, ...
-    'min_intensity_day_during', min_intensity_day_during, ...
-    'max_recessiondays', max_recessiondays, ...
-    'plot_results', plot_results);
+% [IE_effect, SE_effect, IE_thresh_signif, IE_thresh, ...
+%     SE_thresh_signif, SE_thresh, SE_slope, ...
+%     Storage_thresh, Storage_thresh_signif, min_Qf_perc, ...
+%     ~, ~, fig_event] = sig_EventGraphThresholds(Q,t,P,...
+%     'min_termination', min_termination, ...
+%     'min_duration', min_duration, ...
+%     'min_intensity_day', min_intensity_day, ...
+%     'min_intensity_day_during', min_intensity_day_during, ...
+%     'max_recessiondays', max_recessiondays, ...
+%     'plot_results', plot_results);
+
+%___________________________________________________________________________________
+% Recession signatures
+recession_length = 10;
+n_start = 0; % days to be removed after start of recession
+eps = 0.02; %  allowed increase in flow during recession period, default = 0
+filter_par = 0.925; % smoothing parameter of Lyne-Hollick filter to determine
+%      start of recession (higher = later recession start)
+[Recession_Parameters, recession_month, ~, ~, fig_recession] = ...
+    sig_RecessionAnalysis(Q, t, 'recession_length', recession_length, 'n_start', n_start, 'eps', eps, 'filter_par', filter_par, 'plot_results', true);

@@ -181,7 +181,7 @@ merged_df_lowsnow = gages2_us.merge(
 
 # %%
 common_gages_lowsnow = merged_df_lowsnow.index
-filtered_caravan_us_lowsnow = merged_df_lowsnow.loc[common_gages_lowsnow]
+filtered_caravan_us_lowsnow = caravan_us_afterQA_excluSnow.loc[common_gages_lowsnow]
 filtered_gages2_us_lowsnow = gages2_us.loc[common_gages_lowsnow]
 
 filtered_caravan_us_lowsnow.to_csv(
@@ -206,3 +206,5 @@ print(
 print(
     f"Event signatures are only available at: {filtered_gages2_us_lowsnow['IE_thresh'].notna().sum()}"
 )
+
+# %%

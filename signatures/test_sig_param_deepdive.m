@@ -47,7 +47,7 @@ numGauges = height(us_gauges);
 %___________________________________________________________________________________
 % Data preparation
 % Specify the gauge id
-gauge_id = 'camels_14222500';
+gauge_id = 'hysets_07360501';
 
 % Load data and convert it to datetime table
 file_path = fullfile(data_dir, caravan_dir, timeseries_dir,data_type, caravan_data, [gauge_id '.' data_type]);
