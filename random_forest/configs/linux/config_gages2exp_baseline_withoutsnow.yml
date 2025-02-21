@@ -2,11 +2,11 @@ paths:
   home_dir: /home/raraki/data/signature-prediction
   out_dir: /out/rf
   train:
-    signatures: /signatures/caravan_us_20240609_tunedparams/out_calc_All_custom_filt_gages2subset.csv
+    signatures: /signatures/caravan_us_20250219/out_calc_All_custom_filt_qc_snow_gages2subset.csv
     attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
   test:
     attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
-experiment_name: gages2exp_baseline
+experiment_name: gages2exp_baseline_withoutsnow
 filter_by_ecoregion:
   run: false
   name: NA
@@ -23,8 +23,8 @@ sigs_predict:
 - EventRR
 - Recession_a_Seasonality
 - AverageStorage
-- RecessionParameters_1
-- RecessionParameters_2
+- RecessionParameters_b
+- RecessionParameters_T0
 - First_Recession_Slope
 - Mid_Recession_Slope
 - EventRR_TotalRR_ratio

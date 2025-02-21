@@ -2,11 +2,11 @@ paths:
   home_dir: /home/raraki/data/signature-prediction
   out_dir: /out/rf
   train:
-    signatures: /signatures/caravan_us_20250219/out_calc_All_custom_filt_qc_gages2subset.csv
-    attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2_hammondv2.csv
+    signatures: /signatures/caravan_us_20250219/out_calc_All_custom_filt_qc_snow.csv
+    attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
   test:
-    attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2_hammondv2.csv
-experiment_name: gages2exp_gages2attr
+    attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
+experiment_name: gages2exp_baseline_inclu_allcaravan
 filter_by_ecoregion:
   run: false
   name: NA
@@ -41,29 +41,29 @@ sigs_predict:
 - Storage_thresh
 - SE_slope
 attrs_of_interest:
-- ELEV_MEAN_M_BASIN
-- DRAIN_SQKM
-- SLOPE_PCT
-- FORESTNLCD06
-- CROPSNLCD06
-- PASTURENLCD06
-- PCT_IRRIG_AG
-- SNOWICENLCD06
+- ele_mt_sav
+- area
+- sgr_dk_sav
+- for_pc_sse
+- crp_pc_sse
+- pst_pc_sse
+- ire_pc_sse
+- prm_pc_sse
 - pac_pc_sse
 - isowet_areafrac
-- CLAYAVE
-- SILTAVE
-- OMAVE
+- cly_pc_sav
+- slt_pc_sav
+- soc_th_sav
 - kar_pc_sse
 - geol_weighted_ave_age_ma
-- PDEN_2000_BLOCK
+- ppd_pk_sav
 - gdp_ud_sav
-- DEVNLCD06
-- PPTAVG_BASIN
-- PET
+- hdi_ix_sav
+- p_mean
+- pet_mean
 - aridity
-- SNOW_PCT_PRECIP
-- PRECIP_SEAS_IND
+- frac_snow
+- seasonality
 - high_prec_freq
 - low_prec_freq
 - low_prec_dur
