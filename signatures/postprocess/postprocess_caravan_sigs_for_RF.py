@@ -10,9 +10,9 @@ shared_drive = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 
 sig_outdir = os.path.join(shared_drive, "out", "signatures")
 
-hys_dir = "caravan_hysets_20250219"
-camels_dir = "caravan_camels_20250219"
-caravan_dir = "caravan_us_20250219"  # "caravan_us_20240609_tunedparams" "gages2_caravan_us_20250211"
+hys_dir = "caravan_hysets_20250223_withWu"
+camels_dir = "caravan_camels_20250223_withWu"
+caravan_dir = "caravan_us_20250223_withWu"  # "caravan_us_20240609_tunedparams" "gages2_caravan_us_20250211"
 
 out_dir = os.path.join(sig_outdir, caravan_dir)
 if not os.path.exists(out_dir):
@@ -189,3 +189,5 @@ print(
 # %%  ____________________________________________________________
 # Save
 sigs.to_csv(os.path.join(out_dir, f"{results_filename}_filt_qc_snow.csv"))
+
+# %%

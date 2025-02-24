@@ -9,7 +9,7 @@ sig_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signa
 gages2_camels_dir = "gages2_camels_20250219"
 gages2_hysets_dir = "gages2_hysets_20250219"
 out_dir = "gages2_caravan_us_20250219"
-origin_caravan_dir = "caravan_us_20250219"
+origin_caravan_dir = "caravan_us_20250223_withWu"
 
 try:
     os.makedirs(os.path.join(sig_dir, out_dir))

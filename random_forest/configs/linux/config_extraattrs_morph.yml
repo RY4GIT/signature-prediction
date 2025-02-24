@@ -1,0 +1,72 @@
+paths:
+  home_dir: /home/raraki/data/signature-prediction
+  out_dir: /out/rf
+  train:
+    signatures: /signatures/caravan_us_20250223_withWu/out_calc_All_custom_filt_qc_gages2subset.csv
+    attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2+climate_morph_epa.csv
+  test:
+    attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2+climate_morph_epa.csv
+experiment_name: extraattrs_morph
+filter_by_ecoregion:
+  run: false
+  name: NA
+settings:
+  seed: 0
+  ntree: 500
+  num_folds: 10
+  eval_metric: MSE
+parallel:
+  nCores: 16
+sigs_predict:
+- TotalRR
+- RR_Seasonality
+- EventRR
+- Recession_a_Seasonality
+- AverageStorage
+- RecessionParameters_b
+- RecessionParameters_T0
+- First_Recession_Slope
+- Mid_Recession_Slope
+- EventRR_TotalRR_ratio
+- VariabilityIndex
+- BFI
+- BaseflowRecessionK
+- IE_thresh_signif
+- SE_thresh_signif
+- Storage_thresh_signif
+- IE_thresh
+- SE_thresh
+- IE_effect
+- SE_effect
+- Storage_thresh
+- SE_slope
+- R_Pvol_RC
+- R_Pint_RC
+attrs_of_interest:
+- ele_mt_sav
+- area
+- sgr_dk_sav
+- for_pc_sse
+- crp_pc_sse
+- pst_pc_sse
+- ire_pc_sse
+- prm_pc_sse
+- pac_pc_sse
+- isowet_areafrac
+- cly_pc_sav
+- slt_pc_sav
+- soc_th_sav
+- kar_pc_sse
+- geol_weighted_ave_age_ma
+- ppd_pk_sav
+- gdp_ud_sav
+- hdi_ix_sav
+- p_mean
+- pet_mean
+- aridity
+- frac_snow
+- seasonality
+- high_prec_freq
+- low_prec_freq
+- low_prec_dur
+- beta_ave
