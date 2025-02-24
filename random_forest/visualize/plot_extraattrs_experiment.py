@@ -251,20 +251,24 @@ def plot_pie_charts(df, sigs, color_mapping, exp_info, exp_name):
 # Main function to loop through # Per Experiment
 
 for exp_n in exp_types:
-    exp_name = f"{exp_n} - {exp_info[exp_n]['name']}"
-    print(f"Processing {exp_name}...")
-
-    exp_info = exp_info[exp_n]
+    exp_case = f"{exp_n} - {exp_info[exp_n]['name']}"
+    print(f"Processing {exp_case}...")
 
     df_imp = load_data_incRMSE(
-        out_dir_rf, output_date, exp_info, plot_attrs_config_path
+        out_dir_rf,
+        output_date,
+        exp_info[exp_n],
+        experiment_name,
+        plot_attrs_config_path,
     )
-    plot_bar_plots(df_imp, sigs, exp_info, exp_name)
-    plot_pie_charts(df_imp, sigs, attrs_colors, exp_info, exp_name)
+    plot_bar_plots(df_imp, sigs, exp_info[exp_n], exp_case)
+    plot_pie_charts(df_imp, sigs, attrs_colors, exp_info[exp_n], exp_case)
 
 
 # %%___________________________________________________________________________________
 # Compare predicted vs observed signatures
+exp_info
+# %%
 
 
 def load_data_sigpred(output_date, out_dir_rf, exp_info, exp_types):

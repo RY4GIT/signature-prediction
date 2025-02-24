@@ -184,3 +184,53 @@ merged_attrs = attrs_caravan.combine_first(attrs_gages2)
 merged_attrs.to_csv(os.path.join(attrs_dir, out_filename))
 
 # %%
+cara_gages2_attrs_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_and_gages2_epa.csv"
+cara_gages2_attrs = pd.read_csv(cara_gages2_attrs_file)
+# %%
+cara_gages2_attrs["gauge_num"] = (
+    cara_gages2_attrs["gauge_id"].str.split("_").str[-1].str.zfill(8)
+)
+# %%
+climate_attrs["gauge_num"] = climate_attrs.index.astype("str").str.zfill(8)
+# %%
+# Merge the DataFrames on 'usgs_gauge_id' with an outer join and indicator
+cara_gages2_attrs_climate = pd.merge(
+    cara_gages2_attrs,
+    climate_attrs,
+    on="gauge_num",
+    how="left",
+)
+
+morph_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_and_gages2+morph_epa.csv"
+morph = pd.read_csv(morph_file)
+# %%
+
+morph_selected = morph[
+    [
+        "gauge_num",
+        "p99_pave",
+        "dammed_portion",
+        "dam_complete",
+        "slope_pct",
+        "drainage_area",
+        "beta_ave",
+        "cv_q",
+        "cv_l",
+        "fact_l_98",
+    ]
+].copy()
+# %%
+
+cara_gages2_attrs_climate_morph = pd.merge(
+    cara_gages2_attrs_climate,
+    morph_selected,
+    on="gauge_num",
+    how="left",
+)
+
+# %%
+cara_gages2_attrs_climate_morph.to_csv(
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_and_gages2+climate+morph.csv",
+    index=False,
+)
+# %%
