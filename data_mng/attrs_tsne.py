@@ -76,10 +76,10 @@ kmeans = KMeans(n_clusters=9, random_state=42)
 clusters = kmeans.fit_predict(data_scaled)
 # %%
 
-cmap = "tab10"
+cmap = "Set2"
 # Plot t-SNE components
 plt.figure(figsize=(8, 6))
-plt.scatter(data_tsne[:, 0], data_tsne[:, 1], c=clusters, cmap=cmap, s=50, alpha=0.6)
+plt.scatter(data_tsne[:, 0], data_tsne[:, 1], c=clusters, cmap=cmap, s=3, alpha=0.5)
 plt.colorbar(label="Cluster")
 plt.xlabel("t-SNE 1")
 plt.ylabel("t-SNE 2")

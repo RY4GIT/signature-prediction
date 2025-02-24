@@ -4,5 +4,7 @@
     "2": {"name": "GAGES2 attributes, Caravan equiv. (exclu. snowy cats)", "shortname":"gages2attr_withoutsnow", "color": "#dfc27d"},
     "3": {"name": "Baseline (incl. snowy cats)", "shortname":"baseline", "color": "#018571"},
     "4": {"name": "GAGES2 attributes, Caravan equiv. (incl. snowy cats)", "shortname":"gages2attr", "color": "#dfc27d"},
-    "5": {"name": "Surface Water Inputs (incl. snowy cats)", "shortname":"surfacewater", "color": "#bf812d"}
+    "5": {"name": "Surface Water Inputs (incl. snowy cats)", "shortname":"surfacewater", "color": "#bf812d"},
+    "6": {"name": "Surface Water Inputs (excl. snowy cats)", "shortname":"surfacewater_withoutsnow", "color": "#986724"},
+    "7": {"name": "Surface Water Inputs (incl. snowy cats) + GAGES2 attrs", "shortname":"bestattrs_and_surfacewater", "color": "#bf382d"}
 }

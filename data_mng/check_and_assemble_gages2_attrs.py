@@ -4,6 +4,9 @@
 
 import pandas as pd
 import os
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
 # %% #########################################################################
 #
@@ -99,6 +102,92 @@ print(f"Gauges unique to attrs_caravan_epa: {len(unique_to_caravan)}")
 print(unique_to_caravan)
 print(f"Gauges common to both: {len(common_gauges)}")
 print(common_gauges)
+
+# %% ____________________________________________________
+# Plot the gauges unique to Caravan
+# Filter df to include only gauges unique to attrs_caravan_epa
+unique_gauges_df = merged_df[merged_df["usgs_gauge_id"].isin(unique_to_caravan)]
+print(len(unique_gauges_df))
+common_gauges_df = merged_df[merged_df["usgs_gauge_id"].isin(common_gauges)]
+print(len(common_gauges_df))
+
+# Create a figure with Cartopy
+fig, ax = plt.subplots(figsize=(10, 6), subplot_kw={"projection": ccrs.PlateCarree()})
+ax.set_extent([-130, -60, 20, 55], crs=ccrs.PlateCarree())
+
+# Add geographical features
+ax.add_feature(cfeature.COASTLINE)
+ax.add_feature(cfeature.BORDERS, linestyle=":")
+ax.add_feature(cfeature.LAND, edgecolor="black")
+ax.add_feature(cfeature.LAKES, edgecolor="black")
+ax.add_feature(cfeature.RIVERS)
+
+# Plot the gauge locations
+ax.scatter(
+    unique_gauges_df["gauge_lon"],
+    unique_gauges_df["gauge_lat"],
+    color="tab:red",
+    marker="o",
+    alpha=0.5,
+    s=3,
+    label="Unique to Caravan",
+)
+
+ax.scatter(
+    common_gauges_df["gauge_lon"],
+    common_gauges_df["gauge_lat"],
+    color="tab:blue",
+    marker="o",
+    alpha=0.5,
+    s=3,
+    label="Common to Caravan + GAGES2",
+)
+
+# Add title and legend
+ax.legend()
+
+# Show the plot
+plt.show()
+
+
+# %%
+# Plot histogram
+# Define bin width
+import numpy as np
+
+bin_width = 100  # Adjust as needed
+
+# Determine bin edges based on the min and max values
+min_value = min(unique_gauges_df["area"].min(), common_gauges_df["area"].min())
+max_value = max(unique_gauges_df["area"].max(), common_gauges_df["area"].max())
+bins = np.arange(min_value, max_value + bin_width, bin_width)
+# %%
+plt.figure(figsize=(8, 6))
+plt.hist(
+    unique_gauges_df["area"],
+    bins=bins,
+    alpha=0.5,
+    label="Unique to Caravan",
+    color="tab:red",
+)
+plt.hist(
+    common_gauges_df["area"],
+    bins=bins,
+    alpha=0.5,
+    label="Common Gauges",
+    color="tab:blue",
+)
+
+# Labels and title
+plt.xlabel("Area")
+plt.ylabel("Frequency")
+plt.xlim([0, 50000])
+plt.title("Histogram of Area for Unique and Common Gauges")
+plt.legend()
+plt.yscale("log")
+# Show plot
+plt.show()
+
 # %%
 # Return the lists (if needed in a function)
 # Write results to text files
