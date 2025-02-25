@@ -1,5 +1,5 @@
 # signature-prediction
-Scripts to calculate hydrologic signatures, running TOSSH Toolbox functions, and to predict hydrologic signatures using random forest modeling. Extending [the work by Anne Holt](https://github.com/annieholt/Baseflow_Signature_Prediction)
+Scripts to calculate hydrologic signatures, running TOSSH Toolbox functions, and to predict hydrologic signatures using random forest modeling. Extending the work by Anne Holt: https://github.com/annieholt/Baseflow_Signature_Prediction
 
 
 ## Directory layout
@@ -184,7 +184,8 @@ The following gauges are already removed at the stage of calculating attributes:
 
 ## Reference
 - We extensively used the ideas and codes of Holt, A. (2024):
-    Holt, A. (2024). New predictors for hydrologic signatures: Wetlands and geologic age across continental scales (Order No. 31483645). Available from ProQuest Dissertations & Theses Global: The Humanities and Social Sciences Collection; ProQuest One Academic. (3083407273). Retrieved from <https:\\www.proquest.com\dissertations-theses\new-predictors-hydrologic-signatures-wetlands\docview\3083407273\se-2>
+    Holt, A., & McMillan, H. (2025). New predictors for hydrologic signatures: Wetlands and geologic age across continental scales. Hydrological Processes, 39(2). https://doi.org/10.1002/hyp.70080
+    
 - Our ecoregion experiment ideas are inspired by Hammond et al., 2021: 
     Hammond, J. C., Zimmer, M., Shanafield, M., Kaiser, K., Godsey, S. E., Mims, M. C., et al. (2021). Spatial patterns and drivers of nonperennial flow regimes in the contiguous United States. Geophysical Research Letters, 48(2). <https://doi.org/10.1029/2020gl090794>
 - We use modified version of [TOSSH toolbox](https:\\github.com\TOSSHtoolbox\TOSSH) (Gnann et al., 2022) for calculating signatures. The custom TOSSH codes are located in <https:\\github.com\RY4GIT\TOSSH>
