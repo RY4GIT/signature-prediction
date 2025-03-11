@@ -29,7 +29,11 @@ library(dplyr)
 library(doParallel)
 library(foreach)
 library(yaml)
+if (!requireNamespace("iml", quietly = TRUE)) {
+  install.packages("iml")
+}
 
+library(iml)
 
 #############################################
 # INITIALIZATION
@@ -42,19 +46,19 @@ Sys.setenv(R_CONFIG_ACTIVE = "default")
 # _______________________________________________________________________________________________________________
 # (1) Load configuration from a file path
 # Set the configuration file path directly
-# config_file <- "./random_forest/configs/win/config_gages2exp_surfacewater.yml"
+config_file <- "./random_forest/configs/win/config_test.yml"
 
-# # Check if the file exists to avoid runtime errors
-# if (!file.exists(config_file)) {
-#   stop("Configuration file not found: ", config_file)
-# }
+# Check if the file exists to avoid runtime errors
+if (!file.exists(config_file)) {
+  stop("Configuration file not found: ", config_file)
+}
 
-# config <- yaml::read_yaml(config_file)
+config <- yaml::read_yaml(config_file)
 
 # _______________________________________________________________________________________________________________
 # (2) Load configuration as an argument
-args <- commandArgs(trailingOnly = TRUE)
-config_file <- args[1]
+# args <- commandArgs(trailingOnly = TRUE)
+# config_file <- args[1]
 
 # If you choose this, run the code using bash/shell
 #
@@ -162,6 +166,7 @@ kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, sear
 out_r2 <- list()
 out_var_importance <- list()
 out_sig_predictions <- list()
+out_shap_values <- list()
 
 # Loop through signatures (1 RF model per signature)
 for(sig in config$sigs_predict){
@@ -228,7 +233,21 @@ for(sig in config$sigs_predict){
       dplyr::mutate(sig_name = sig)
   }
   
+  # _______________________________________________________________________________________________________________
+  # Calculate SHAP values
   
+  # Create a predictor object for the model
+  predictor <- Predictor$new(forest$finalModel, data = train_data %>% select(-all_of(sig)), y = train_data[[sig]])
+  
+  # Calculate SHAP values
+  shap <- Shapley$new(predictor, x.interest = train_data %>% select(-all_of(sig)))
+  shap_values <- shap$results
+
+  # Store SHAP values in the list
+  out_shap_values[[sig]] <- shap_values %>%
+    as.data.frame() %>%
+    dplyr::mutate(sig_name = sig)
+
   # _______________________________________________________________________________________________________________
   # Predict signature values on test set
   
@@ -264,10 +283,13 @@ all_r2 <- bind_rows(out_r2) %>%
   pivot_longer(everything(), names_to = "sig_name", values_to = "r_squared")
 all_sig_predictions <- bind_rows(out_sig_predictions)
 all_var_importance <- bind_rows(out_var_importance)
+all_shap_values <- bind_rows(out_shap_values)
 
 write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
 write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures.csv"), row.names = FALSE)
 write.csv(all_var_importance, file.path(out_path, "var_importance.csv"), row.names = FALSE)
+write.csv(all_shap_values, file.path(out_path, "shap_values.csv"), row.names = FALSE)
+
 
 # Output the config file
 yaml::write_yaml(config, file.path(out_path, "config.yaml"))

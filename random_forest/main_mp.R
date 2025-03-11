@@ -29,6 +29,7 @@ library(caret)
 library(dplyr)
 library(doParallel)
 library(foreach)
+library(iml)
 
 #############################################
 # INITIALIZATION
@@ -145,6 +146,7 @@ kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, sear
 out_r2 <- list()
 out_var_importance <- list()
 out_sig_predictions <- list()
+out_shap_values <- list()
 
 print("Start multiple RFs")
 # Multi-threadding --- each thread receives one RF model for one signature prediction 
@@ -228,12 +230,31 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
     out_sig_predictions <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
   }
   
+
+  # _______________________________________________________________________________________________________________
+  # Calculate SHAP values
+  
+  # Create a predictor object for the model
+  predictor <- Predictor$new(forest$finalModel, data = train_data %>% select(-all_of(sig)), y = train_data[[sig]])
+  
+  # Calculate SHAP values
+  shap <- Shapley$new(predictor, x.interest = train_data %>% select(-all_of(sig)))
+  shap_values <- shap$results
+
+  # Store SHAP values in the list
+  out_shap_values[[sig]] <- shap_values %>%
+    as.data.frame() %>%
+    dplyr::mutate(sig_name = sig)
+
   # Summarize all output from one thread run in a list
   list(
     sig_predictions = out_sig_predictions, 
     r2 = out_r2,
-    var_importance = out_var_importance
+    var_importance = out_var_importance,
+    shap_values = out_shap_values
   )
+
+
   # }, error = function(e) {
   #   print(paste("An error occurred:", e$message))
   #   # Return NA values if an error occurs
@@ -253,16 +274,19 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
 out_sig_predictions <- lapply(results, `[[`, "sig_predictions")
 out_r2 <- lapply(results, `[[`, "r2")
 out_var_importance <- lapply(results, `[[`, "var_importance")
+out_shap_values <- lapply(results, `[[`, "shap_values")
 
 # Combine all the elements in the lists (results from multiple threads) into data frames
 all_sig_predictions <- bind_rows(out_sig_predictions)
-all_var_importance <- bind_rows(out_var_importance)
 all_r2 <- bind_rows(out_r2)
+all_var_importance <- bind_rows(out_var_importance)
+all_shap_values <- bind_rows(out_shap_values)
 
 # Save output to CSV
 write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures.csv"), row.names = FALSE)
 write.csv(all_var_importance, file.path(out_path, "var_importance.csv"), row.names = FALSE)
 write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
+write.csv(all_shap_values, file.path(out_path, "shap_values.csv"), row.names = FALSE)
 
 # Save config file
 yaml::write_yaml(config, file.path(out_path, "config.yaml"))

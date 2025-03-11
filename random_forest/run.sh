@@ -10,21 +10,21 @@
 project_dir="/home/raraki/signature-prediction/random_forest"
 config_dir="$project_dir/configs/linux"
 
-echo "Running experiment with $config_dir/config_20250311_baseline.yml"
-Rscript main_serial.R "$config_dir/config_20250311_baseline.yml"
-echo "Experiment with $config_dir/config_20250311_baseline.yml finished"
+echo "Running experiment with $config_dir/config_test.yml"
+Rscript main_serial.R "$config_dir/config_test.yml"
+echo "Experiment with $config_dir/config_test.yml finished"
 
-echo "Running experiment with $config_dir/config_20250311_east.yml"
-Rscript main_serial.R "$config_dir/config_20250311_east.yml"
-echo "Experiment with $config_dir/config_20250311_east.yml finished"
+# echo "Running experiment with $config_dir/config_20250311_east.yml"
+# Rscript main_serial.R "$config_dir/config_20250311_east.yml"
+# echo "Experiment with $config_dir/config_20250311_east.yml finished"
 
-echo "Running experiment with $config_dir/config_20250311_equiv_recalc.yml"
-Rscript main_serial.R "$config_dir/config_20250311_equiv_recalc.yml"
-echo "Experiment with $config_dir/config_20250311_equiv_recalc.yml finished"
+# echo "Running experiment with $config_dir/config_20250311_equiv_recalc.yml"
+# Rscript main_serial.R "$config_dir/config_20250311_equiv_recalc.yml"
+# echo "Experiment with $config_dir/config_20250311_equiv_recalc.yml finished"
 
-echo "Running experiment with $config_dir/config_20250311_north.yml"
-Rscript main_serial.R "$config_dir/config_20250311_north.yml"
-echo "Experiment with $config_dir/config_20250311_north.yml finished"
+# echo "Running experiment with $config_dir/config_20250311_north.yml"
+# Rscript main_serial.R "$config_dir/config_20250311_north.yml"
+# echo "Experiment with $config_dir/config_20250311_north.yml finished"
 
 # # For test
 # echo "Running experiment with $config_dir/config_test.yml"
