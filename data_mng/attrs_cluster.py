@@ -30,13 +30,12 @@ selected_columns = [
     "PET",
     "SNOW_PCT_PRECIP",
     "PRECIP_SEAS_IND",
-    "peakSWEdivP",
     "PETdivP",
     "input_seasonality",
     "input_PET_synchrony",
     "gauge_lat",
     "gauge_lon",
-]  # More climates
+]  # More climate attrs
 
 # selected_columns = [
 #     "ELEV_MEAN_M_BASIN",
@@ -243,7 +242,7 @@ box_attributes = [
     "PET",
     "SNOW_PCT_PRECIP",
     "PRECIP_SEAS_IND",
-    "peakSWEdivP",
+    # "peakSWEdivP",
     "PETdivP",
     "input_seasonality",
     "input_PET_synchrony",
