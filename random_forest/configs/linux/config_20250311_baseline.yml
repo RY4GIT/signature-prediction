@@ -6,7 +6,7 @@ paths:
     attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat.csv
   test:
     attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat.csv
-experiment_name: 20250311_east
+experiment_name: 20250311_baseline
 filter_by_ecoregion:
   run: false
   name: NA
