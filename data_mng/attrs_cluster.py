@@ -18,6 +18,26 @@ import textwrap
 file_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_and_gages2+climate+morph+padcat.csv"
 num_clusters = 6
 seed = 0
+
+selected_columns = [
+    "PPTAVG_BASIN",
+    "T_AVG_BASIN",
+    "T_MAXSTD_BASIN",
+    "RH_BASIN",
+    "FST32F_BASIN",
+    "LST32F_BASIN",
+    "WD_BASIN",
+    "PET",
+    "SNOW_PCT_PRECIP",
+    "PRECIP_SEAS_IND",
+    "peakSWEdivP",
+    "PETdivP",
+    "input_seasonality",
+    "input_PET_synchrony",
+    "gauge_lat",
+    "gauge_lon",
+]  # More climates
+
 # selected_columns = [
 #     "ELEV_MEAN_M_BASIN",
 #     "SLOPE_PCT",
@@ -32,38 +52,38 @@ seed = 0
 #     "gauge_lat",
 #     "gauge_lon",
 # ]  # Only for claimtes
-selected_columns = [
-    "ELEV_MEAN_M_BASIN",
-    "DRAIN_SQKM",
-    "SLOPE_PCT",
-    "FORESTNLCD06",
-    "CROPSNLCD06",
-    "PASTURENLCD06",
-    "PCT_IRRIG_AG",
-    "SNOWICENLCD06",
-    "PADCAT1_AND_2",
-    "isowet_areafrac",
-    "CLAYAVE",
-    "SILTAVE",
-    "OMAVE",
-    "kar_pc_sse",
-    "geol_weighted_ave_age_ma",
-    "PDEN_2000_BLOCK",
-    "gdp_ud_sav",
-    "FRAGUN_BASIN",
-    "P_mm_day",
-    "PET_mm_day",
-    "ARIDITY_GAGES2",
-    "SNOW_PCT_PRECIP",
-    "PRECIP_SEAS_IND",
-    "high_prec_freq",
-    "low_prec_freq",
-    "low_prec_dur",
-    "ASPECT_NORTHNESS",
-    "ASPECT_EASTNESS",
-    "gauge_lat",
-    "gauge_lon",
-]  # GAGES2
+# selected_columns = [
+#     "ELEV_MEAN_M_BASIN",
+#     "DRAIN_SQKM",
+#     "SLOPE_PCT",
+#     "FORESTNLCD06",
+#     "CROPSNLCD06",
+#     "PASTURENLCD06",
+#     "PCT_IRRIG_AG",
+#     "SNOWICENLCD06",
+#     "PADCAT1_AND_2",
+#     "isowet_areafrac",
+#     "CLAYAVE",
+#     "SILTAVE",
+#     "OMAVE",
+#     "kar_pc_sse",
+#     "geol_weighted_ave_age_ma",
+#     "PDEN_2000_BLOCK",
+#     "gdp_ud_sav",
+#     "FRAGUN_BASIN",
+#     "P_mm_day",
+#     "PET_mm_day",
+#     "ARIDITY_GAGES2",
+#     "SNOW_PCT_PRECIP",
+#     "PRECIP_SEAS_IND",
+#     "high_prec_freq",
+#     "low_prec_freq",
+#     "low_prec_dur",
+#     "ASPECT_NORTHNESS",
+#     "ASPECT_EASTNESS",
+#     "gauge_lat",
+#     "gauge_lon",
+# ]  # GAGES2
 # file_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_caravan_us_epa.csv"
 # selected_columns = [
 #     "ele_mt_sav",
@@ -213,13 +233,29 @@ for cluster in range(num_clusters):
 
 # Selected attributes for box plots
 box_attributes = [
-    "SLOPE_PCT",
-    "FORESTNLCD06",
-    "CLAYAVE",
-    "geol_weighted_ave_age_ma",
-    "ARIDITY_GAGES2",
+    "PPTAVG_BASIN",
+    "T_AVG_BASIN",
+    "T_MAXSTD_BASIN",
+    "RH_BASIN",
+    "FST32F_BASIN",
+    "LST32F_BASIN",
+    "WD_BASIN",
+    "PET",
     "SNOW_PCT_PRECIP",
-]  # For caravan
+    "PRECIP_SEAS_IND",
+    "peakSWEdivP",
+    "PETdivP",
+    "input_seasonality",
+    "input_PET_synchrony",
+]
+# box_attributes = [
+#     "SLOPE_PCT",
+#     "FORESTNLCD06",
+#     "CLAYAVE",
+#     "geol_weighted_ave_age_ma",
+#     "ARIDITY_GAGES2",
+#     "SNOW_PCT_PRECIP",
+# ]  # For caravan
 
 # box_attributes = [
 #     "ELEV_MEAN_M_BASIN",
