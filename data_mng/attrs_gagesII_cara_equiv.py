@@ -19,6 +19,22 @@ print(
 )
 
 # %% ####################################
+# Check drainage area discrepancy
+########################################
+# Create a scatter plot between pac_pc_sse and PADCAT1_AND_2
+plt.figure(figsize=(6, 6))
+plt.scatter(attrs["area"], attrs["DRAIN_SQKM"], alpha=0.5)
+plt.xlabel("area (HYSETS)")
+plt.ylabel("DRAIN_SQKM (GAGES II)")
+plt.show()
+
+attrs["delineation_err"] = (
+    (attrs["area"] - attrs["DRAIN_SQKM"]) / attrs["DRAIN_SQKM"] * 100
+)
+attrs[["gauge_id", "delineation_err", "area", "DRAIN_SQKM"]][
+    attrs["delineation_err"] > 25
+].to_csv(os.path.join(attrs_dir, "delineation_err.csv"), index=False)
+# %% ####################################
 # PROTECTED AREA PERCENTAGE
 ########################################
 #  Get protected area precent basin based on GAGES II datasets

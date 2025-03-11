@@ -182,6 +182,7 @@ for(sig in config$sigs_predict){
   # print(sprintf("sigs_train: %d rows, %d columns", nrow(sigs_train), ncol(sigs_train)))
 
   # Join attribute tables and the selected signature column
+  # Drop the "gauge_id" column for prediction
   train_data <- attrs_train %>%
     inner_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
     select(-gauge_id) %>%
@@ -194,7 +195,7 @@ for(sig in config$sigs_predict){
   forest <- train(
     # signature to predict
     formula(paste(sig, "~ .")),
-    # input attribute dataset, includes signature
+    # input attribute dataset, including signature column
     data = train_data,
     # Random forest method
     method = "rf",
@@ -235,8 +236,12 @@ for(sig in config$sigs_predict){
   
   # _______________________________________________________________________________________________________________
   # Calculate SHAP values
+  # https://cran.r-project.org/web/packages/iml/vignettes/intro.html
+  # https://christophm.github.io/interpretable-ml-book/agnostic.html
   
   # Create a predictor object for the model
+  # "data" should be the training data (attributes) without the signature column
+  # "y" should be the signature column
   predictor <- Predictor$new(forest$finalModel, data = train_data %>% select(-all_of(sig)), y = train_data[[sig]])
   
   # Calculate SHAP values

@@ -15,39 +15,86 @@ import textwrap
 # LOAD ATTRIBUTES
 #
 ##############################################################################
-file_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_caravan_us_epa.csv"
-num_clusters = 8
-seed = 42
+file_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_and_gages2+climate+morph+padcat.csv"
+num_clusters = 6
+seed = 0
+# selected_columns = [
+#     "ELEV_MEAN_M_BASIN",
+#     "SLOPE_PCT",
+#     "P_mm_day",
+#     "PET_mm_day",
+#     "ARIDITY_GAGES2",
+#     "SNOW_PCT_PRECIP",
+#     "PRECIP_SEAS_IND",
+#     "high_prec_freq",
+#     "low_prec_freq",
+#     "low_prec_dur",
+#     "gauge_lat",
+#     "gauge_lon",
+# ]  # Only for claimtes
 selected_columns = [
-    "ele_mt_sav",
-    "area",
-    "sgr_dk_sav",
-    "for_pc_sse",
-    "crp_pc_sse",
-    "pst_pc_sse",
-    "ire_pc_sse",
-    "prm_pc_sse",
-    "pac_pc_sse",
+    "ELEV_MEAN_M_BASIN",
+    "DRAIN_SQKM",
+    "SLOPE_PCT",
+    "FORESTNLCD06",
+    "CROPSNLCD06",
+    "PASTURENLCD06",
+    "PCT_IRRIG_AG",
+    "SNOWICENLCD06",
+    "PADCAT1_AND_2",
     "isowet_areafrac",
-    "cly_pc_sav",
-    "slt_pc_sav",
-    "soc_th_sav",
+    "CLAYAVE",
+    "SILTAVE",
+    "OMAVE",
     "kar_pc_sse",
     "geol_weighted_ave_age_ma",
-    "ppd_pk_sav",
+    "PDEN_2000_BLOCK",
     "gdp_ud_sav",
-    "hdi_ix_sav",
-    "p_mean",
-    "pet_mean",
-    "aridity",
-    "frac_snow",
-    "seasonality",
+    "FRAGUN_BASIN",
+    "P_mm_day",
+    "PET_mm_day",
+    "ARIDITY_GAGES2",
+    "SNOW_PCT_PRECIP",
+    "PRECIP_SEAS_IND",
     "high_prec_freq",
     "low_prec_freq",
     "low_prec_dur",
+    "ASPECT_NORTHNESS",
+    "ASPECT_EASTNESS",
     "gauge_lat",
     "gauge_lon",
-]
+]  # GAGES2
+# file_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_caravan_us_epa.csv"
+# selected_columns = [
+#     "ele_mt_sav",
+#     "area",
+#     "sgr_dk_sav",
+#     "for_pc_sse",
+#     "crp_pc_sse",
+#     "pst_pc_sse",
+#     "ire_pc_sse",
+#     "prm_pc_sse",
+#     "pac_pc_sse",
+#     "isowet_areafrac",
+#     "cly_pc_sav",
+#     "slt_pc_sav",
+#     "soc_th_sav",
+#     "kar_pc_sse",
+#     "geol_weighted_ave_age_ma",
+#     "ppd_pk_sav",
+#     "gdp_ud_sav",
+#     "hdi_ix_sav",
+#     "p_mean",
+#     "pet_mean",
+#     "aridity",
+#     "frac_snow",
+#     "seasonality",
+#     "high_prec_freq",
+#     "low_prec_freq",
+#     "low_prec_dur",
+#     "gauge_lat",
+#     "gauge_lon",
+# ]  # For Caravan
 # %% #########################################################################
 #
 # LOAD ATTRIBUTES
@@ -60,7 +107,7 @@ print(len(data))
 
 # %%
 # Extract the selected columns
-data_selected = data[selected_columns]
+data_selected = data[selected_columns].astype(float)
 data_selected_filt = data_selected.dropna()
 len(data_selected_filt)
 
@@ -166,13 +213,35 @@ for cluster in range(num_clusters):
 
 # Selected attributes for box plots
 box_attributes = [
-    "sgr_dk_sav",
-    "for_pc_sse",
-    "cly_pc_sav",
+    "SLOPE_PCT",
+    "FORESTNLCD06",
+    "CLAYAVE",
     "geol_weighted_ave_age_ma",
-    "aridity",
-    "frac_snow",
-]
+    "ARIDITY_GAGES2",
+    "SNOW_PCT_PRECIP",
+]  # For caravan
+
+# box_attributes = [
+#     "ELEV_MEAN_M_BASIN",
+#     "SLOPE_PCT",
+#     "P_mm_day",
+#     "PET_mm_day",
+#     "ARIDITY_GAGES2",
+#     "SNOW_PCT_PRECIP",
+#     "PRECIP_SEAS_IND",
+#     "high_prec_freq",
+#     "low_prec_freq",
+#     "low_prec_dur",
+# ]  # For climates
+
+# box_attributes = [
+#     "sgr_dk_sav",
+#     "for_pc_sse",
+#     "cly_pc_sav",
+#     "geol_weighted_ave_age_ma",
+#     "aridity",
+#     "frac_snow",
+# ]  # For caravan
 # %%
 data_scaled_df = pd.DataFrame(
     np.concatenate(
@@ -219,9 +288,9 @@ for cluster in range(num_clusters):
     # Wrap long x-axis labels
     labels = axes[row, col].get_xticklabels()
     wrapped_labels = [
-        "\n".join(textwrap.wrap(label.get_text(), 13)) for label in labels
+        "\n".join(textwrap.wrap(label.get_text(), 20)) for label in labels
     ]
-    axes[row, col].set_xticklabels(wrapped_labels, rotation=60)
+    axes[row, col].set_xticklabels(wrapped_labels, rotation=90)
     axes[row, col].set_xlabel(None)
 
 # Hide any unused subplots
