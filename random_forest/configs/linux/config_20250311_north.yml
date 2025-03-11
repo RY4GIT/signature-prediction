@@ -1,0 +1,72 @@
+paths:
+  home_dir: /home/raraki/data/signature-prediction
+  out_dir: /out/rf
+  train:
+    signatures: /signatures/caravan_us_20250223_withWu/out_calc_All_custom_filt_qc_snow_gages2subset.csv
+    attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat.csv
+  test:
+    attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat.csv
+experiment_name: 20250311_north
+filter_by_ecoregion:
+  run: false
+  name: NA
+settings:
+  seed: 0
+  ntree: 500
+  num_folds: 10
+  eval_metric: MSE
+parallel:
+  nCores: 16
+sigs_predict:
+- TotalRR
+- RR_Seasonality
+- EventRR
+- Recession_a_Seasonality
+- AverageStorage
+- RecessionParameters_b
+- RecessionParameters_T0
+- First_Recession_Slope
+- Mid_Recession_Slope
+- EventRR_TotalRR_ratio
+- VariabilityIndex
+- BFI
+- BaseflowRecessionK
+- IE_thresh_signif
+- SE_thresh_signif
+- Storage_thresh_signif
+- IE_thresh
+- SE_thresh
+- IE_effect
+- SE_effect
+- Storage_thresh
+- SE_slope
+- R_Pvol_RC
+- R_Pint_RC
+attrs_of_interest:
+- ELEV_MEAN_M_BASIN
+- DRAIN_SQKM
+- SLOPE_PCT
+- FORESTNLCD06
+- CROPSNLCD06
+- PASTURENLCD06
+- PCT_IRRIG_AG
+- SNOWICENLCD06
+- PADCAT1_AND_2
+- isowet_areafrac
+- CLAYAVE
+- SILTAVE
+- OMAVE
+- kar_pc_sse
+- geol_weighted_ave_age_ma
+- PDEN_2000_BLOCK
+- gdp_ud_sav
+- FRAGUN_BASIN
+- P_mm_day
+- PET_mm_day
+- ARIDITY_GAGES2
+- SNOW_PCT_PRECIP
+- PRECIP_SEAS_IND
+- high_prec_freq
+- low_prec_freq
+- low_prec_dur
+- ASPECT_NORTHNESS
