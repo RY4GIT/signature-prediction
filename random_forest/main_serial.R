@@ -46,19 +46,19 @@ Sys.setenv(R_CONFIG_ACTIVE = "default")
 # _______________________________________________________________________________________________________________
 # (1) Load configuration from a file path
 # Set the configuration file path directly
-config_file <- "./random_forest/configs/win/config_test.yml"
+# config_file <- "./random_forest/configs/win/config_test.yml"
 
-# Check if the file exists to avoid runtime errors
-if (!file.exists(config_file)) {
-  stop("Configuration file not found: ", config_file)
-}
+# # Check if the file exists to avoid runtime errors
+# if (!file.exists(config_file)) {
+#   stop("Configuration file not found: ", config_file)
+# }
 
-config <- yaml::read_yaml(config_file)
+# config <- yaml::read_yaml(config_file)
 
 # _______________________________________________________________________________________________________________
 # (2) Load configuration as an argument
-# args <- commandArgs(trailingOnly = TRUE)
-# config_file <- args[1]
+args <- commandArgs(trailingOnly = TRUE)
+config_file <- args[1]
 
 # If you choose this, run the code using bash/shell
 #
@@ -251,7 +251,12 @@ for(sig in config$sigs_predict){
   # Store SHAP values in the list
   out_shap_values[[sig]] <- shap_values %>%
     as.data.frame() %>%
-    dplyr::mutate(sig_name = sig)
+    dplyr::mutate(
+      feature = gsub("=.*", "", feature),
+      feature_value = as.numeric(gsub(".*=", "", feature.value)),
+      sig_name = sig
+    ) %>%
+    select(feature, phi, phi.var, feature_value, sig_name)
 
   # _______________________________________________________________________________________________________________
   # Predict signature values on test set

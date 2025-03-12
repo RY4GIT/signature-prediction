@@ -5,29 +5,30 @@
 # > cd signature-prediction\random_forest
 # > run.bat
 
+# UNCOMMENT THIS IF YOUR COMPUTER DOES NOT HAVE THE REQUIRED PACKAGES
 # # Set CRAN mirror
 # options(repos = c(CRAN = "https://cran.rstudio.com/"))
-# 
+
 # # Function to install packages if not already installed
 # install_if_missing <- function(packages) {
 #   new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
 #   if (length(new_packages)) install.packages(new_packages, dependencies = TRUE)
 # }
-# 
+
 # # List of all required packages
 # packages <- c(
 #   "tidyverse", "randomForest", "caret", 
-#   "doParallel", "dplyr", "foreach", "yaml"
+#   "doParallel", "dplyr", "foreach", "yaml", "iml"
 # )
-# 
+
 # # Install missing packages
 # install_if_missing(packages)
 
 library(tidyverse)
 library(randomForest)
 library(caret)
-library(dplyr)
 library(doParallel)
+library(dplyr)
 library(foreach)
 library(iml)
 
@@ -241,10 +242,18 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
   shap <- Shapley$new(predictor, x.interest = train_data %>% select(-all_of(sig)))
   shap_values <- shap$results
 
-  # Store SHAP values in the list
-  out_shap_values[[sig]] <- shap_values %>%
+  # Format SHAP values
+  shap_values <- shap_values %>%
     as.data.frame() %>%
-    dplyr::mutate(sig_name = sig)
+    dplyr::mutate(
+      feature = gsub("=.*", "", feature),
+      feature_value = as.numeric(gsub(".*=", "", feature.value)),
+      sig_name = sig
+    ) %>%
+    select(feature, phi, phi.var, feature_value, sig_name)
+
+  # Store SHAP values in the list
+  out_shap_values <- shap_values
 
   # Summarize all output from one thread run in a list
   list(
