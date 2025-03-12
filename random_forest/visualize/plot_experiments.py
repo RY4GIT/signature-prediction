@@ -11,9 +11,37 @@ import yaml
 
 # %%
 ########################## CHANGE HERE #################
-output_date = r"output_raraki_20250223"
-experiment_name = "extraattrs"
+output_date = r"output_raraki_20250307"
+experiment_name = "climattrs"
 ########################################################
+
+# # GROSSARY OF EXPERIMENTS
+
+# ############# GAGES2 VS CARAVAN EXPERIMENT #################
+# output_date = r"output_raraki_20250220"
+# experiment_name = "gages2exp"
+# ########################################################
+
+# ############# GAGES2 VS CARAVAN EXPERIMENT #################
+# output_date = r"output_raraki_20250220"
+# experiment_name = "gages2exp"
+# ########################################################
+
+# ############# CARAVAN EQUIV RECALC & NORTHNESS and EASTNESS EXP #################
+# output_date = r"output_raraki_20250311"
+# experiment_name = "20250311"
+# ################################################################################
+
+# ########### EXTRA ATTRIBUTES FROM PRANCEVIC ###########
+# output_date = r"output_raraki_20250223"
+# experiment_name = "extraattrs"
+# ########################################################
+
+# ########## EXTRA ATTRIBUTES FROM HAMMOND CLIMATE ##############
+# output_date = r"output_raraki_20250307"
+# experiment_name = "climattrs"
+# ########################################################
+
 
 # ____________________________________________________________________________________
 # Config
@@ -49,7 +77,7 @@ def read_json_file(file_path):
     return data
 
 
-exp_info = read_json_file(f"plot_config_{experiment_name}_colors.json")
+exp_info = read_json_file(f"plot_config_expcolors_{experiment_name}.json")
 exp_info = {int(k): v for k, v in exp_info.items()}
 exp_types = exp_info.keys()
 
@@ -67,9 +95,7 @@ sigs = sigs_config.column_name
 #####################################################
 
 
-def load_data_r2(
-    output_date, out_dir_rf, exp_info, exp_types, experiment_name="extraattrs"
-):
+def load_data_r2(output_date, out_dir_rf, exp_info, exp_types, experiment_name):
     _dfs_r2 = []
 
     # Read by ecoregion
@@ -127,7 +153,7 @@ def plot_average_r2(dfs_r2, exp_info):
     fig.savefig(os.path.join(fig_dir, f"r2_average.png"))
 
 
-dfs_r2 = load_data_r2(output_date, out_dir_rf, exp_info, exp_types)
+dfs_r2 = load_data_r2(output_date, out_dir_rf, exp_info, exp_types, experiment_name)
 plot_r2_values(dfs_r2, exp_info, exp_types)
 plot_average_r2(dfs_r2, exp_info)
 
