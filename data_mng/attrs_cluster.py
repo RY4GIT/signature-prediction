@@ -9,6 +9,11 @@ from sklearn.manifold import TSNE
 import seaborn as sns
 import numpy as np
 import textwrap
+from sklearn.mixture import GaussianMixture
+
+# Define the custom color map
+from matplotlib.colors import ListedColormap
+
 
 # %% #########################################################################
 #
@@ -20,117 +25,58 @@ num_clusters = 6
 seed = 0
 
 selected_columns = [
-    "PPTAVG_BASIN",
+    "P_mm_day",
     "T_AVG_BASIN",
-    "T_MAXSTD_BASIN",
-    "T_MIN_BASIN",
-    "T_MINSTD_BASIN",
+    # "T_MAX_BASIN", # Maybe redundant pretty similar to T_AVG_BASIN
+    # "T_MIN_BASIN", # Maybe redundant pretty similar to T_AVG_BASIN
+    "PET_mm_day",
     "RH_BASIN",
-    "FST32F_BASIN",
-    "LST32F_BASIN",
-    "WD_BASIN",
-    "WDMAX_BASIN",
-    "WDMIN_BASIN",
-    "PET",
+    "ARIDITY_GAGES2",
+    "moisture_index",  # ? Sometimes shows different patterns than ARIDITY_GAGES2
+    # "T_MAXSTD_BASIN", # Redundant, we are not looking at the inter-annual change
+    # "T_MINSTD_BASIN", # Redundant, we are not looking at the inter-annual change
     "SNOW_PCT_PRECIP",
     "PRECIP_SEAS_IND",
-    "moisture_index",
+    "input_seasonality",
     "seasonality",
+    "input_PET_synchrony",
+    "WD_BASIN",
     "high_prec_freq",
     "high_prec_dur",
     "low_prec_freq",
     "low_prec_dur",
-    "PETdivP",
-    "input_seasonality",
-    "input_PET_synchrony",
+    "FST32F_BASIN",
+    "LST32F_BASIN",
+    # "WDMAX_BASIN", # Redundant, we are not looking at the inter-annual change
+    # "WDMIN_BASIN", # Redundant, we are not looking at the inter-annual change
+    # "PETdivP", # Use ARIDITY_GAGES2 instead (used in the main experiment)
     "gauge_lat",
     "gauge_lon",
-]  # More climate attrs
+]
 
-# selected_columns = [
-#     "ELEV_MEAN_M_BASIN",
-#     "SLOPE_PCT",
-#     "P_mm_day",
-#     "PET_mm_day",
-#     "ARIDITY_GAGES2",
-#     "SNOW_PCT_PRECIP",
-#     "PRECIP_SEAS_IND",
-#     "high_prec_freq",
-#     "low_prec_freq",
-#     "low_prec_dur",
-#     "gauge_lat",
-#     "gauge_lon",
-# ]  # Only for claimtes
-# selected_columns = [
-#     "ELEV_MEAN_M_BASIN",
-#     "DRAIN_SQKM",
-#     "SLOPE_PCT",
-#     "FORESTNLCD06",
-#     "CROPSNLCD06",
-#     "PASTURENLCD06",
-#     "PCT_IRRIG_AG",
-#     "SNOWICENLCD06",
-#     "PADCAT1_AND_2",
-#     "isowet_areafrac",
-#     "CLAYAVE",
-#     "SILTAVE",
-#     "OMAVE",
-#     "kar_pc_sse",
-#     "geol_weighted_ave_age_ma",
-#     "PDEN_2000_BLOCK",
-#     "gdp_ud_sav",
-#     "FRAGUN_BASIN",
-#     "P_mm_day",
-#     "PET_mm_day",
-#     "ARIDITY_GAGES2",
-#     "SNOW_PCT_PRECIP",
-#     "PRECIP_SEAS_IND",
-#     "high_prec_freq",
-#     "low_prec_freq",
-#     "low_prec_dur",
-#     "ASPECT_NORTHNESS",
-#     "ASPECT_EASTNESS",
-#     "gauge_lat",
-#     "gauge_lon",
-# ]  # GAGES2
-# file_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_caravan_us_epa.csv"
-# selected_columns = [
-#     "ele_mt_sav",
-#     "area",
-#     "sgr_dk_sav",
-#     "for_pc_sse",
-#     "crp_pc_sse",
-#     "pst_pc_sse",
-#     "ire_pc_sse",
-#     "prm_pc_sse",
-#     "pac_pc_sse",
-#     "isowet_areafrac",
-#     "cly_pc_sav",
-#     "slt_pc_sav",
-#     "soc_th_sav",
-#     "kar_pc_sse",
-#     "geol_weighted_ave_age_ma",
-#     "ppd_pk_sav",
-#     "gdp_ud_sav",
-#     "hdi_ix_sav",
-#     "p_mean",
-#     "pet_mean",
-#     "aridity",
-#     "frac_snow",
-#     "seasonality",
-#     "high_prec_freq",
-#     "low_prec_freq",
-#     "low_prec_dur",
-#     "gauge_lat",
-#     "gauge_lon",
-# ]  # For Caravan
+custom_colors = [
+    "#a6d854",
+    "#66c2a5",
+    "#e78ac3",
+    "#fc8d62",
+    "#ffd92f",
+    "#8da0cb",
+    "#a6d854",
+    # "#66c2a5",
+    # "#fc8d62",
+    # "#e78ac3",
+]
+cmap = ListedColormap(custom_colors)
+# All available climate attrs at BASIN level, annual scale
+# From Caravan, GAGES2, and Hammond
+
 # %% #########################################################################
 #
 # LOAD ATTRIBUTES
 #
 ##############################################################################
 
-_data = pd.read_csv(file_path)
+_data = pd.read_csv(file_path, index_col="gauge_id")
 data = _data[_data["country"] == "United States of America"]
 print(len(data))
 
@@ -162,14 +108,28 @@ data_tsne = tsne.fit_transform(data_scaled)
 
 # %%
 # Apply K-Means clustering
-kmeans = KMeans(n_clusters=num_clusters, random_state=seed)
-clusters = kmeans.fit_predict(data_scaled)
+# kmeans = KMeans(n_clusters=num_clusters, random_state=seed)
+# clusters = kmeans.fit_predict(data_scaled)
+
+# from sklearn.cluster import MeanShift
+
+# meanshift = MeanShift()
+# clusters = meanshift.fit_predict(data_scaled)
+
+# from sklearn.cluster import DBSCAN
+
+# dbscan = DBSCAN(min_samples=100)
+# clusters = dbscan.fit_predict(data_scaled)
+
+
+gmm = GaussianMixture(n_components=num_clusters, random_state=seed)
+clusters = gmm.fit_predict(data_scaled)
 # %% #########################################################################
 #
 # t-SNE PLOTTING
 #
 ##############################################################################
-cmap = "Set2"
+
 # Plot t-SNE components
 plt.figure(figsize=(8, 6))
 plt.scatter(data_tsne[:, 0], data_tsne[:, 1], c=clusters, cmap=cmap, s=3, alpha=0.5)
@@ -204,17 +164,25 @@ scatter = ax.scatter(
     alpha=0.5,
     transform=ccrs.PlateCarree(),
 )
-plt.colorbar(scatter, label="Cluster")
+cbar = plt.colorbar(
+    mappable=scatter, ticks=np.arange(np.min(clusters), np.max(clusters) + 1)
+)
+cbar.set_label("Cluster")
 plt.title("t-SNE Clusters on Map")
 plt.show()
 
 # %%
+# Plot each cluster on a map in a 3-by-2 subplot layout
+nrows = 4
+fig, axes = plt.subplots(
+    nrows, 2, figsize=(15, 4 * nrows), subplot_kw={"projection": ccrs.PlateCarree()}
+)
+axes = axes.flatten()
 for cluster in range(num_clusters):
     # Create a scatter plot on a map
-    plt.figure(figsize=(10, 6))
-    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax = axes[cluster]
     ax.add_feature(cfeature.LAND)
-    ax.add_feature(cfeature.OCEAN)
+    ax.add_feature(cfeature.OCEAN, facecolor="lightgrey")
     ax.add_feature(cfeature.COASTLINE)
     ax.add_feature(cfeature.BORDERS, linestyle=":")
     ax.add_feature(cfeature.LAKES, alpha=0.5)
@@ -226,13 +194,19 @@ for cluster in range(num_clusters):
     scatter = ax.scatter(
         lat_lon["gauge_lon"][clusters == cluster],
         lat_lon["gauge_lat"][clusters == cluster],
-        c=clusters[clusters == cluster],
+        c=custom_colors[cluster],
         s=100,
-        alpha=0.1,
+        alpha=0.7,
         transform=ccrs.PlateCarree(),
     )
-    plt.title("Cluster " + str(cluster))
-    plt.show()
+    ax.set_title("Cluster " + str(cluster))
+
+# Hide any unused subplots
+for i in range(num_clusters, len(axes)):
+    fig.delaxes(axes[i])
+
+plt.tight_layout()
+plt.show()
 
 # %% #########################################################################
 #
@@ -241,52 +215,33 @@ for cluster in range(num_clusters):
 ##############################################################################
 
 # Selected attributes for box plots
-box_attributes = [
-    "PPTAVG_BASIN",
-    "T_AVG_BASIN",
-    "T_MAXSTD_BASIN",
-    "RH_BASIN",
-    "FST32F_BASIN",
-    "LST32F_BASIN",
-    "WD_BASIN",
-    "PET",
-    "SNOW_PCT_PRECIP",
-    "PRECIP_SEAS_IND",
-    # "peakSWEdivP",
-    "PETdivP",
-    "input_seasonality",
-    "input_PET_synchrony",
-]
-# box_attributes = [
-#     "SLOPE_PCT",
-#     "FORESTNLCD06",
-#     "CLAYAVE",
-#     "geol_weighted_ave_age_ma",
-#     "ARIDITY_GAGES2",
-#     "SNOW_PCT_PRECIP",
-# ]  # For caravan
-
-# box_attributes = [
-#     "ELEV_MEAN_M_BASIN",
-#     "SLOPE_PCT",
-#     "P_mm_day",
-#     "PET_mm_day",
-#     "ARIDITY_GAGES2",
+box_attributes = selected_columns[:-2]
+# [
+#     "PPTAVG_BASIN",
+#     "T_AVG_BASIN",
+#     "T_MAXSTD_BASIN",
+#     "T_MIN_BASIN",
+#     "T_MINSTD_BASIN",
+#     "RH_BASIN",
+#     "FST32F_BASIN",
+#     "LST32F_BASIN",
+#     "WD_BASIN",
+#     "WDMAX_BASIN",
+#     "WDMIN_BASIN",
+#     "PET",
 #     "SNOW_PCT_PRECIP",
 #     "PRECIP_SEAS_IND",
+#     "moisture_index",
+#     "seasonality",
 #     "high_prec_freq",
+#     "high_prec_dur",
 #     "low_prec_freq",
 #     "low_prec_dur",
-# ]  # For climates
+#     "PETdivP",
+#     "input_seasonality",
+#     "input_PET_synchrony",
+# ]
 
-# box_attributes = [
-#     "sgr_dk_sav",
-#     "for_pc_sse",
-#     "cly_pc_sav",
-#     "geol_weighted_ave_age_ma",
-#     "aridity",
-#     "frac_snow",
-# ]  # For caravan
 # %%
 data_scaled_df = pd.DataFrame(
     np.concatenate(
@@ -304,42 +259,86 @@ data_scaled_df
 # %%
 # Create a subplot for each cluster
 num_clusters = len(np.unique(clusters))
-fig, axes = plt.subplots(3, 3, figsize=(12, 12))
-
+if num_clusters > 6:
+    nrows = 4
+else:
+    nrows = 3
+fig, axes = plt.subplots(3, 2, figsize=(4 * nrows, 12))
+axes = axes.flatten()
 # Define flier properties for outliers
 flierprops = dict(marker=".", color="#F2F0EF", alpha=0.1)
 
+
+def custom_palette(data):
+    colors = []
+    for attribute in data["attribute"].unique():
+        values = data[data["attribute"] == attribute]["value"]
+        q25, q50, q75 = np.percentile(values, [25, 50, 75])
+        if q75 < 0:
+            colors.append("tab:pink")
+        elif q25 > 0:
+            colors.append("tab:blue")
+        else:
+            colors.append("lightgrey")
+    return colors
+
+
 for cluster in range(num_clusters):
-    row = cluster // 3
-    col = cluster % 3
+    row = cluster // 2
+    col = cluster % 2
 
     cluster_data = data_scaled_df[box_attributes][data_scaled_df["cluster"] == cluster]
     plot_cluster_data = cluster_data.melt(var_name="attribute", value_name="value")
 
-    axes[row, col].axhline(0, linestyle="--", color="grey", linewidth=1.0)
+    colors = custom_palette(plot_cluster_data)
+
+    axes[cluster].axhline(0, linestyle="--", color="grey", linewidth=1.0)
     sns.boxplot(
         x="attribute",
         y="value",
         data=plot_cluster_data,
-        ax=axes[row, col],
-        palette=cmap,
+        ax=axes[cluster],
+        palette=colors,  # cmap
         legend=False,
         flierprops=flierprops,
     )
 
-    axes[row, col].set_title(f"Cluster {cluster}")
-    axes[row, col].set_ylabel("Scaled Value")
-    axes[row, col].set_ylim([-4, 6])
+    axes[cluster].set_title(f"Cluster {cluster}")
+    axes[cluster].set_ylabel("Scaled Value")
+    axes[cluster].set_ylim([-5, 5])
     # Wrap long x-axis labels
-    labels = axes[row, col].get_xticklabels()
+    labels = axes[cluster].get_xticklabels()
     wrapped_labels = [
         "\n".join(textwrap.wrap(label.get_text(), 20)) for label in labels
     ]
-    axes[row, col].set_xticklabels(wrapped_labels, rotation=90)
-    axes[row, col].set_xlabel(None)
+    axes[cluster].set_xticklabels(wrapped_labels, rotation=90)
+    axes[cluster].set_xlabel(None)
 
 # Hide any unused subplots
 plt.tight_layout()
 plt.show()
 
+# %%
+
+data_selected_filt.index
+# %%
+# Save the data with the cluster labels
+
+# %%
+data_filtered = data.loc[data_selected_filt.index]
+data_filtered["cluster"] = clusters
+# %%
+data_output = data.merge(
+    data_filtered[["cluster"]], left_index=True, right_index=True, how="left"
+)
+# %%
+data_output.to_csv(
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_and_gages2+climate+morph+padcat+cluster.csv",
+    index=True,
+)
+
+# %%
+data_output[["CLASS", "AGGECOREGION"]].groupby("AGGECOREGION").count().to_clipboard()
+# %%
+data_output[["CLASS", "cluster"]].groupby("cluster").count().to_clipboard()
 # %%

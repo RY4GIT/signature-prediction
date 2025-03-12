@@ -123,7 +123,7 @@ load_attrs <- function(file_path) {
   # Select the gauge_id and the attributes of interest
   # and return it as a data frame
   data %>%
-    select(gauge_id, all_of(config$attrs_of_interest), ecoregion) %>%
+    select(gauge_id, all_of(config$attrs_of_interest), cluster) %>%
     as.data.frame()
 }
 
@@ -134,18 +134,18 @@ attrs_test_path <- file.path(home_dir, config$paths$test$attributes)
 attrs_test <- load_attrs(attrs_test_path)
 
 # _______________________________________________________________________________________________________________
-# If running the model by ecoregion, filter and get the subset of the data
-if (config$filter_by_ecoregion$run) {
+# If running the model by cluster, filter and get the subset of the data
+if (config$filter_by_cluster$run) {
   attrs_train <- attrs_train %>%
-    filter(ecoregion == config$filter_by_ecoregion$name) %>%
-    select(-ecoregion)
+    filter(cluster == config$filter_by_cluster$name) %>%
+    select(-cluster)
   attrs_test <- attrs_test %>%
-    filter(ecoregion == config$filter_by_ecoregion$name) %>%
-    select(-ecoregion)
-  message("Selected ", nrow(attrs_train), " gauges in: ", config$filter_by_ecoregion$name)
+    filter(cluster == config$filter_by_cluster$name) %>%
+    select(-cluster)
+  message("Selected ", nrow(attrs_train), " gauges in: ", config$filter_by_cluster$name)
 } else {
   attrs_train <- attrs_train %>%
-  select(-ecoregion)
+  select(-cluster)
 }
 
 #############################################

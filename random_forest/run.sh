@@ -10,9 +10,21 @@
 project_dir="/home/raraki/signature-prediction/random_forest"
 config_dir="$project_dir/configs/linux"
 
-echo "Running experiment with $config_dir/config_test.yml"
-Rscript main_serial.R "$config_dir/config_test.yml"
-echo "Experiment with $config_dir/config_test.yml finished"
+
+# List of cluster codes
+clusters="0 1 2 3 4 5"
+
+# # Loop through each ecoregion code
+for i in $clusters
+do
+    echo "Running experiment with $config_dir/config_cluster_$i.yml"
+    Rscript main_mp.R "$config_dir/config_cluster_$i.yml"
+    echo "Experiment with $config_dir/config_cluster_$i.yml finished"
+done
+
+# echo "Running experiment with $config_dir/config_test.yml"
+# Rscript main_serial.R "$config_dir/config_test.yml"
+# echo "Experiment with $config_dir/config_test.yml finished"
 
 # echo "Running experiment with $config_dir/config_20250311_east.yml"
 # Rscript main_serial.R "$config_dir/config_20250311_east.yml"
@@ -31,16 +43,7 @@ echo "Experiment with $config_dir/config_test.yml finished"
 # Rscript main_mp.R "$config_dir/config_test.yml"
 # echo "Experiment with $config_dir/config_test.yml finished"
 
-# # List of ecoregion codes
-# ecoregions="11 1210 6713 81 82 91 92"
 
-# # # Loop through each ecoregion code
-# for i in $ecoregions
-# do
-#     echo "Running experiment with $config_dir/config_ecoregion_$i.yml"
-#     Rscript main_mp.R "$config_dir/config_ecoregion_$i.yml"
-#     echo "Experiment with $config_dir/config_ecoregion_$i.yml finished"
-# done
 
 # echo "Running experiment with $config_dir/config_ecoregion_11.yml"
 # Rscript main_mp.R "$config_dir/config_ecoregion_11.yml"
