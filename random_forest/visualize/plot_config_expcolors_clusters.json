@@ -1,0 +1,8 @@
+{
+    "0": {"name": "Midwest", "color": "#a6d854"},
+    "1": {"name": "South", "color": "#66c2a5"},
+    "2": {"name": "Western Rocky", "color": "#e78ac3"},
+    "3": {"name": "Pacific NorthWest", "color": "#8da0cb"},
+    "4": {"name": "Western Coast and Deserts", "color": "#ffd92f"},
+    "5": {"name": "Eastern Mountains", "color": "#fc8d62"}
+}
