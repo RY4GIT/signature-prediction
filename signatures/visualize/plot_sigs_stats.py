@@ -8,7 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import seaborn as sns
-
+# %%
 
 home_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 data_dir = "data"
@@ -257,7 +257,6 @@ sigs_camels.head()
 # %%
 
 for HUCnum in range(1, 21 + 1):
-
     prefix = f"camels_{HUCnum:02}"
     print(f"Currently plotting HUC{HUCnum:02}")
 

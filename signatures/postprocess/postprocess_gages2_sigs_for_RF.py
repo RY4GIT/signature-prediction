@@ -16,6 +16,11 @@ try:
 except Exception as e:
     print(e)
 
+
+# gages2_camels_dir = "gages2_camels_20250219"
+# gages2_hysets_dir = "gages2_hysets_20250219"
+# out_dir = "gages2_caravan_us_20250219"
+# origin_caravan_dir = "caravan_us_20250223_withWu"
 # %% ################################################################
 # CONCAT HYSETS AND CAMELS RESULTS FOR GAGES 2
 #####################################################################
@@ -58,6 +63,16 @@ caravan_us_afterQA_excluSnow = pd.read_csv(
 )
 print(
     f"Excluding snowy catchments for Event signatures: {caravan_us_afterQA_excluSnow['IE_thresh'].notna().sum()}"
+)
+
+caravan_us_afterQA_excluSnow_dropBadarea = pd.read_csv(
+    filepath_or_buffer=os.path.join(
+        sig_dir, origin_caravan_dir, "out_calc_All_custom_filt_qc_snow_area.csv"
+    ),
+    index_col="gauge_id",
+)
+print(
+    f"CARAVAN after removing gages with bad-quality Q and area estimates: {len(caravan_us_afterQA_excluSnow_dropBadarea)}"
 )
 
 # %%
@@ -207,4 +222,57 @@ print(
     f"Event signatures are only available at: {filtered_gages2_us_lowsnow['IE_thresh'].notna().sum()}"
 )
 
+# %% ################################################################
+# Repeat the same for the catchments with bad-area estimates
+#####################################################################
+
+
+merged_df_goodarea = gages2_us.merge(
+    caravan_us_afterQA_excluSnow_dropBadarea,
+    on="gauge_id",
+    suffixes=("_gages2", "_caravan"),
+    how="inner",
+)
+
+
+# %%
+common_gages_area = merged_df_goodarea.index
+filtered_caravan_us_area = caravan_us_afterQA_excluSnow_dropBadarea.loc[
+    common_gages_area
+]
+filtered_gages2_us_area = gages2_us.loc[common_gages_area]
+
+filtered_caravan_us_area.to_csv(
+    path_or_buf=os.path.join(
+        sig_dir,
+        origin_caravan_dir,
+        "out_calc_All_custom_filt_qc_snow_area_gages2subset.csv",
+    )
+)
+
+filtered_gages2_us_area.to_csv(
+    path_or_buf=os.path.join(
+        sig_dir, out_dir, "out_calc_All_custom_filt_qc_snow_area_caravanoverlap.csv"
+    )
+)
+
+print(f"Caravan after QA and snow: {len(caravan_us_afterQA_excluSnow_dropBadarea)}")
+print(f"GAGES2: {len(gages2_us)}")
+print(f"Joined left on GAGES2: {len(merged_df_goodarea)}")
+print(f"<- this should be equal or smaller than Caravan or GAGES2 gage numbers")
+print(
+    f"<- the value should equal to {len(filtered_caravan_us_area)} and {len(filtered_gages2_us_area)}"
+)
+
+
+# %%
+os.path.join(
+    sig_dir,
+    origin_caravan_dir,
+    "out_calc_All_custom_filt_qc_snow_area_gages2subset.csv",
+)
+# %%
+os.path.join(
+    sig_dir, out_dir, "out_calc_All_custom_filt_qc_snow_area_caravanoverlap.csv"
+)
 # %%

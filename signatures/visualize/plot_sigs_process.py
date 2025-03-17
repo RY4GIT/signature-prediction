@@ -11,6 +11,7 @@ import yaml
 import geopandas as gpd
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Rectangle
+import geopandas as gdp
 # %% ######################
 # PREPARATION
 ##########################
@@ -18,7 +19,7 @@ from matplotlib.patches import Rectangle
 # ____________________________________________________________________________________
 # Config
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\signatures\visualize")
-out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\gages2_caravan_us_20250211"
+out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20250223_withWu"
 plot_sigs_config_path = "plot_sigs_config.csv"
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
@@ -68,9 +69,12 @@ wspolygon.set_index("gauge_id", inplace=True)
 # %%
 # %%
 _df_sigs = pd.read_csv(
-    os.path.join(out_dir, "out_calc_All_custom.csv"), index_col="gauge_id"
+    os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_gages2subset.csv"),
+    index_col="gauge_id",
 )
-_df_sigs = _df_sigs.join(attrs_caravan, how="left")
+_df_sigs = _df_sigs.drop(
+    columns=["gauge_name", "country", "gauge_lat", "gauge_lon", "area"]
+).join(attrs_caravan, how="left")
 df_sigs = _df_sigs.join(eco_caravan, how="left")
 
 df_sigs = wspolygon.join(df_sigs, how="right")
@@ -197,7 +201,9 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 
 # %%
 # %% ######################
-# Plot signature value map
+#
+#  Plot signature value map
+#
 ##########################
 
 # _____________________________________________________________________________
@@ -242,7 +248,9 @@ for sigs_name in plot_sigs_config.column_name:
 
 # %%
 # %% ######################
-# Plot signature-process interpretation map
+#
+# Plot signature-process interpretation map (linear combination of signatures)
+#
 ##########################
 
 # ______________________________________________________________________________
@@ -343,9 +351,12 @@ def plot_err_box(df, sig_name):
 
 plot_err_box(df_sigs, process_name)
 
-# %% ________________________________________________________
+# %%
+
+########################################################################################
 # Plot the bivariate map
 # Color map and the idea from Datawim: https://www.datawim.com/post/creating-professional-bivariate-maps-in-r/
+########################################################################################
 
 # ______________________________________________________
 # Preparation
@@ -362,8 +373,15 @@ labels = [1, 2, 3, 4]
 dir_label = ["low", "", "", "high"]
 
 # Reversed labels for quantiles (high --> low)
-labels_rev = [4, 3, 2, 1]
+labels_rev = [
+    4,
+    3,
+    2,
+    1,
+]
+# Label low values as 4, so that it gets assinged to (x,y)=(i,4) or (4,j) in the quadrant
 dir_label_rev = ["high", "", "", "low"]
+
 
 # CHANGE HERE ################
 
@@ -371,8 +389,8 @@ dir_label_rev = ["high", "", "", "low"]
 # process_name = "Water loss to deep GW or ET"
 # process_name = "Storage capacity and retention"
 # process_name = "Infiltration Excess Overlandflow"
-process_name = "Saturation Excess Overlandflow"
-# process_name = "ET impacts on storage and baseflow"
+# process_name = "Saturation Excess Overlandflow"
+process_name = "ET impacts on storage and baseflow"
 
 # For checking the items
 process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
@@ -464,10 +482,10 @@ if process_name == "ET impacts on storage and baseflow":
         process_columns.label == "VariabilityIndex"
     ].squeeze()  # X variable, R
 
-    sig1_label = labels_rev
+    sig1_label = labels
     sig2_label = labels
 
-    sig1_dir = dir_label_rev
+    sig1_dir = dir_label
     sig2_dir = dir_label
 ###############################
 
@@ -615,3 +633,4 @@ y_ticks = sig2_dir
 create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
 
 # %%
+print(df_sigs_clean.columns)

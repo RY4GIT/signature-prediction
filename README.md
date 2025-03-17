@@ -44,11 +44,12 @@ Skip this step if you have downloaded pre-caluclated signature values from GDriv
 - Calculate signatures using ```.\signatures\main_caravan.m``` for Caravan datasets (CAMELS + HYSETS gauges)
 - Calculate signatures using ```.\signatures\main_gages2.m``` for GAGES2 catchments overlapping with CAMELS + HYSETS, with surface water input data from [Hammond, 2024](https://www.sciencebase.gov/catalog/item/6494515fd34ef77fcb014eb0)
 - Make sure to filter out some signatures using scripts in ```.\signatures\postprocess\```
-    - `postprocess_caravan_sigs_for_RF.py` filter out some signatures based on the following conditions. This script output signature files with extension `_filt_qc.csv` (for meeting conditions 1 & 2), and `_filt_qc_snow.csv` (for meeting conditions 1 & 2 & 3)
+    - `postprocess_caravan_sigs_for_RF.py` filter out some signatures based on the following conditions. This script output signature files with extension `_filt_qc.csv` (for meeting conditions 1 & 2), `_filt_qc_snow.csv` (for meeting conditions 1 & 2 & 3), and `_filt_qc_snow_area.csv` (for meeting conditions 1 & 2 & 3 & 4)
         1. Exclude Hysets watersheds with bad data quality (less than 5 years of record & for the period where data is available, >30\% record is NaN)
         2. Exclude Hysets watersheds overlapping with CAMELS gages
         3. Event-based overlandflow signatures, exclude Hysets watersheds dominated with snow with `frac_snow` >20\%
-    - In addition to the above conditions, `postprocess_gages2_sigs_for_RF.py` get the subset of gages that are overlapping between Caravan and GAGES2 (still in progress). 
+        4. Exclude watersheds that has >25% error in estimated watershed drainage area between Caravan and GAGES-II estimates (consisting of 31 watersheds)
+- After runinng the above script, run `postprocess_gages2_sigs_for_RF.py` get the subset of gages that are overlapping between Caravan and GAGES2.
 
 ### 3. Run RF experiment (R script)
 #### To start off some small-scale experiment or implement debug
@@ -103,6 +104,13 @@ Once you get the hang of it, you might want to automate the workflow because you
     - Note: I tried to do this using Python GeoPandas and somehow didn't work well
 - Run [Wetland_GeologicAge_Attributes/3_get_ecoregion.py](https://github.com/RY4GIT/Wetland_GeologicAge_Attributes/blob/main/3_get_ecoregion.py) to get the ecoregion that has the largest overlapping are with an watershed of interest
 - Run [Wetland_GeologicAge_Attributes/4_assemble_attrs.py](https://github.com/RY4GIT/Wetland_GeologicAge_Attributes/blob/main/4_assemble_attrs.py). This code joins calculated landscape attributes and watershed-ecoregion dataframe
+
+#### Climate region definition
+- Climate region definition is currently generated using `data_mng\attrs_cluster.py`
+- Use `random_forest\configs\generate_config_by_cluster.py` for generating configs
+- Use `random_forest\configs\linux\config_cluster_{cluster_number}.yml` for random forest
+- Use `random_forest\visualize\plot_experiments_clusters.py` for visualizing RF results
+
 
 #### Ecoregion definition 
 There are multiple ecoregion definition that I've tried out. The followings are the definitions & attribute files that has the corresponding ecoregion column. 

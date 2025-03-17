@@ -56,9 +56,7 @@ select_columns = [
 west_coast_gauges[select_columns].to_csv(os.path.join(out_dir, "IESE_westcoast.csv"))
 
 # %%
-not_signif_gages = df_sigs[
-    (df_sigs["IE_thresh_signif"] > 0.05)
-]
+not_signif_gages = df_sigs[(df_sigs["IE_thresh_signif"] > 0.05)]
 # %%
 not_signif_gages[select_columns].to_csv(os.path.join(out_dir, "IESE_nonsignif.csv"))
 # %%

@@ -1,4 +1,8 @@
 {
+    "all": {
+        "name": "CONUS-wide",
+        "color": "lightgrey"
+    },
     "0": {"name": "Midwest", "color": "#a6d854"},
     "1": {"name": "South", "color": "#66c2a5"},
     "2": {"name": "Western Rocky", "color": "#e78ac3"},

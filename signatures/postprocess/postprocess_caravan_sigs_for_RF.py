@@ -30,6 +30,10 @@ hys_qa_file = os.path.join(
     shared_drive, "out", "caravan_datacheck", "hysets_summary.csv"
 )
 
+attrs_gages2_file = os.path.join(
+    derived_attrs_dir, "assembled_RA", "attrs_gages2_epa.csv"
+)
+
 ##################################################################
 # QUALITY CONTROL THRESHOLDS
 
@@ -42,6 +46,8 @@ subset_nan_fraction_thresh = 0.3  # in fraction (-)
 # Mask overland flow signature calculated for snowy area
 frac_snow_thresh = 0.2  # in fraction (-)
 
+# Drop the gauges with drainage area estimation error > 25%
+area_err_thresh = 0.25  # in fraction (-)
 ##################################################################
 
 # %% ____________________________________________________________
@@ -179,6 +185,8 @@ columns_mask = [
     "SE_slope",
     "Storage_thresh_signif",
     "Storage_thresh",
+    "R_Pvol_RC",
+    "R_Pint_RC",
 ]
 
 sigs.loc[row_mask_idx, columns_mask] = np.nan
@@ -189,5 +197,31 @@ print(
 # %%  ____________________________________________________________
 # Save
 sigs.to_csv(os.path.join(out_dir, f"{results_filename}_filt_qc_snow.csv"))
+
+# %%
+attrs_gages2 = pd.read_csv(attrs_gages2_file, index_col="gauge_id").drop(
+    columns=["gauge_name", "country", "gauge_lat", "gauge_lon", "area"]
+)
+sigs_gages2 = sigs.join(attrs_gages2, how="left")
+sigs_gages2["area_err"] = abs(
+    (sigs_gages2["area"] - sigs_gages2["DRAIN_SQKM"]) / sigs_gages2["DRAIN_SQKM"]
+)
+area_err_idx = sigs_gages2[sigs_gages2["area_err"] > 0.25].index
+print(area_err_idx)
+# %%
+# Drop the rows with the area_err_idx from sigs dataframe
+sigs_qa_area = sigs.drop(index=area_err_idx)
+
+print(
+    f"{len(sigs_qa_area)} survived after area error filtering ({len(sigs_qa_area) / len(sigs) * 100:.1f} %)"
+)
+print(
+    f"{len(area_err_idx)} gages were dropped due to area error ({len(area_err_idx) / len(sigs) * 100:.1f} %)"
+)
+
+# %%
+
+# Save the updated sigs dataframe
+sigs_qa_area.to_csv(os.path.join(out_dir, f"{results_filename}_filt_qc_snow_area.csv"))
 
 # %%

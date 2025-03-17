@@ -43,7 +43,8 @@ sigs_info = pd.read_csv(cofig_sigs_file)
 # Cluster colors
 with open("plot_config_expcolors_clusters.json", "r") as file:
     cluster_plot_json = json.load(file)
-cluster_info = {int(k): v for k, v in cluster_plot_json.items()}
+# Convert keys to integers except for the first item
+cluster_info = {int(k) if k.isdigit() else k: v for k, v in cluster_plot_json.items()}
 clusters = cluster_info.keys()
 print(clusters)
 
@@ -94,26 +95,24 @@ def output_dir_name(rf_dir, user_name, output_date, cluster_num):
 def load_data_r2(rf_dir, user_name, output_date, cluster_info):
     _dfs_r2 = []
 
-    # Read CONUS
-    output_dir = f"{output_date}_cluster_all"
-    file_path = os.path.join(rf_dir, output_dir, "r_squared.csv")
-    df_conus = pd.read_csv(file_path, index_col="sig_name")
-    df_conus.columns = ["CONUS-wide"]
-    _dfs_r2.append(df_conus)
-
     # Read by cluster_num
     for cluster_num in cluster_info.keys():
         output_dir = output_dir_name(rf_dir, user_name, output_date, cluster_num)
         file_path = os.path.join(output_dir, "r_squared.csv")
         if os.path.exists(file_path):
             df_temp = pd.read_csv(file_path, index_col="sig_name")
-            df_temp.columns = [f"{cluster_num} - {cluster_info[cluster_num]['name']}"]
+            if cluster_num == "all":
+                df_temp.columns = ["CONUS-wide"]
+            else:
+                df_temp.columns = [
+                    f"{cluster_num} - {cluster_info[cluster_num]['name']}"
+                ]
             _dfs_r2.append(df_temp)
         else:
             print(f"File not found: {file_path}")
 
     dfs_r2 = pd.concat(_dfs_r2, axis=1)
-    return dfs_r2, df_conus
+    return dfs_r2
 
 
 def plot_r2_values(df, cluster_info):
@@ -123,7 +122,7 @@ def plot_r2_values(df, cluster_info):
         for cluster_num in cluster_info.keys()
         if f"{cluster_num} - {cluster_info[cluster_num]['name']}" in df.columns
     ]
-    colors.insert(0, "grey")
+    colors.insert(0, "lightgrey")
 
     fig, ax = plt.subplots(figsize=(20, 8))
     df.plot(kind="bar", color=colors, ax=ax)
@@ -136,38 +135,37 @@ def plot_r2_values(df, cluster_info):
     fig.savefig(os.path.join(fig_dir, "r2_per_sig.png"))
 
 
-def plot_average_r2(dfs_r2, df_conus, cluster_info):
-    _df_avg_r2 = dfs_r2.drop(columns="CONUS-wide").mean(axis=0).reset_index()
-    _df_avg_r2.columns = ["cluster_num", "Average R-squared"]
+def plot_average_r2(dfs_r2, cluster_info):
+    df_avg_r2 = dfs_r2.mean(axis=0).reset_index()
+    df_avg_r2.columns = ["cluster_name", "Average R-squared"]
 
-    df_avg_r2_conus = df_conus.mean(axis=0).reset_index()
-    df_avg_r2_conus.columns = ["cluster_num", "Average R-squared"]
-
-    df_avg_r2 = pd.concat([df_avg_r2_conus, _df_avg_r2], axis=0)
-
-    # Add colors to the DataFrame
-    df_avg_r2["Color"] = df_avg_r2["cluster_num"].apply(
-        lambda x: (cluster_info[x]["color"])
+    df_avg_r2["cluster_num"] = df_avg_r2["cluster_name"].apply(
+        lambda x: int(x.split(" - ")[0]) if " - " in x else x
     )
 
-    fig, ax = plt.subplots(figsize=(6, 4))
+    df_avg_r2["Color"] = df_avg_r2["cluster_num"].apply(
+        lambda x: cluster_info[int(x)]["color"]
+        if x != "CONUS-wide" and int(x) in cluster_info
+        else "lightgrey"
+    )
+
+    fig, ax = plt.subplots(figsize=(4, 5))
     ax.bar(
-        df_avg_r2["cluster_num"],
+        df_avg_r2["cluster_name"],
         df_avg_r2["Average R-squared"],
         color=df_avg_r2["Color"],
     )
     ax.set_title(r"Average $R^2$ for Different cluster_nums")
-    ax.set_xlabel("cluster_num")
+    ax.set_xlabel("cluster name")
     ax.set_ylabel(r"Average $R^2$")
-    ax.set_xticklabels(df_avg_r2["cluster_num"], rotation=45, ha="right")
+    ax.set_xticklabels(df_avg_r2["cluster_name"], rotation=45, ha="right")
     fig.tight_layout()
     fig.savefig(os.path.join(fig_dir, "r2_average.png"))
 
 
-dfs_r2, df_conus = load_data_r2(rf_dir, user_name, output_date, cluster_info)
+dfs_r2 = load_data_r2(rf_dir, user_name, output_date, cluster_info)
 plot_r2_values(dfs_r2, cluster_info)
-plot_average_r2(dfs_r2, df_conus, cluster_info)
-
+plot_average_r2(dfs_r2, cluster_info)
 
 # %%
 
@@ -328,329 +326,3 @@ for cluster_num in clusters:
 
     df_imp = load_data_incRMSE(rf_dir, user_name, output_date, cluster_num, attrs_info)
     plot_bar_plots(df_imp, cluster_num=cluster_num, cluster_info=cluster_info)
-
-
-# %%
-
-
-######################################################
-# Compare predicted vs observed signatures
-#####################################################
-
-
-def load_data_sigpred(output_date, rf_dir, cluster_info):
-    _dfs = []
-
-    # Read CONUS
-    output_dir = f"{output_date}_caravan_us"
-    file_path = os.path.join(rf_dir, output_dir, "predicted_signatures.csv")
-    df_conus = pd.read_csv(file_path, index_col="gauge_id")
-    df_conus["region"] = "CONUS-wide"
-    _dfs.append(df_conus)
-
-    # Read by cluster_num
-    for cluster_num in cluster_info.keys():
-        output_dir = f"{output_date}_cluster_num_{cluster_num}"
-        file_path = os.path.join(rf_dir, output_dir, "predicted_signatures.csv")
-        if os.path.exists(file_path):
-            df_temp = pd.read_csv(file_path, index_col="gauge_id")
-            df_temp["region"] = f"{cluster_num} - {cluster_info[cluster_num]['name']}"
-            _dfs.append(df_temp)
-        else:
-            print(f"File not found: {file_path}")
-
-    dfs = pd.concat(_dfs, axis=0)
-    return dfs, df_conus
-
-
-df_sigpred, df_conus = load_data_sigpred(output_date, rf_dir, cluster_info)
-# %%__________________________________________________________________________________
-# LOAD OBSERVED AND PREDICTED SIGNAUTURES
-
-# Concat original signature file that is used by sig_name and gauge_id
-# file_path = os.path.join(rf_dir, f"{output_date}_caravan_us", "config.yaml")
-# with open(file_path, "r") as file:
-#     rf_config = yaml.safe_load(file)
-
-# sigobs_path = rf_config["paths"]["train"]["signatures"]
-# if sigobs_path.startswith("/"):
-#     sigobs_path = sigobs_path.lstrip("/")
-sigobs_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20240609_tunedparams\out_calc_All_custom_filt.csv"
-
-# Load the observed signatures
-df_sigobs = pd.read_csv(sigobs_path)
-
-# Subset df_sigpred based on region
-df_sigpred_conus = df_sigpred[df_sigpred["region"] == "CONUS-wide"]
-df_sigpred_regional = df_sigpred[df_sigpred["region"] != "CONUS-wide"]
-
-# Pivot df_sigpred_regional to make each signature a column
-df_sigpred_pivot = (
-    df_sigpred_conus.reset_index()
-    .pivot(index="gauge_id", columns="sig_name", values="prediction")
-    .reset_index()
-)
-
-# Ensure gauge_id columns are strings and strip any leading/trailing whitespace
-df_sigobs["gauge_id"] = df_sigobs["gauge_id"].astype(str).str.strip()
-df_sigpred_pivot["gauge_id"] = df_sigpred_pivot["gauge_id"].astype(str).str.strip()
-
-# Merge the pivoted df_sigpred with df_sigobs on gauge_id
-df_merged = pd.merge(
-    df_sigobs, df_sigpred_pivot, on="gauge_id", how="left", suffixes=("", "_pred")
-)
-df_merged.set_index("gauge_id", inplace=True)
-
-# %%
-attrs_camels = pd.read_csv(attrs_camels_file, index_col="gauge_id")
-attrs_hysets = pd.read_csv(attrs_hysets_file, index_col="gauge_id")
-caravan_attrs = pd.concat([attrs_camels, attrs_hysets])
-
-# %%
-# Merge attributes with the merged signatures DataFrame
-df_sigs = pd.merge(caravan_attrs, df_merged, on="gauge_id", how="left")
-
-# Save the final DataFrame to a CSV file
-file_path = os.path.join(fig_dir, "predicted_signatures_merged.csv")
-df_sigs.to_csv(file_path)
-# %%
-eco_camels_file = r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs\cluster_nums\cluster_num_camels.csv"
-eco_hysets_file = r"G:\Shared drives\Signatures -- large scale\baseflow\AHolt\data\derived_attrs\cluster_nums\cluster_num_hysets.csv"
-eco_camels = pd.read_csv(eco_camels_file, index_col="gauge_id")
-eco_hysets = pd.read_csv(eco_hysets_file, index_col="gauge_id")
-eco_caravan = pd.concat([eco_camels, eco_hysets])
-df_sigs_eco = df_sigs.join(eco_caravan, how="left")
-
-
-# %% ______________________________________________________________________________________
-# Plot the residuals R2 by cluster_num or CONUS-wide
-def plot_sigerr_map(df, sig_name, overlay_layer):
-    # Get plot config
-    plot_config = plot_sigs_config.loc[
-        plot_sigs_config["column_name"] == sig_name
-    ].iloc[0]
-
-    # Calculate abs diffrences
-    frac_err = abs(df[sig_name] - df[sig_name + "_pred"]) / df[sig_name]
-    # abs_err = df[sig_name] - df[sig_name + "_pred"]
-
-    # Set up the map
-    fig = plt.figure(figsize=(12, 8))
-    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
-
-    # Add a legend
-    overlay_layer.plot(
-        ax=ax,
-        edgecolor="black",
-        facecolor="none",
-        linewidth=0.5,
-        aspect=1.1,
-        zorder=100,
-    )
-
-    land = cfeature.NaturalEarthFeature(
-        "physical",
-        "land",
-        "50m",
-        edgecolor="face",
-        facecolor="lightgrey",  # Set land color to light gray
-    )
-    ax.add_feature(land)
-
-    # Set extent to CONUS
-    ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
-    # Add map features
-    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
-
-    # Plotting the filtered data
-    scatter = ax.scatter(
-        df["gauge_lon_x"],
-        df["gauge_lat_x"],
-        c=frac_err,
-        cmap="Reds",
-        marker="o",
-        # edgecolors="grey",
-        s=5,
-        alpha=0.8,
-        zorder=99,
-        vmin=0,
-        vmax=frac_err.quantile(0.90),
-    )
-
-    # for geometry in overlay_layer.geometry:
-    #     ax.add_geometries([geometry], crs=ccrs.PlateCarree(), edgecolor='black', facecolor='none', linewidth=1, zorder=100)
-
-    ax.set_title(f"{plot_config['label']}")
-
-    # Adding a colorbar
-    cbar = plt.colorbar(scatter, ax=ax, shrink=0.5)
-    cbar.set_label(
-        r"$|pred-obs|/obs$" + f"{plot_config['unit']}", rotation=270, labelpad=30
-    )
-    # cbar.set_label(r"$|e|$" + f'{plot_config["unit"]}', rotation=270, labelpad=30)
-    # Display the plot
-    plt.tight_layout()
-    plt.savefig(os.path.join(fig_dir, f"sigerr_{sig_name}.png"))
-
-
-# %%
-for sigs_name in plot_sigs_config.column_name:
-    try:
-        plot_sigerr_map(df_sigs, sigs_name)
-    except:
-        print(f"{sigs_name} is not in the prediction")
-# # %%
-# df_sigs.columns
-# # plot_sigerr_map(df_sigs, "TotalRR", cluster_num_overlay)
-# #
-# %%
-# ______________________________________________________________
-# Get the error bar plot per region
-
-
-def plot_err_box(df, sig_name):
-    plot_config = plot_sigs_config.loc[
-        plot_sigs_config["column_name"] == sig_name
-    ].iloc[0]
-
-    # Calculate fractional error
-    df["frac_err"] = abs(df[sig_name] - df[sig_name + "_pred"]) / df[sig_name]
-
-    # Calculate the 99th percentile of the fractional error
-    upper_lim = df["frac_err"].quantile(0.99)
-
-    # df["abs_err"] = abs(df[sig_name] - df[sig_name + "_pred"])
-    # abs_err_percentile = df["abs_err"].quantile(0.99)
-
-    sample_counts = df["cluster_num"].value_counts()
-    valid_cluster_nums = sample_counts[sample_counts >= 100].index
-    df_filt = df[df["cluster_num"].isin(valid_cluster_nums)].copy()
-    df_filt["cluster_numumber"] = (
-        df_filt["cluster_num"].str.extract(r"(\d+)").astype(int)
-    )
-
-    custom_order = {
-        "11": 0,
-        "1210": 1,
-        "6713": 2,
-        "81": 3,
-        "82": 4,
-        "91": 5,
-        "92": 6,
-    }
-    df_filt["custom_order"] = df_filt["cluster_numumber"].map(custom_order)
-
-    # Sort by the custom order
-    df_sorted = df_filt.sort_values("custom_order")
-    df_sorted = df_sorted.drop(columns=["custom_order"])
-    # df_sorted = df_filt.sort_values("cluster_numumber")
-
-    # Plot the boxplot using Seaborn
-    cluster_num_colors = [
-        "#D1E8BA",  # MEDITERRANEAN CALIFORNIA (11)
-        "#FFDB71",  # WESTERN DESERTS (1210)
-        "#5DC05A",  # WESTERN FORESTED MOUNTAINS (6713)
-        "#BBDD90",  # NORTH EASTERN FORESTS (81)
-        "#4DCAC2",  # SOUTH EASTERN FORESTS (82)
-        "#BD9977",  # NORTH GREAT PLAINS (91)
-        "#FECE9F",  # SOUTH GREAT PLAINS (92)
-    ]
-
-    # cluster_num_colors = [
-    #     "#9ACDCF",
-    #     "#5DC05A",
-    #     "#4DCAC2",
-    #     "#BBDD90",
-    #     "#FECE9F",
-    #     "#FFDB71",
-    #     "#D1E8BA",
-    #     "#BBDD90",
-    # ]
-
-    plt.figure(figsize=(12, 5))
-    boxplot = sns.boxplot(
-        x="frac_err",
-        y="cluster_num",
-        data=df_sorted,
-        palette=cluster_num_colors,
-        order=df_sorted["cluster_num"].unique(),
-    )
-
-    # Customize the plot
-    boxplot.set_xlabel(r"$|pred-obs|/obs$" + f"{plot_config['unit']}")
-    boxplot.set_ylabel("cluster_num")
-    boxplot.set_title(f"{plot_config['label']}")
-    boxplot.set_xlim([0, upper_lim])
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(fig_dir, f"sigerrbox_{sig_name}.png"))
-    plt.show()
-
-
-for sigs_name in plot_sigs_config.column_name:
-    try:
-        plot_err_box(df_sigs_eco, sigs_name)
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-# %%
-
-# # Function to plot pie charts
-# def plot_pie_charts(
-#     df,
-#     cluster_num,
-#     cluster_info,
-#     attrs_colors,
-# ):
-#     sigs = df["sig_name"].unique()
-
-#     n_cols = 4
-#     n_rows = (len(sigs) + n_cols - 1) // n_cols
-
-#     fig, axes = plt.subplots(
-#         nrows=n_rows,
-#         ncols=n_cols,
-#         figsize=(8 * n_cols, 10 * n_rows),
-#         constrained_layout=True,
-#     )
-#     axes = axes.flatten()
-
-#     for i, sig in enumerate(sigs):
-#         try:
-#             df_subset = df[df["sig_name"] == sig]
-#             grouped = df_subset.groupby("Group")["%IncMSE"].sum()
-#             total = grouped.sum()
-#             normalized = grouped / total
-
-#             axes[i].pie(
-#                 normalized,
-#                 labels=normalized.index,
-#                 colors=[attrs_info[group] for group in normalized.index],
-#             )
-#             axes[i].set_title(sig, loc="left", fontsize=30)
-
-#         except Exception as e:
-#             print(f"Error plotting pie chart for {sig}: {e}")
-#             axes[i].set_title(sig, loc="left", fontsize=30)
-#             continue
-
-#     for j in range(i + 1, len(axes)):
-#         axes[j].set_visible(False)
-
-#     fig.suptitle(cluster_name, fontsize=32)
-#     fig.savefig(os.path.join(fig_dir, f"var_importance_pie_{cluster_num}.png"))
-
-#     return axes
-
-
-# __________________________________________________________
-# Conus- wide
-# cluster_num = "caravan_us"
-# cluster_name = "CONUS-wide"
-# print(f"Processing {cluster_name}...")
-# df_imp_conus = load_data_incRMSE(
-# )
-# sigs = df_imp_conus["sig_name"].unique()
-
-# plot_bar_plots(df_imp_conus, sigs, cluster_num, cluster_name)
-# plot_pie_charts(df_imp_conus, sigs, attrs_colors, cluster_name, cluster_name)
