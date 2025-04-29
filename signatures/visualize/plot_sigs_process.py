@@ -69,7 +69,7 @@ wspolygon.set_index("gauge_id", inplace=True)
 # %%
 # %%
 _df_sigs = pd.read_csv(
-    os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_gages2subset.csv"),
+    os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_area_gages2subset.csv"),
     index_col="gauge_id",
 )
 _df_sigs = _df_sigs.drop(
@@ -258,7 +258,9 @@ for sigs_name in plot_sigs_config.column_name:
 # process_name = "Baseflow"
 # process_name = "Saturation Excess Overlandflow"  # "Infiltration Excess Overlandflow"
 # process_name = "Storage capacity and retention"  # "Water loss to deep GW or ET"
-process_name = "ET impacts on storage and baseflow"
+# process_name = "ET impacts on storage and baseflow"
+# process_name = "Infiltration Excess Overlandflow"
+process_name = "Saturation Excess Overlandflow"
 process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
 process_columns
 
@@ -389,8 +391,8 @@ dir_label_rev = ["high", "", "", "low"]
 # process_name = "Water loss to deep GW or ET"
 # process_name = "Storage capacity and retention"
 # process_name = "Infiltration Excess Overlandflow"
-# process_name = "Saturation Excess Overlandflow"
-process_name = "ET impacts on storage and baseflow"
+process_name = "Saturation Excess Overlandflow"
+# process_name = "ET impacts on storage and baseflow"
 
 # For checking the items
 process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
@@ -447,10 +449,10 @@ if process_name == "Infiltration Excess Overlandflow":
         process_columns.label == "IE_thresh_signif"
     ].squeeze()  # X variable, R
 
-    sig1_label = labels_rev
+    sig1_label = labels
     sig2_label = labels
 
-    sig1_dir = dir_label_rev
+    sig1_dir = dir_label
     sig2_dir = dir_label
 
 ###############################
@@ -465,10 +467,10 @@ if process_name == "Saturation Excess Overlandflow":
         process_columns.label == "SE_thresh_signif"
     ].squeeze()  # X variable, R
 
-    sig1_label = labels_rev
+    sig1_label = labels
     sig2_label = labels
 
-    sig1_dir = dir_label_rev
+    sig1_dir = dir_label
     sig2_dir = dir_label
 
 ###############################
@@ -634,3 +636,5 @@ create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_di
 
 # %%
 print(df_sigs_clean.columns)
+
+# %%

@@ -70,6 +70,58 @@ cmap = ListedColormap(custom_colors)
 # All available climate attrs at BASIN level, annual scale
 # From Caravan, GAGES2, and Hammond
 
+
+"""2025-04-29 Current best
+
+file_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_and_gages2+climate+morph+padcat.csv"
+num_clusters = 6
+seed = 0
+
+selected_columns = [
+    "P_mm_day",
+    "T_AVG_BASIN",
+    # "T_MAX_BASIN", # Maybe redundant pretty similar to T_AVG_BASIN
+    # "T_MIN_BASIN", # Maybe redundant pretty similar to T_AVG_BASIN
+    "PET_mm_day",
+    "RH_BASIN",
+    "ARIDITY_GAGES2",
+    "moisture_index",  # ? Sometimes shows different patterns than ARIDITY_GAGES2
+    # "T_MAXSTD_BASIN", # Redundant, we are not looking at the inter-annual change
+    # "T_MINSTD_BASIN", # Redundant, we are not looking at the inter-annual change
+    "SNOW_PCT_PRECIP",
+    "PRECIP_SEAS_IND",
+    "input_seasonality",
+    "seasonality",
+    "input_PET_synchrony",
+    "WD_BASIN",
+    "high_prec_freq",
+    "high_prec_dur",
+    "low_prec_freq",
+    "low_prec_dur",
+    "FST32F_BASIN",
+    "LST32F_BASIN",
+    # "WDMAX_BASIN", # Redundant, we are not looking at the inter-annual change
+    # "WDMIN_BASIN", # Redundant, we are not looking at the inter-annual change
+    # "PETdivP", # Use ARIDITY_GAGES2 instead (used in the main experiment)
+    "gauge_lat",
+    "gauge_lon",
+]
+
+custom_colors = [
+    "#a6d854",
+    "#66c2a5",
+    "#e78ac3",
+    "#8da0cb",
+    "#ffd92f",
+    "#fc8d62",
+    # "#a6d854",
+    # "#66c2a5",
+    # "#fc8d62",
+    # "#e78ac3",
+]
+cmap = ListedColormap(custom_colors)
+    """
+
 # %% #########################################################################
 #
 # LOAD ATTRIBUTES
