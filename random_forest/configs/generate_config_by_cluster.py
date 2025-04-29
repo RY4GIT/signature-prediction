@@ -29,7 +29,7 @@ if os_type == "win":
 elif os_type == "linux":
     home_dir = "/home/raraki/data/signature-prediction"
     rf_out_dir = "/out/rf"
-    sigs_file = "/signatures/caravan_us_20250223_withWu/out_calc_All_custom_filt_qc_snow_gages2subset.csv"
+    sigs_file = "/signatures/caravan_us_20250223_withWu/out_calc_All_custom_filt_qc_snow_area_gages2subset.csv"
     attrs_file = "/derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
 
     config_out_dir = (

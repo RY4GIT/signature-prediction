@@ -22,6 +22,10 @@ do
     echo "Experiment with $config_dir/config_cluster_$i.yml finished"
 done
 
+echo "Running experiment with $config_dir/config_cluster_all.yml"
+Rscript main_mp.R "$config_dir/config_cluster_$i.yml"
+echo "Experiment with $config_dir/config_cluster_all.yml finished"
+
 # echo "Running experiment with $config_dir/config_test.yml"
 # Rscript main_serial.R "$config_dir/config_test.yml"
 # echo "Experiment with $config_dir/config_test.yml finished"
