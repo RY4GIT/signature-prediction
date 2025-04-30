@@ -126,8 +126,13 @@ if (config$filter_by_cluster$run) {
 # _______________________________________________________________________________________________________________
 # Parallel pool
 print("initiating parallel pool")
-# Register the parallel backend
-registerDoParallel(cores = config$parallel$nCores)
+
+# Register the parallel backend: Use this if you are on the unlimited cluster 
+# registerDoParallel(cores = config$parallel$nCores)
+
+# Use this for the shared cluster
+registerDoParallel(cores = min(4, detectCores()))
+
 
 
 # _______________________________________________________________________________________________________________
@@ -188,7 +193,9 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
     # hyperparameter testing
     tuneGrid = hyper_grid,
     # return importance, want %IncMSE data
-    importance = TRUE
+    importance = TRUE,
+    # avoid duplicates in parallel processing
+    allowParallel = FALSE
   )
 
   print(forest)
