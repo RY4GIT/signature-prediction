@@ -6,9 +6,12 @@ date="20250429"
 # Set the base directory path
 base_dir="/home/raraki/data/signature-prediction/out/rf"
 
+# Move to the base directory
+cd "$base_dir" || { echo "Base directory not found!"; exit 1; }
+
 # Loop over 0 to 5
 for n in {0..5}; do
-    folder="${base_dir}/output_raraki_${date}_cluster_${n}"
+    folder="output_raraki_${date}_cluster_${n}"
     if [ -e "$folder" ]; then
         zip -r "${folder}.zip" "$folder"
         echo "Zipped $folder into ${folder}.zip"
@@ -17,8 +20,8 @@ for n in {0..5}; do
     fi
 done
 
-# Now zip the 'all' folder
-folder="${base_dir}/output_raraki_${date}_cluster_all"
+# Zip the 'all' folder
+folder="output_raraki_${date}_cluster_all"
 if [ -e "$folder" ]; then
     zip -r "${folder}.zip" "$folder"
     echo "Zipped $folder into ${folder}.zip"

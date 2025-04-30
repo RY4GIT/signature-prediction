@@ -9,7 +9,7 @@ import cartopy.feature as cfeature
 
 # %%
 ########################## CHANGE HERE #################
-output_date = r"20250312"
+output_date = r"20250429"
 user_name = "raraki"
 ########################################################
 
@@ -326,3 +326,5 @@ for cluster_num in clusters:
 
     df_imp = load_data_incRMSE(rf_dir, user_name, output_date, cluster_num, attrs_info)
     plot_bar_plots(df_imp, cluster_num=cluster_num, cluster_info=cluster_info)
+
+# %%

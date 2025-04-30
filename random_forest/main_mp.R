@@ -146,7 +146,13 @@ hyper_grid <- expand.grid(
   mtry = c(1:(length(attrs_train)-1))
 )
 
-kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, search = "grid", verboseIter = TRUE)
+# Create a vector of seeds for each iteration (for parallel reproducibility)
+n_models <- length(config$sigs_predict)
+seeds <- vector(mode = "list", length = n_models + 1) # +1 for final model
+for(i in 1:n_models) seeds[[i]] <- sample.int(1000, nrow(hyper_grid))
+seeds[[n_models + 1]] <- sample.int(1000, 1) # for final model
+
+kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, search = "grid", verboseIter = TRUE, seeds = seeds)
 
 # Prepare output list
 out_r2 <- list()
