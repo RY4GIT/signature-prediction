@@ -29,11 +29,11 @@ if not os.path.exists(fig_dir):
 # %%
 # ____________________________________________________________________________________
 # Load overlay layer for plotting
-_ecoregion_overlay = gpd.read_file(
-    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\EcoRegions\NA_CEC_Eco_Level1.shp"
-)
-_ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
-ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
+# _ecoregion_overlay = gpd.read_file(
+#     r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\EcoRegions\NA_CEC_Eco_Level1.shp"
+# )
+# _ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
+# ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
 # %%
 # ____________________________________________________________________________________
 # Load data
@@ -136,6 +136,7 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
         cbar_label = f"{plot_config['unit']}"
         out_file_name = f"map_{sig_name}_{plot_mode}.png"
         title_label = f"{plot_config['label']}"
+        alpha = 0.8
     elif stats == "percentile":
         plot_config = plot_sigs_config.loc[
             plot_sigs_config["column_name"] == sig_name
@@ -146,6 +147,7 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
         cbar_label = "percentile"
         out_file_name = f"map_perc_{sig_name}_{plot_mode}.png"
         title_label = f"{plot_config['label']}"
+        alpha = 0.8
     elif stats == "process_perc":
         c_data = df[sig_name + "_medperc"]
         llim = 0
@@ -153,9 +155,12 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
         cbar_label = "Median percentile"
         out_file_name = f"map_medperc_{sig_name}_{plot_mode}.png"
         title_label = sig_name
+        alpha = 0.5
 
     # Create a colormap and normalize
     cmap = plt.cm.Blues
+    if sig_name in ["diff_RCPint_RCPvol"]:
+        cmap = plt.cm.RdBu_r
     norm = mpl.colors.Normalize(vmin=llim, vmax=ulim)
 
     if plot_mode == "scatter":
@@ -167,7 +172,7 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
             marker="o",
             # edgecolors="grey",
             s=5,
-            alpha=0.8,
+            alpha=alpha,
             zorder=99,
             vmin=llim,
             vmax=ulim,
@@ -213,9 +218,7 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 
 for sigs_name in plot_sigs_config.column_name:
     try:
-        plot_sig_map(
-            df_sigs, sigs_name, ecoregion_overlay, stats="normal", plot_mode="scatter"
-        )
+        plot_sig_map(df_sigs, sigs_name, None, stats="normal", plot_mode="scatter")
         # plot_sig_map(
         #     df_sigs, sigs_name, ecoregion_overlay, stats="normal", plot_mode="polygon"
         # )
@@ -232,7 +235,7 @@ for sigs_name in plot_sigs_config.column_name:
         plot_sig_map(
             df_sigs,
             sigs_name,
-            ecoregion_overlay,
+            None,
             stats="percentile",
             plot_mode="scatter",
         )
@@ -301,12 +304,8 @@ df_sigs[process_name + "_medperc"] = pd.concat(percentiles, axis=1).median(
 df_sigs
 
 # %%
-plot_sig_map(
-    df_sigs, process_name, ecoregion_overlay, stats="process_perc", plot_mode="scatter"
-)
-plot_sig_map(
-    df_sigs, process_name, ecoregion_overlay, stats="process_perc", plot_mode="polygon"
-)
+plot_sig_map(df_sigs, process_name, None, stats="process_perc", plot_mode="scatter")
+plot_sig_map(df_sigs, process_name, None, stats="process_perc", plot_mode="polygon")
 
 
 # %% ________________________________________
@@ -636,5 +635,15 @@ create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_di
 
 # %%
 print(df_sigs_clean.columns)
+
+# %%
+df_sigs["diff_RCPint_RCPvol"] = df_sigs["R_Pint_RC"] - df_sigs["R_Pvol_RC"]
+plot_sig_map(
+    df_sigs,
+    "diff_RCPint_RCPvol",
+    None,
+    stats="normal",
+    plot_mode="polygon",
+)
 
 # %%

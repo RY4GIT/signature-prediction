@@ -23,7 +23,7 @@ do
 done
 
 echo "Running experiment with $config_dir/config_cluster_all.yml"
-Rscript main_mp.R "$config_dir/config_cluster_$i.yml"
+Rscript main_mp.R "$config_dir/config_cluster_all.yml"
 echo "Experiment with $config_dir/config_cluster_all.yml finished"
 
 # echo "Running experiment with $config_dir/config_test.yml"
