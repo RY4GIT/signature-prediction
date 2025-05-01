@@ -23,3 +23,6 @@ diff_RCPint_RCPvol,IE_minus_SE_corr,[-],-0.1,0.1,overlandflow,Infiltration Exces
 RR_Seasonality,RR_Seasonality,[-],0,4,groundwater,ET impacts on storage and baseflow,pos
 Recession_a_Seasonality,Recession_a_Seasonality,[-],0,6,groundwater,ET impacts on storage and baseflow,pos
 VariabilityIndex,VariabilityIndex,[-],0,1,groundwater,ET impacts on storage and baseflow,pos
+diff_IE_SE_thresh,Differences in threshold (IE minus SE),[mm],-20,20,,,
+diff_IE_Str_thresh,Differences in threshold (IE minus Storage),[mm],-40,40,,,
+diff_SE_Str_thresh,Differences in threshold (SE minus Storage),[mm],-20,20,,,

@@ -80,15 +80,44 @@ df_sigs = _df_sigs.join(eco_caravan, how="left")
 df_sigs = wspolygon.join(df_sigs, how="right")
 
 
+# %%
+def below_thresh_percentile(column_data, thresh_value):
+    new_percentile = column_data.apply(
+        lambda x: 0 if x > thresh_value else (1 - (x / thresh_value)) * 100
+    )
+    return new_percentile
+
+
 # Get the percentile
 for sigs_name in plot_sigs_config["column_name"]:
     # Get df[sigs_name]
     column_data = df_sigs[sigs_name]
 
     # Calculate the percentile rank for each value in the column
-    df_sigs[sigs_name + "_perc"] = column_data.rank(pct=True) * 100
+    if "thresh" in sigs_name:
+        df_sigs[sigs_name + "_perc"] = below_thresh_percentile(df_sigs[sigs_name], 0.05)
+    else:
+        df_sigs[sigs_name + "_perc"] = column_data.rank(pct=True) * 100
 
 
+# percentiles = []
+
+# for _, row in process_columns.iterrows():
+#     column_name = row["column_name"]
+#     relationship = row["relationship"]
+#     percentile_column = column_name + "_perc"
+
+#     if relationship == "pos":
+#         percentiles.append(df_sigs[percentile_column])
+#     elif relationship == "neg":
+#         percentiles.append(100 - df_sigs[percentile_column])
+#     elif "thresh" in relationship:
+#         # Extract the threshold value from the relationship string
+#         threshold = float(relationship.split(":")[1])
+#         recalculated_percentile = recalculate_percentile(
+#             df_sigs[column_name], threshold
+#         )
+#         percentiles.append(recalculated_percentile)
 # %% ######################
 # FUNCTIONS
 ##########################
@@ -159,7 +188,7 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 
     # Create a colormap and normalize
     cmap = plt.cm.Blues
-    if sig_name in ["diff_RCPint_RCPvol"]:
+    if "diff_" in sig_name:
         cmap = plt.cm.RdBu_r
     norm = mpl.colors.Normalize(vmin=llim, vmax=ulim)
 
@@ -390,8 +419,11 @@ dir_label_rev = ["high", "", "", "low"]
 # process_name = "Water loss to deep GW or ET"
 # process_name = "Storage capacity and retention"
 # process_name = "Infiltration Excess Overlandflow"
-process_name = "Saturation Excess Overlandflow"
+# process_name = "Saturation Excess Overlandflow"
 # process_name = "ET impacts on storage and baseflow"
+# process_name = "IE vs SE significance"
+# process_name = "IE vs SE (SSF2 & GW) significance"
+process_name = "SSF1 vs SSF2 & GW significance"
 
 # For checking the items
 process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
@@ -476,8 +508,8 @@ if process_name == "Saturation Excess Overlandflow":
 
 # For ET impacts on storage and baseflow
 if process_name == "ET impacts on storage and baseflow":
-    sig2 = process_columns.loc[
-        process_columns.label == "Recession_a_Seasonality"
+    sig2 = plot_sigs_config[
+        plot_sigs_config["process"] == process_name
     ].squeeze()  # Y variable,
     sig1 = process_columns.loc[
         process_columns.label == "VariabilityIndex"
@@ -491,13 +523,69 @@ if process_name == "ET impacts on storage and baseflow":
 ###############################
 
 
+# For Saturation Excess Overlandflow
+
+if process_name == "IE vs SE significance":
+    sig2 = plot_sigs_config[
+        plot_sigs_config["column_name"] == "IE_thresh_signif"
+    ].squeeze()
+    sig1 = plot_sigs_config[
+        plot_sigs_config["column_name"] == "SE_thresh_signif"
+    ].squeeze()
+
+    sig1_label = labels
+    sig2_label = labels
+
+    sig1_dir = dir_label
+    sig2_dir = dir_label
+
+
+# For Saturation Excess Overlandflow
+
+if process_name == "IE vs SE (SSF2 & GW) significance":
+    sig2 = plot_sigs_config[
+        plot_sigs_config["column_name"] == "IE_thresh_signif"
+    ].squeeze()
+    sig1 = plot_sigs_config[
+        plot_sigs_config["column_name"] == "Storage_thresh_signif"
+    ].squeeze()
+
+    sig1_label = labels
+    sig2_label = labels
+
+    sig1_dir = dir_label
+    sig2_dir = dir_label
+
+# For SSF1 vs SSF2 & GW significance
+if process_name == "SSF1 vs SSF2 & GW significance":
+    sig2 = plot_sigs_config[
+        plot_sigs_config["column_name"] == "SE_thresh_signif"
+    ].squeeze()
+    sig1 = plot_sigs_config[
+        plot_sigs_config["column_name"] == "Storage_thresh_signif"
+    ].squeeze()
+
+    sig1_label = labels
+    sig2_label = labels
+
+    sig1_dir = dir_label
+    sig2_dir = dir_label
+
+
 def update_column_name(signal):
     """
     Updates the column_name attribute of the signal to use percentile, if it is threshold-based signatures
     Parameters:
     - signal: An object with `label` and `column_name` attributes.
     """
-    label_to_column = {"IE_thresh": "IE_thresh_perc", "SE_thresh": "SE_thresh_perc"}
+    label_to_column = {
+        "IE_thresh": "IE_thresh_perc",
+        "SE_thresh": "SE_thresh_perc",
+        "IE_thresh_signif": "IE_thresh_signif_perc",
+        "SE_thresh_signif": "SE_thresh_signif_perc",
+        "Storage_thresh": "Storage_thresh_perc",
+        "Storage_thresh_signif": "Storage_thresh_signif_perc",
+    }
     if signal.label in label_to_column:
         signal.column_name = label_to_column[signal.label]
 
@@ -506,7 +594,7 @@ def update_column_name(signal):
 update_column_name(sig1)
 update_column_name(sig2)
 
-print(f"Plotting the bivariate map for Y: {sig2.label} & X: {sig1.label}")
+print(f"Plotting the bivariate map for Y: {sig2.column_name} & X: {sig1.column_name}")
 
 
 # %% __________________________________________________
@@ -514,12 +602,22 @@ print(f"Plotting the bivariate map for Y: {sig2.label} & X: {sig1.label}")
 def get_bivariate_class(df, sig1, sig2, sig1_label, sig2_label):
     df_clean = df.dropna(subset=[sig1.column_name, sig2.column_name]).copy()
 
-    df_clean[sig1.column_name + "_class"] = pd.qcut(
-        df_clean[sig1.column_name], q=len(sig1_label), labels=sig1_label
-    )
-    df_clean[sig2.column_name + "_class"] = pd.qcut(
-        df_clean[sig2.column_name], q=len(sig2_label), labels=sig2_label
-    )
+    # Use custom bins for percentile columns
+    for sig, label in [(sig1, sig1_label), (sig2, sig2_label)]:
+        col_name = sig.column_name
+        class_col = col_name + "_class"
+
+        if "_perc" in col_name:
+            # Use fixed percentile bins (0, 25, 50, 75, 100) for percentile columns
+            bins = [0, 25, 50, 75, 100]
+            df_clean[class_col] = pd.cut(
+                df_clean[col_name], bins=bins, labels=label, include_lowest=True
+            )
+        else:
+            # Use quantile-based binning for non-percentile columns
+            df_clean[class_col] = pd.qcut(
+                df_clean[col_name], q=len(label), labels=label, duplicates="drop"
+            )
 
     df_clean["bivariate_class"] = (
         df_clean[sig1.column_name + "_class"].astype(str)
@@ -636,11 +734,48 @@ create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_di
 # %%
 print(df_sigs_clean.columns)
 
-# %%
+# %% #############################################################################
+# Plot the IE vs SE diffferences
+#################################################################################
+
 df_sigs["diff_RCPint_RCPvol"] = df_sigs["R_Pint_RC"] - df_sigs["R_Pvol_RC"]
+df_sigs["diff_IE_SE_thresh"] = df_sigs["IE_thresh"] - df_sigs["SE_thresh"]
+df_sigs["diff_IE_Str_thresh"] = df_sigs["IE_thresh"] - df_sigs["Storage_thresh"]
+df_sigs["diff_SE_Str_thresh"] = df_sigs["SE_thresh"] - df_sigs["Storage_thresh"]
+
+# %%
 plot_sig_map(
     df_sigs,
     "diff_RCPint_RCPvol",
+    None,
+    stats="normal",
+    plot_mode="polygon",
+)
+
+# %%
+
+
+plot_sig_map(
+    df_sigs,
+    "diff_IE_SE_thresh",
+    None,
+    stats="normal",
+    plot_mode="polygon",
+)
+
+
+plot_sig_map(
+    df_sigs,
+    "diff_IE_Str_thresh",
+    None,
+    stats="normal",
+    plot_mode="polygon",
+)
+
+# %%
+plot_sig_map(
+    df_sigs,
+    "diff_SE_Str_thresh",
     None,
     stats="normal",
     plot_mode="polygon",
