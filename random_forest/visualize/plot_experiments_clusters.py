@@ -452,7 +452,7 @@ for cluster_num in clusters:
 # %%
 # Function to calculate and plot relative category importance across clusters
 def plot_relative_category_importance(
-    rf_dir, user_name, output_date, cluster_info, top_n=10
+    rf_dir, user_name, output_date, cluster_info, subset_top=False, top_n=10
 ):
     """
     For each signature, creates a plot showing relative importance of each category
@@ -488,11 +488,15 @@ def plot_relative_category_importance(
             # Filter by signature
             df_sig = df_imp[df_imp["sig_name"] == sig_name].copy()
 
-            # Get top N variables by importance
-            top_vars = df_sig.sort_values(by="%IncMSE", ascending=False).head(top_n)
+            if subset_top:
+                # Get top N variables by importance
+                top_vars = df_sig.sort_values(by="%IncMSE", ascending=False).head(top_n)
 
-            # Group by category and sum importance
-            category_imp = top_vars.groupby("Group")["%IncMSE"].sum().reset_index()
+                # Group by category and sum importance
+                category_imp = top_vars.groupby("Group")["%IncMSE"].sum().reset_index()
+
+            else:
+                category_imp = df_sig.groupby("Group")["%IncMSE"].sum().reset_index()
 
             # Calculate relative importance (percentage)
             total_imp = category_imp["%IncMSE"].sum()
@@ -594,8 +598,13 @@ def plot_relative_category_importance(
             bottoms += values
 
         # Customize the plot
+        if subset_top:
+            title_suffix = f" (Top {top_n} Variables)"
+        else:
+            title_suffix = ""
+
         ax.set_title(
-            f"Relative Category Importance for {sig_name} (Top {top_n} Variables)",
+            f"Relative Category Importance for {sig_name} {title_suffix}",
             fontsize=16,
         )
         ax.set_xlabel("Clusters", fontsize=12)
@@ -613,16 +622,29 @@ def plot_relative_category_importance(
         )
 
         plt.tight_layout()
-        plt.savefig(
-            os.path.join(fig_dir, f"relative_importance_{sig_name}.{file_type}"),
-            dpi=300,
-            bbox_inches="tight",
-        )
+        if subset_top:
+            plt.savefig(
+                os.path.join(
+                    fig_dir,
+                    f"relative_importance_top{top_n}_{sig_name}.{file_type}",
+                ),
+                dpi=300,
+                bbox_inches="tight",
+            )
+        else:
+            plt.savefig(
+                os.path.join(fig_dir, f"relative_importance_{sig_name}.{file_type}"),
+                dpi=300,
+                bbox_inches="tight",
+            )
         plt.close()
 
 
 # Run the function
 plot_relative_category_importance(rf_dir, user_name, output_date, cluster_info)
+plot_relative_category_importance(
+    rf_dir, user_name, output_date, cluster_info, subset_top=True, top_n=10
+)
 
 
 # %%
