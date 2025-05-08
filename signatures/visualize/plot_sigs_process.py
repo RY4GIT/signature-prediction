@@ -72,7 +72,9 @@ wspolygon_hysets = gpd.read_file(wspolygon_hysets_file).to_crs(epsg=4326)
 wspolygon = pd.concat([wspolygon_camels, wspolygon_hysets], ignore_index=True)
 wspolygon.set_index("gauge_id", inplace=True)
 
-# %%
+# %% #######################################################
+# Loading the data
+#######################################################
 print("Loading signatures results file ...")
 _df_sigs = pd.read_csv(
     os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_area.csv"),
@@ -85,14 +87,16 @@ df_sigs = _df_sigs.join(eco_caravan, how="left")
 
 df_sigs = wspolygon.join(df_sigs, how="right")
 
-# Calculate some differences signature
+#######################################################
+# Preprocess the data
+#######################################################
+
 df_sigs["diff_RCPint_RCPvol"] = df_sigs["R_Pint_RC"] - df_sigs["R_Pvol_RC"]
 df_sigs["diff_IE_SE_thresh"] = df_sigs["IE_thresh"] - df_sigs["SE_thresh"]
 df_sigs["diff_IE_Str_thresh"] = df_sigs["IE_thresh"] - df_sigs["Storage_thresh"]
 df_sigs["diff_SE_Str_thresh"] = df_sigs["SE_thresh"] - df_sigs["Storage_thresh"]
 
 
-# %%
 def below_thresh_percentile(column_data, thresh_value):
     new_percentile = column_data.apply(
         lambda x: 0 if x > thresh_value else (1 - (x / thresh_value)) * 100
@@ -106,30 +110,12 @@ for sigs_name in plot_sigs_config["column_name"]:
     column_data = df_sigs[sigs_name]
 
     # Calculate the percentile rank for each value in the column
-    if "thresh" in sigs_name:
+    if "_signif" in sigs_name:
         df_sigs[sigs_name + "_perc"] = below_thresh_percentile(df_sigs[sigs_name], 0.05)
     else:
         df_sigs[sigs_name + "_perc"] = column_data.rank(pct=True) * 100
 
 
-# percentiles = []
-
-# for _, row in process_columns.iterrows():
-#     column_name = row["column_name"]
-#     relationship = row["relationship"]
-#     percentile_column = column_name + "_perc"
-
-#     if relationship == "pos":
-#         percentiles.append(df_sigs[percentile_column])
-#     elif relationship == "neg":
-#         percentiles.append(100 - df_sigs[percentile_column])
-#     elif "thresh" in relationship:
-#         # Extract the threshold value from the relationship string
-#         threshold = float(relationship.split(":")[1])
-#         recalculated_percentile = recalculate_percentile(
-#             df_sigs[column_name], threshold
-#         )
-#         percentiles.append(recalculated_percentile)
 # %% ######################
 # FUNCTIONS
 ##########################
@@ -240,10 +226,9 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 
     plt.tight_layout(pad=1.5)
     plt.tight_layout()
-    plt.savefig(os.path.join(fig_dir, out_file_name))
+    plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
 
 
-# %%
 # %% ######################
 #
 #  Plot signature value map
@@ -253,8 +238,8 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 # _____________________________________________________________________________
 # Plot signature value map
 # For testing
-# plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, stats="normal", plot_mode="polygon")
-
+plot_sig_map(df_sigs, "EventRR", ecoregion_overlay, stats="normal", plot_mode="polygon")
+# %%
 for sigs_name in tqdm(
     plot_sigs_config.column_name, desc="Plotting maps of signature values", leave=False
 ):
@@ -406,11 +391,11 @@ def plot_bivariate_map(df, sig1, sig2, overlay_layer, fig_dir, plot_mode="polygo
     plt.savefig(
         os.path.join(
             fig_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_{plot_mode}.png"
-        )
+        ),
+        dpi=300,
     )
 
 
-# %%
 # Create a function to draw a bivariate legend
 def create_bivariate_legend(colors, x_label, y_label, x_ticks, y_ticks, fig_dir):
     fig, ax = plt.subplots(figsize=(4, 4))
@@ -457,15 +442,13 @@ def update_column_name(signal):
     - signal: An object with `label` and `column_name` attributes.
     """
     label_to_column = {
-        "IE_thresh": "IE_thresh_perc",
-        "SE_thresh": "SE_thresh_perc",
         "IE_thresh_signif": "IE_thresh_signif_perc",
         "SE_thresh_signif": "SE_thresh_signif_perc",
-        "Storage_thresh": "Storage_thresh_perc",
         "Storage_thresh_signif": "Storage_thresh_signif_perc",
     }
-    if signal.label in label_to_column:
-        signal.column_name = label_to_column[signal.label]
+    if signal.column_name in label_to_column:
+        signal.column_name = label_to_column[signal.column_name]
+        signal.label = sig1.label.replace("(p-value)", "significance")
 
 
 # ______________________________________________________
@@ -496,15 +479,15 @@ dir_label_rev = ["high", "", "", "low"]
 # CHANGE HERE ################
 
 processes = [
-    "Baseflow",
-    "Water loss to deep GW or ET",
-    "Storage capacity and retention",
-    "Infiltration Excess Overlandflow",
-    "Saturation Excess Overlandflow",
+    # "Baseflow",
+    # "Water loss to deep GW or ET",
+    # "Storage capacity and retention",
+    # "Infiltration Excess Overlandflow",
+    # "Saturation Excess Overlandflow",
     "ET impacts on storage and baseflow",
-    "IE vs SE significance",
-    "IE vs SE (SSF2 & GW) significance",
-    "SSF1 vs SSF2 & GW significance",
+    # "IE vs SE significance",
+    # "IE vs SE (SSF2 & GW) significance",
+    # "SSF1 vs SSF2 & GW significance",
 ]
 
 for process_name in tqdm(
@@ -520,11 +503,11 @@ for process_name in tqdm(
 
     # For Baseflow plots
     if process_name == "Baseflow":
-        sig2 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "BFI"
+        sig2 = process_columns[
+            process_columns["column_name"] == "BFI"
         ].squeeze()  # Y variable, BFI
-        sig1 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "BaseflowRecessionK"
+        sig1 = process_columns[
+            process_columns["column_name"] == "BaseflowRecessionK"
         ].squeeze()  # X variable, Baseflow Recession K
 
         sig1_label = labels
@@ -536,11 +519,11 @@ for process_name in tqdm(
     # For Water loss to deep GW or ET
 
     if process_name == "Water loss to deep GW or ET":
-        sig2 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "Total RR"
+        sig2 = process_columns[
+            process_columns["column_name"] == "TotalRR"
         ].squeeze()  # Y variable, Total RR
-        sig1 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "RR_Seaonality"
+        sig1 = process_columns[
+            process_columns["column_name"] == "RR_Seasonality"
         ].squeeze()  # X variable, RR_Seaonality
 
         sig1_label = labels
@@ -552,34 +535,35 @@ for process_name in tqdm(
     # For Staoge capacity and retention
 
     if process_name == "Storage capacity and retention":
-        sig2 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "AverageStorage"
-        ].squeeze()  # Y variable, AverageStorage
-        sig1 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "RecessionParameters_b"
+        sig1 = process_columns[
+            process_columns["column_name"] == "RecessionParameters_b"
         ].squeeze()  # X variable, RecessionParameters_b
+        sig2 = process_columns[
+            process_columns["column_name"] == "AverageStorage"
+        ].squeeze()  # Y variable, AverageStorage
 
-        sig1_label = labels
+        sig1_label = labels_rev
         sig2_label = labels
 
-        sig1_dir = dir_label
+        sig1_dir = dir_label_rev
+        # Higher b (=high nonlinearity) means multiple storages, so reverse the direction
         sig2_dir = dir_label
 
     ###############################
     # For Infiltration Excess Overlandflow
 
     if process_name == "Infiltration Excess Overlandflow":
-        sig2 = process_columns.loc[
-            process_columns.label == "IE_thresh"
-        ].squeeze()  # Y variable, IE_thresh
         sig1 = process_columns.loc[
-            process_columns.label == "IE_thresh_signif"
+            process_columns.column_name == "IE_thresh_signif"
         ].squeeze()  # X variable, IE_thresh_signif
+        sig2 = process_columns.loc[
+            process_columns.column_name == "IE_thresh"
+        ].squeeze()  # Y variable, IE_thresh
 
-        sig1_label = labels
+        sig1_label = labels_rev
         sig2_label = labels
 
-        sig1_dir = dir_label
+        sig1_dir = dir_label_rev
         sig2_dir = dir_label
 
     ###############################
@@ -587,45 +571,55 @@ for process_name in tqdm(
     # For Saturation Excess Overlandflow
 
     if process_name == "Saturation Excess Overlandflow":
-        sig2 = process_columns.loc[
-            process_columns.label == "SE_thresh"
-        ].squeeze()  # Y variable, IE_thresh
         sig1 = process_columns.loc[
-            process_columns.label == "SE_thresh_signif"
+            process_columns.column_name == "Storage_thresh_signif"
         ].squeeze()  # X variable, IE_thresh_signif
+        sig2 = process_columns.loc[
+            process_columns.column_name == "Storage_thresh"
+        ].squeeze()  # Y variable, IE_thresh
 
-        sig1_label = labels
+        # sig1 = process_columns.loc[
+        #     process_columns.column_name == "SE_thresh_signif"
+        # ].squeeze()  # X variable, IE_thresh_signif
+        # sig2 = process_columns.loc[
+        #     process_columns.column_name == "SE_thresh"
+        # ].squeeze()  # Y variable, IE_thresh
+
+        sig1_label = labels_rev
         sig2_label = labels
 
-        sig1_dir = dir_label
+        sig1_dir = dir_label_rev
         sig2_dir = dir_label
 
     ###############################
 
     # For ET impacts on storage and baseflow
     if process_name == "ET impacts on storage and baseflow":
-        sig2 = process_columns.loc[
-            process_columns.label == "Recession_a_Seasonality"
-        ].squeeze()  # Y variable,
         sig1 = process_columns.loc[
-            process_columns.label == "VariabilityIndex"
+            process_columns.column_name == "VariabilityIndex"
         ].squeeze()  # X variable, VariabilityIndex
+        # sig2 = process_columns.loc[
+        #     process_columns.column_name == "Recession_a_Seasonality"
+        # ].squeeze()  # Y variable,
+        sig2 = process_columns.loc[
+            process_columns.column_name == "RR_Seasonality"
+        ].squeeze()  # Y variable,
 
-        sig1_label = labels
+        sig1_label = labels_rev
         sig2_label = labels
 
-        sig1_dir = dir_label
+        sig1_dir = dir_label_rev
         sig2_dir = dir_label
     ###############################
 
     # For Saturation Excess Overlandflow
 
     if process_name == "IE vs SE significance":
-        sig2 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "IE_thresh_signif"
+        sig2 = process_columns[
+            process_columns["column_name"] == "IE_thresh_signif"
         ].squeeze()
-        sig1 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "SE_thresh_signif"
+        sig1 = process_columns[
+            process_columns["column_name"] == "SE_thresh_signif"
         ].squeeze()
 
         sig1_label = labels
@@ -637,11 +631,11 @@ for process_name in tqdm(
     # For Saturation Excess Overlandflow
 
     if process_name == "IE vs SE (SSF2 & GW) significance":
-        sig2 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "IE_thresh_signif"
+        sig2 = process_columns[
+            process_columns["column_name"] == "IE_thresh_signif"
         ].squeeze()
-        sig1 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "Storage_thresh_signif"
+        sig1 = process_columns[
+            process_columns["column_name"] == "Storage_thresh_signif"
         ].squeeze()
 
         sig1_label = labels
@@ -652,11 +646,11 @@ for process_name in tqdm(
 
     # For SSF1 vs SSF2 & GW significance
     if process_name == "SSF1 vs SSF2 & GW significance":
-        sig2 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "SE_thresh_signif"
+        sig2 = process_columns[
+            process_columns["column_name"] == "SE_thresh_signif"
         ].squeeze()
-        sig1 = plot_sigs_config[
-            plot_sigs_config["column_name"] == "Storage_thresh_signif"
+        sig1 = process_columns[
+            process_columns["column_name"] == "Storage_thresh_signif"
         ].squeeze()
 
         sig1_label = labels
@@ -690,157 +684,11 @@ for process_name in tqdm(
 
     # Create the legend
     # Define axis labels and tick labels
+
     x_label = f"{sig1.label} {sig1.unit}"
     y_label = f"{sig2.label} {sig2.unit}"
     x_ticks = sig1_dir
     y_ticks = sig2_dir
     create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
 
-
-# # %% #############################################################################
-# # Plot the IE vs SE diffferences
-# #################################################################################
-
-
-# # %%
-# plot_sig_map(
-#     df_sigs,
-#     "diff_RCPint_RCPvol",
-#     None,
-#     stats="normal",
-#     plot_mode="polygon",
-# )
-
-# plot_sig_map(
-#     df_sigs,
-#     "diff_RCPint_RCPvol",
-#     None,
-#     stats="normal",
-#     plot_mode="scatter",
-# )
-# # %%
-
-
-# plot_sig_map(
-#     df_sigs,
-#     "diff_IE_SE_thresh",
-#     None,
-#     stats="normal",
-#     plot_mode="polygon",
-# )
-
-
-# plot_sig_map(
-#     df_sigs,
-#     "diff_IE_Str_thresh",
-#     None,
-#     stats="normal",
-#     plot_mode="polygon",
-# )
-
-# # %%
-# plot_sig_map(
-#     df_sigs,
-#     "diff_SE_Str_thresh",
-#     None,
-#     stats="normal",
-#     plot_mode="polygon",
-# )
-
 # %%
-
-# # ______________________________________________________________________________
-# # Plot the average percentile per processes
-# # process_name = "Baseflow"
-# # process_name = "Saturation Excess Overlandflow"  # "Infiltration Excess Overlandflow"
-# # process_name = "Storage capacity and retention"  # "Water loss to deep GW or ET"
-# # process_name = "ET impacts on storage and baseflow"
-# # process_name = "Infiltration Excess Overlandflow"
-# process_name = "Saturation Excess Overlandflow"
-# process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
-# process_columns
-
-
-# # %%
-# # Recalculate the percentiles based on aggregation
-# def recalculate_percentile(column_data, thresh_value):
-#     new_percentile = column_data.apply(
-#         lambda x: 0 if x > thresh_value else (1 - (x / thresh_value)) * 100
-#     )
-#     return new_percentile
-
-
-# percentiles = []
-
-# for _, row in process_columns.iterrows():
-#     column_name = row["column_name"]
-#     relationship = row["relationship"]
-#     percentile_column = column_name + "_perc"
-
-#     if relationship == "pos":
-#         percentiles.append(df_sigs[percentile_column])
-#     elif relationship == "neg":
-#         percentiles.append(100 - df_sigs[percentile_column])
-#     elif "thresh" in relationship:
-#         # Extract the threshold value from the relationship string
-#         threshold = float(relationship.split(":")[1])
-#         recalculated_percentile = recalculate_percentile(
-#             df_sigs[column_name], threshold
-#         )
-#         percentiles.append(recalculated_percentile)
-
-# # Combine the percentiles and calculate the average
-# # Do not calculate the median percentile, if there is nan
-# df_sigs[process_name + "_medperc"] = pd.concat(percentiles, axis=1).median(
-#     axis=1, skipna=False
-# )
-# df_sigs
-
-# # %%
-# plot_sig_map(df_sigs, process_name, None, stats="process_perc", plot_mode="scatter")
-# plot_sig_map(df_sigs, process_name, None, stats="process_perc", plot_mode="polygon")
-
-
-# # %% ________________________________________
-# # Plot error map
-# def plot_err_box(df, sig_name):
-#     sample_counts = df["ecoregion"].value_counts()
-#     valid_ecoregions = sample_counts[sample_counts >= 100].index
-#     df_filt = df[df["ecoregion"].isin(valid_ecoregions)].copy()
-#     df_filt["ecoregion_number"] = df_filt["ecoregion"].str.extract(r"(\d+)").astype(int)
-
-#     df_sorted = df_filt.sort_values("ecoregion_number")
-
-#     # Plot the boxplot using Seaborn
-#     ecoregion_colors = [
-#         "#9ACDCF",
-#         "#5DC05A",
-#         "#4DCAC2",
-#         "#BBDD90",
-#         "#FECE9F",
-#         "#FFDB71",
-#         "#D1E8BA",
-#         "#BBDD90",
-#     ]
-
-#     plt.figure(figsize=(12, 5))
-#     boxplot = sns.boxplot(
-#         x=f"{sig_name}_medperc",
-#         y="ecoregion",
-#         data=df_sorted,
-#         palette=ecoregion_colors,
-#         order=df_sorted["ecoregion"].unique(),
-#     )
-
-#     # Customize the plot
-#     boxplot.set_xlabel("Median percentile")
-#     boxplot.set_ylabel("Ecoregion")
-#     boxplot.set_title(sig_name)
-#     boxplot.set_xlim([0, 100])
-
-#     plt.tight_layout()
-#     plt.savefig(os.path.join(fig_dir, f"medpercbox_{sig_name}.png"))
-#     plt.show()
-
-
-# plot_err_box(df_sigs, process_name)
