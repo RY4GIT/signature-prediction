@@ -12,12 +12,14 @@ import geopandas as gpd
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Rectangle
 import geopandas as gdp
+from tqdm import tqdm
 # %% ######################
 # PREPARATION
 ##########################
 
 # ____________________________________________________________________________________
 # Config
+print("Loading config...")
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\signatures\visualize")
 out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20250223_withWu"
 plot_sigs_config_path = "plot_sigs_config.csv"
@@ -29,14 +31,17 @@ if not os.path.exists(fig_dir):
 # %%
 # ____________________________________________________________________________________
 # Load overlay layer for plotting
-# _ecoregion_overlay = gpd.read_file(
-#     r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\EcoRegions\NA_CEC_Eco_Level1.shp"
-# )
-# _ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
-# ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
+print("Loading overlay layer...")
+_ecoregion_overlay = gpd.read_file(
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\EcoRegions\NA_CEC_Eco_Level2.shp"
+)
+_ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
+ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
 # %%
 # ____________________________________________________________________________________
 # Load data
+print("Loading attributes data...")
+
 caravan_attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\attributes"
 attrs_camels_file = os.path.join(
     caravan_attrs_dir,
@@ -59,6 +64,7 @@ eco_hysets = pd.read_csv(eco_hysets_file, index_col="gauge_id")
 eco_caravan = pd.concat([eco_camels, eco_hysets])
 
 # %%
+print("Loading watershed shapefiles...")
 wspolygon_camels_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\shapefiles\camels\camels_basin_shapes.shp"
 wspolygon_camels = gpd.read_file(wspolygon_camels_file).to_crs(epsg=4326)
 wspolygon_hysets_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\shapefiles\hysets\hysets_basin_shapes.shp"
@@ -67,9 +73,9 @@ wspolygon = pd.concat([wspolygon_camels, wspolygon_hysets], ignore_index=True)
 wspolygon.set_index("gauge_id", inplace=True)
 
 # %%
-# %%
+print("Loading signatures results file ...")
 _df_sigs = pd.read_csv(
-    os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_area_gages2subset.csv"),
+    os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_area.csv"),
     index_col="gauge_id",
 )
 _df_sigs = _df_sigs.drop(
@@ -78,6 +84,12 @@ _df_sigs = _df_sigs.drop(
 df_sigs = _df_sigs.join(eco_caravan, how="left")
 
 df_sigs = wspolygon.join(df_sigs, how="right")
+
+# Calculate some differences signature
+df_sigs["diff_RCPint_RCPvol"] = df_sigs["R_Pint_RC"] - df_sigs["R_Pvol_RC"]
+df_sigs["diff_IE_SE_thresh"] = df_sigs["IE_thresh"] - df_sigs["SE_thresh"]
+df_sigs["diff_IE_Str_thresh"] = df_sigs["IE_thresh"] - df_sigs["Storage_thresh"]
+df_sigs["diff_SE_Str_thresh"] = df_sigs["SE_thresh"] - df_sigs["Storage_thresh"]
 
 
 # %%
@@ -127,18 +139,18 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
     # Get plot config
 
     # Set up the map
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
     # Add a legend
-    # overlay_layer.plot(
-    #     ax=ax,
-    #     edgecolor="black",
-    #     facecolor="none",
-    #     linewidth=0.5,
-    #     aspect=1.1,
-    #     zorder=100,
-    # )
+    overlay_layer.plot(
+        ax=ax,
+        edgecolor="grey",
+        facecolor="none",
+        linewidth=0.5,
+        aspect=1.1,
+        zorder=100,
+    )
 
     land = cfeature.NaturalEarthFeature(
         "physical",
@@ -150,7 +162,7 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
     ax.add_feature(land)
 
     # Set extent to CONUS
-    ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+    # ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
     # Add map features
     ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
 
@@ -165,7 +177,6 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
         cbar_label = f"{plot_config['unit']}"
         out_file_name = f"map_{sig_name}_{plot_mode}.png"
         title_label = f"{plot_config['label']}"
-        alpha = 0.8
     elif stats == "percentile":
         plot_config = plot_sigs_config.loc[
             plot_sigs_config["column_name"] == sig_name
@@ -176,7 +187,6 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
         cbar_label = "percentile"
         out_file_name = f"map_perc_{sig_name}_{plot_mode}.png"
         title_label = f"{plot_config['label']}"
-        alpha = 0.8
     elif stats == "process_perc":
         c_data = df[sig_name + "_medperc"]
         llim = 0
@@ -184,7 +194,6 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
         cbar_label = "Median percentile"
         out_file_name = f"map_medperc_{sig_name}_{plot_mode}.png"
         title_label = sig_name
-        alpha = 0.5
 
     # Create a colormap and normalize
     cmap = plt.cm.Blues
@@ -201,7 +210,7 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
             marker="o",
             # edgecolors="grey",
             s=5,
-            alpha=alpha,
+            alpha=0.5,
             zorder=99,
             vmin=llim,
             vmax=ulim,
@@ -209,7 +218,8 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
         cbar = plt.colorbar(plot_obj, ax=ax, shrink=0.5)
         cbar.set_label(cbar_label, rotation=270, labelpad=30)
     elif plot_mode == "polygon":
-        plot_obj = df.plot(
+        df_sorted = df.sort_values("area", ascending=False)
+        plot_obj = df_sorted.plot(
             ax=ax,
             column=sig_name,
             cmap=cmap,
@@ -218,17 +228,17 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
             vmax=ulim,
             zorder=99,
         )
+
         # Add a colorbar
         sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm._A = []  # Empty array for ScalarMappable
         cbar = plt.colorbar(sm, ax=ax, shrink=0.5)
         cbar.set_label(cbar_label, rotation=270, labelpad=30)
 
+    ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
     ax.set_title(title_label)
 
-    # Adding a colorbar
-
-    # Display the plot
+    plt.tight_layout(pad=1.5)
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, out_file_name))
 
@@ -245,38 +255,46 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 # For testing
 # plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, stats="normal", plot_mode="polygon")
 
-for sigs_name in plot_sigs_config.column_name:
+for sigs_name in tqdm(
+    plot_sigs_config.column_name, desc="Plotting maps of signature values", leave=False
+):
     try:
-        plot_sig_map(df_sigs, sigs_name, None, stats="normal", plot_mode="scatter")
-        # plot_sig_map(
-        #     df_sigs, sigs_name, ecoregion_overlay, stats="normal", plot_mode="polygon"
-        # )
+        plot_sig_map(
+            df_sigs, sigs_name, ecoregion_overlay, stats="normal", plot_mode="scatter"
+        )
+        plot_sig_map(
+            df_sigs, sigs_name, ecoregion_overlay, stats="normal", plot_mode="polygon"
+        )
     except Exception as e:
         print(f"{sigs_name}: {e}")
 
-# %%
-# ______________________________________________________________________________
-# Plot the percentile map
-# For testing
-# plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, stats="normal")
-for sigs_name in plot_sigs_config.column_name:
-    try:
-        plot_sig_map(
-            df_sigs,
-            sigs_name,
-            None,
-            stats="percentile",
-            plot_mode="scatter",
-        )
-        # plot_sig_map(
-        #     df_sigs,
-        #     sigs_name,
-        #     ecoregion_overlay,
-        #     stats="percentile",
-        #     plot_mode="polygon",
-        # )
-    except Exception as e:
-        print(f"{sigs_name}: {e}")
+# # %%
+# # ______________________________________________________________________________
+# # Plot the percentile map
+# # For testing
+# # plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, stats="normal")
+# for sigs_name in tqdm(
+#     plot_sigs_config.column_name,
+#     desc="Plotting maps of signature percentiles",
+#     leave=False,
+# ):
+#     try:
+#         plot_sig_map(
+#             df_sigs,
+#             sigs_name,
+#             ecoregion_overlay,
+#             stats="percentile",
+#             plot_mode="scatter",
+#         )
+#         plot_sig_map(
+#             df_sigs,
+#             sigs_name,
+#             ecoregion_overlay,
+#             stats="percentile",
+#             plot_mode="polygon",
+#         )
+#     except Exception as e:
+#         print(f"{sigs_name}: {e}")
 
 # %%
 # %% ######################
@@ -285,316 +303,12 @@ for sigs_name in plot_sigs_config.column_name:
 #
 ##########################
 
-# ______________________________________________________________________________
-# Plot the average percentile per processes
-# process_name = "Baseflow"
-# process_name = "Saturation Excess Overlandflow"  # "Infiltration Excess Overlandflow"
-# process_name = "Storage capacity and retention"  # "Water loss to deep GW or ET"
-# process_name = "ET impacts on storage and baseflow"
-# process_name = "Infiltration Excess Overlandflow"
-process_name = "Saturation Excess Overlandflow"
-process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
-process_columns
-
-
-# %%
-# Recalculate the percentiles based on aggregation
-def recalculate_percentile(column_data, thresh_value):
-    new_percentile = column_data.apply(
-        lambda x: 0 if x > thresh_value else (1 - (x / thresh_value)) * 100
-    )
-    return new_percentile
-
-
-percentiles = []
-
-for _, row in process_columns.iterrows():
-    column_name = row["column_name"]
-    relationship = row["relationship"]
-    percentile_column = column_name + "_perc"
-
-    if relationship == "pos":
-        percentiles.append(df_sigs[percentile_column])
-    elif relationship == "neg":
-        percentiles.append(100 - df_sigs[percentile_column])
-    elif "thresh" in relationship:
-        # Extract the threshold value from the relationship string
-        threshold = float(relationship.split(":")[1])
-        recalculated_percentile = recalculate_percentile(
-            df_sigs[column_name], threshold
-        )
-        percentiles.append(recalculated_percentile)
-
-# Combine the percentiles and calculate the average
-# Do not calculate the median percentile, if there is nan
-df_sigs[process_name + "_medperc"] = pd.concat(percentiles, axis=1).median(
-    axis=1, skipna=False
-)
-df_sigs
-
-# %%
-plot_sig_map(df_sigs, process_name, None, stats="process_perc", plot_mode="scatter")
-plot_sig_map(df_sigs, process_name, None, stats="process_perc", plot_mode="polygon")
-
-
-# %% ________________________________________
-# Plot error map
-def plot_err_box(df, sig_name):
-    sample_counts = df["ecoregion"].value_counts()
-    valid_ecoregions = sample_counts[sample_counts >= 100].index
-    df_filt = df[df["ecoregion"].isin(valid_ecoregions)].copy()
-    df_filt["ecoregion_number"] = df_filt["ecoregion"].str.extract(r"(\d+)").astype(int)
-
-    df_sorted = df_filt.sort_values("ecoregion_number")
-
-    # Plot the boxplot using Seaborn
-    ecoregion_colors = [
-        "#9ACDCF",
-        "#5DC05A",
-        "#4DCAC2",
-        "#BBDD90",
-        "#FECE9F",
-        "#FFDB71",
-        "#D1E8BA",
-        "#BBDD90",
-    ]
-
-    plt.figure(figsize=(12, 5))
-    boxplot = sns.boxplot(
-        x=f"{sig_name}_medperc",
-        y="ecoregion",
-        data=df_sorted,
-        palette=ecoregion_colors,
-        order=df_sorted["ecoregion"].unique(),
-    )
-
-    # Customize the plot
-    boxplot.set_xlabel("Median percentile")
-    boxplot.set_ylabel("Ecoregion")
-    boxplot.set_title(sig_name)
-    boxplot.set_xlim([0, 100])
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(fig_dir, f"medpercbox_{sig_name}.png"))
-    plt.show()
-
-
-plot_err_box(df_sigs, process_name)
-
 # %%
 
 ########################################################################################
 # Plot the bivariate map
 # Color map and the idea from Datawim: https://www.datawim.com/post/creating-professional-bivariate-maps-in-r/
 ########################################################################################
-
-# ______________________________________________________
-# Preparation
-patch_colors = [
-    ["#D3D3D3", "#D6B3A0", "#D9926A", "#DD6A29"],
-    ["#9CC4D2", "#9EA69F", "#A08769", "#A36229"],
-    ["#5FB2D1", "#60979F", "#617B69", "#635929"],
-    ["#159DD0", "#15869E", "#176D68", "#174F28"],
-]
-cmap = ListedColormap(patch_colors)
-
-# Labels for quantiles (low-->high)
-labels = [1, 2, 3, 4]
-dir_label = ["low", "", "", "high"]
-
-# Reversed labels for quantiles (high --> low)
-labels_rev = [
-    4,
-    3,
-    2,
-    1,
-]
-# Label low values as 4, so that it gets assinged to (x,y)=(i,4) or (4,j) in the quadrant
-dir_label_rev = ["high", "", "", "low"]
-
-
-# CHANGE HERE ################
-
-# process_name = "Baseflow"
-# process_name = "Water loss to deep GW or ET"
-# process_name = "Storage capacity and retention"
-# process_name = "Infiltration Excess Overlandflow"
-# process_name = "Saturation Excess Overlandflow"
-# process_name = "ET impacts on storage and baseflow"
-# process_name = "IE vs SE significance"
-# process_name = "IE vs SE (SSF2 & GW) significance"
-process_name = "SSF1 vs SSF2 & GW significance"
-
-# For checking the items
-process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
-print(process_columns)
-
-###############################
-
-# For Baseflow plots
-if process_name == "Baseflow":
-    sig2 = process_columns.iloc[0]  # Y variable, BFI
-    sig1 = process_columns.iloc[1]  # X variable, Baseflow Recession K
-    sig1_label = labels
-    sig2_label = labels
-
-    sig1_dir = dir_label
-    sig2_dir = dir_label
-###############################
-# For Water loss to deep GW or ET
-
-if process_name == "Water loss to deep GW or ET":
-    sig2 = process_columns.iloc[0]  # Y variable, Total RR
-    sig1 = process_columns.iloc[2]  # X variable, RR_Seaonality
-
-    sig1_label = labels
-    sig2_label = labels
-
-    sig1_dir = dir_label
-    sig2_dir = dir_label
-###############################
-# For Staoge capacity and retention
-
-if process_name == "Storage capacity and retention":
-    sig2 = process_columns.loc[
-        process_columns.label == "AverageStorage"
-    ].squeeze()  # Y variable, Average Storage
-    sig1 = process_columns.loc[
-        process_columns.label == "RecessionParameters_b"
-    ].squeeze()  # X variable, RecessionParameters_b
-
-    sig1_label = labels
-    sig2_label = labels
-
-    sig1_dir = dir_label
-    sig2_dir = dir_label
-
-###############################
-# For Infiltration Excess Overlandflow
-
-if process_name == "Infiltration Excess Overlandflow":
-    sig2 = process_columns.loc[
-        process_columns.label == "IE_thresh"
-    ].squeeze()  # Y variable,
-    sig1 = process_columns.loc[
-        process_columns.label == "IE_thresh_signif"
-    ].squeeze()  # X variable, R
-
-    sig1_label = labels
-    sig2_label = labels
-
-    sig1_dir = dir_label
-    sig2_dir = dir_label
-
-###############################
-
-# For Saturation Excess Overlandflow
-
-if process_name == "Saturation Excess Overlandflow":
-    sig2 = process_columns.loc[
-        process_columns.label == "SE_thresh"
-    ].squeeze()  # Y variable,
-    sig1 = process_columns.loc[
-        process_columns.label == "SE_thresh_signif"
-    ].squeeze()  # X variable, R
-
-    sig1_label = labels
-    sig2_label = labels
-
-    sig1_dir = dir_label
-    sig2_dir = dir_label
-
-###############################
-
-# For ET impacts on storage and baseflow
-if process_name == "ET impacts on storage and baseflow":
-    sig2 = plot_sigs_config[
-        plot_sigs_config["process"] == process_name
-    ].squeeze()  # Y variable,
-    sig1 = process_columns.loc[
-        process_columns.label == "VariabilityIndex"
-    ].squeeze()  # X variable, R
-
-    sig1_label = labels
-    sig2_label = labels
-
-    sig1_dir = dir_label
-    sig2_dir = dir_label
-###############################
-
-
-# For Saturation Excess Overlandflow
-
-if process_name == "IE vs SE significance":
-    sig2 = plot_sigs_config[
-        plot_sigs_config["column_name"] == "IE_thresh_signif"
-    ].squeeze()
-    sig1 = plot_sigs_config[
-        plot_sigs_config["column_name"] == "SE_thresh_signif"
-    ].squeeze()
-
-    sig1_label = labels
-    sig2_label = labels
-
-    sig1_dir = dir_label
-    sig2_dir = dir_label
-
-
-# For Saturation Excess Overlandflow
-
-if process_name == "IE vs SE (SSF2 & GW) significance":
-    sig2 = plot_sigs_config[
-        plot_sigs_config["column_name"] == "IE_thresh_signif"
-    ].squeeze()
-    sig1 = plot_sigs_config[
-        plot_sigs_config["column_name"] == "Storage_thresh_signif"
-    ].squeeze()
-
-    sig1_label = labels
-    sig2_label = labels
-
-    sig1_dir = dir_label
-    sig2_dir = dir_label
-
-# For SSF1 vs SSF2 & GW significance
-if process_name == "SSF1 vs SSF2 & GW significance":
-    sig2 = plot_sigs_config[
-        plot_sigs_config["column_name"] == "SE_thresh_signif"
-    ].squeeze()
-    sig1 = plot_sigs_config[
-        plot_sigs_config["column_name"] == "Storage_thresh_signif"
-    ].squeeze()
-
-    sig1_label = labels
-    sig2_label = labels
-
-    sig1_dir = dir_label
-    sig2_dir = dir_label
-
-
-def update_column_name(signal):
-    """
-    Updates the column_name attribute of the signal to use percentile, if it is threshold-based signatures
-    Parameters:
-    - signal: An object with `label` and `column_name` attributes.
-    """
-    label_to_column = {
-        "IE_thresh": "IE_thresh_perc",
-        "SE_thresh": "SE_thresh_perc",
-        "IE_thresh_signif": "IE_thresh_signif_perc",
-        "SE_thresh_signif": "SE_thresh_signif_perc",
-        "Storage_thresh": "Storage_thresh_perc",
-        "Storage_thresh_signif": "Storage_thresh_signif_perc",
-    }
-    if signal.label in label_to_column:
-        signal.column_name = label_to_column[signal.label]
-
-
-# Simplified usage
-update_column_name(sig1)
-update_column_name(sig2)
-
-print(f"Plotting the bivariate map for Y: {sig2.column_name} & X: {sig1.column_name}")
 
 
 # %% __________________________________________________
@@ -632,18 +346,29 @@ def get_bivariate_class(df, sig1, sig2, sig1_label, sig2_label):
     return df_clean
 
 
-df_sigs_clean = get_bivariate_class(df_sigs, sig1, sig2, sig1_label, sig2_label)
-# %% __________________________________________________
-# Plot the bivariate map
-
-
-def plot_bivariate_map(df, sig1, sig2, fig_dir):
+def plot_bivariate_map(df, sig1, sig2, overlay_layer, fig_dir, plot_mode="polygon"):
     # Set up the map
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
     # Add map features
-    df.plot(ax=ax, color=df["color"], linewidth=0.2, alpha=0.5)
+    if plot_mode == "scatter":
+        ax.scatter(
+            df["gauge_lon"],
+            df["gauge_lat"],
+            color=df["color"],
+            marker="o",
+            s=5,
+            alpha=0.5,
+        )
+    elif plot_mode == "polygon":
+        # Add an area column (if not already present)
+        df["area"] = df.geometry.area
+
+        # Sort by area in descending order so smaller polygons are plotted last
+        df_sorted = df.sort_values("area", ascending=False)
+
+        df_sorted.plot(ax=ax, color=df["color"], linewidth=0.2, alpha=0.5)
 
     # Add the BORDERS feature first
     ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k", alpha=0.5)
@@ -661,6 +386,16 @@ def plot_bivariate_map(df, sig1, sig2, fig_dir):
         linewidth=0.5,  # Optionally adjust linewidth for edges
     )
 
+    # Add a legend
+    overlay_layer.plot(
+        ax=ax,
+        edgecolor="grey",
+        facecolor="none",
+        linewidth=0.5,
+        aspect=1.1,
+        zorder=100,
+    )
+
     title_label = f"Bivariate map of {sig1.label} vs. {sig2.label}"
     ax.set_title(title_label)
     # Set extent to CONUS
@@ -669,16 +404,10 @@ def plot_bivariate_map(df, sig1, sig2, fig_dir):
     # Display the plot
     plt.tight_layout()
     plt.savefig(
-        os.path.join(fig_dir, f"bivar_{sig1.column_name}_{sig2.column_name}.png")
+        os.path.join(
+            fig_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_{plot_mode}.png"
+        )
     )
-    plt.show()
-
-
-plot_bivariate_map(df_sigs_clean, sig1, sig2, fig_dir)
-# # %%
-# df_sigs_clean.columns
-# # %%
-# df_sigs_clean[["IE_thresh", "IE_signif_perc", "bivariate_class"]]
 
 
 # %%
@@ -719,66 +448,399 @@ def create_bivariate_legend(colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
     plt.savefig(
         os.path.join(fig_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_legend.png")
     )
-    plt.show()
 
 
-# Define axis labels and tick labels
-x_label = f"{sig1.label} {sig1.unit}"
-y_label = f"{sig2.label} {sig2.unit}"
-x_ticks = sig1_dir
-y_ticks = sig2_dir
+def update_column_name(signal):
+    """
+    Updates the column_name attribute of the signal to use percentile, if it is threshold-based signatures
+    Parameters:
+    - signal: An object with `label` and `column_name` attributes.
+    """
+    label_to_column = {
+        "IE_thresh": "IE_thresh_perc",
+        "SE_thresh": "SE_thresh_perc",
+        "IE_thresh_signif": "IE_thresh_signif_perc",
+        "SE_thresh_signif": "SE_thresh_signif_perc",
+        "Storage_thresh": "Storage_thresh_perc",
+        "Storage_thresh_signif": "Storage_thresh_signif_perc",
+    }
+    if signal.label in label_to_column:
+        signal.column_name = label_to_column[signal.label]
 
-# Create the legend
-create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
+
+# ______________________________________________________
+# Preparation, do not change here
+patch_colors = [
+    ["#D3D3D3", "#D6B3A0", "#D9926A", "#DD6A29"],
+    ["#9CC4D2", "#9EA69F", "#A08769", "#A36229"],
+    ["#5FB2D1", "#60979F", "#617B69", "#635929"],
+    ["#159DD0", "#15869E", "#176D68", "#174F28"],
+]
+cmap = ListedColormap(patch_colors)
+
+# Labels for quantiles (low-->high)
+labels = [1, 2, 3, 4]
+dir_label = ["low", "", "", "high"]
+
+# Reversed labels for quantiles (high --> low)
+labels_rev = [
+    4,
+    3,
+    2,
+    1,
+]
+# Label low values as 4, so that it gets assinged to (x,y)=(i,4) or (4,j) in the quadrant
+dir_label_rev = ["high", "", "", "low"]
+
+
+# CHANGE HERE ################
+
+processes = [
+    "Baseflow",
+    "Water loss to deep GW or ET",
+    "Storage capacity and retention",
+    "Infiltration Excess Overlandflow",
+    "Saturation Excess Overlandflow",
+    "ET impacts on storage and baseflow",
+    "IE vs SE significance",
+    "IE vs SE (SSF2 & GW) significance",
+    "SSF1 vs SSF2 & GW significance",
+]
+
+for process_name in tqdm(
+    processes, desc="Plotting bivariate maps of process hypothesis", leave=False
+):
+    # For checking the items
+    process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
+    print(process_columns)
+
+    ###############################
+    # Get the process signatures
+    ###############################
+
+    # For Baseflow plots
+    if process_name == "Baseflow":
+        sig2 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "BFI"
+        ].squeeze()  # Y variable, BFI
+        sig1 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "BaseflowRecessionK"
+        ].squeeze()  # X variable, Baseflow Recession K
+
+        sig1_label = labels
+        sig2_label = labels
+
+        sig1_dir = dir_label
+        sig2_dir = dir_label
+    ###############################
+    # For Water loss to deep GW or ET
+
+    if process_name == "Water loss to deep GW or ET":
+        sig2 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "Total RR"
+        ].squeeze()  # Y variable, Total RR
+        sig1 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "RR_Seaonality"
+        ].squeeze()  # X variable, RR_Seaonality
+
+        sig1_label = labels
+        sig2_label = labels
+
+        sig1_dir = dir_label
+        sig2_dir = dir_label
+    ###############################
+    # For Staoge capacity and retention
+
+    if process_name == "Storage capacity and retention":
+        sig2 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "AverageStorage"
+        ].squeeze()  # Y variable, AverageStorage
+        sig1 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "RecessionParameters_b"
+        ].squeeze()  # X variable, RecessionParameters_b
+
+        sig1_label = labels
+        sig2_label = labels
+
+        sig1_dir = dir_label
+        sig2_dir = dir_label
+
+    ###############################
+    # For Infiltration Excess Overlandflow
+
+    if process_name == "Infiltration Excess Overlandflow":
+        sig2 = process_columns.loc[
+            process_columns.label == "IE_thresh"
+        ].squeeze()  # Y variable, IE_thresh
+        sig1 = process_columns.loc[
+            process_columns.label == "IE_thresh_signif"
+        ].squeeze()  # X variable, IE_thresh_signif
+
+        sig1_label = labels
+        sig2_label = labels
+
+        sig1_dir = dir_label
+        sig2_dir = dir_label
+
+    ###############################
+
+    # For Saturation Excess Overlandflow
+
+    if process_name == "Saturation Excess Overlandflow":
+        sig2 = process_columns.loc[
+            process_columns.label == "SE_thresh"
+        ].squeeze()  # Y variable, IE_thresh
+        sig1 = process_columns.loc[
+            process_columns.label == "SE_thresh_signif"
+        ].squeeze()  # X variable, IE_thresh_signif
+
+        sig1_label = labels
+        sig2_label = labels
+
+        sig1_dir = dir_label
+        sig2_dir = dir_label
+
+    ###############################
+
+    # For ET impacts on storage and baseflow
+    if process_name == "ET impacts on storage and baseflow":
+        sig2 = process_columns.loc[
+            process_columns.label == "Recession_a_Seasonality"
+        ].squeeze()  # Y variable,
+        sig1 = process_columns.loc[
+            process_columns.label == "VariabilityIndex"
+        ].squeeze()  # X variable, VariabilityIndex
+
+        sig1_label = labels
+        sig2_label = labels
+
+        sig1_dir = dir_label
+        sig2_dir = dir_label
+    ###############################
+
+    # For Saturation Excess Overlandflow
+
+    if process_name == "IE vs SE significance":
+        sig2 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "IE_thresh_signif"
+        ].squeeze()
+        sig1 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "SE_thresh_signif"
+        ].squeeze()
+
+        sig1_label = labels
+        sig2_label = labels
+
+        sig1_dir = dir_label
+        sig2_dir = dir_label
+
+    # For Saturation Excess Overlandflow
+
+    if process_name == "IE vs SE (SSF2 & GW) significance":
+        sig2 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "IE_thresh_signif"
+        ].squeeze()
+        sig1 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "Storage_thresh_signif"
+        ].squeeze()
+
+        sig1_label = labels
+        sig2_label = labels
+
+        sig1_dir = dir_label
+        sig2_dir = dir_label
+
+    # For SSF1 vs SSF2 & GW significance
+    if process_name == "SSF1 vs SSF2 & GW significance":
+        sig2 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "SE_thresh_signif"
+        ].squeeze()
+        sig1 = plot_sigs_config[
+            plot_sigs_config["column_name"] == "Storage_thresh_signif"
+        ].squeeze()
+
+        sig1_label = labels
+        sig2_label = labels
+
+        sig1_dir = dir_label
+        sig2_dir = dir_label
+
+    # If looking at the significance of the threshold values, use the percentile columns, instead of the original p-values
+    update_column_name(sig1)
+    update_column_name(sig2)
+
+    print(
+        f"Plotting the bivariate map for Y: {sig2.column_name} & X: {sig1.column_name}"
+    )
+
+    #####################################################
+    # Plot the bivariate map
+    #####################################################
+
+    # Get the bivariate class of data
+    df_sigs_clean = get_bivariate_class(df_sigs, sig1, sig2, sig1_label, sig2_label)
+
+    # Plot the bivariate map
+    plot_bivariate_map(
+        df_sigs_clean, sig1, sig2, ecoregion_overlay, fig_dir, plot_mode="polygon"
+    )
+    plot_bivariate_map(
+        df_sigs_clean, sig1, sig2, ecoregion_overlay, fig_dir, plot_mode="scatter"
+    )
+
+    # Create the legend
+    # Define axis labels and tick labels
+    x_label = f"{sig1.label} {sig1.unit}"
+    y_label = f"{sig2.label} {sig2.unit}"
+    x_ticks = sig1_dir
+    y_ticks = sig2_dir
+    create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
+
+
+# # %% #############################################################################
+# # Plot the IE vs SE diffferences
+# #################################################################################
+
+
+# # %%
+# plot_sig_map(
+#     df_sigs,
+#     "diff_RCPint_RCPvol",
+#     None,
+#     stats="normal",
+#     plot_mode="polygon",
+# )
+
+# plot_sig_map(
+#     df_sigs,
+#     "diff_RCPint_RCPvol",
+#     None,
+#     stats="normal",
+#     plot_mode="scatter",
+# )
+# # %%
+
+
+# plot_sig_map(
+#     df_sigs,
+#     "diff_IE_SE_thresh",
+#     None,
+#     stats="normal",
+#     plot_mode="polygon",
+# )
+
+
+# plot_sig_map(
+#     df_sigs,
+#     "diff_IE_Str_thresh",
+#     None,
+#     stats="normal",
+#     plot_mode="polygon",
+# )
+
+# # %%
+# plot_sig_map(
+#     df_sigs,
+#     "diff_SE_Str_thresh",
+#     None,
+#     stats="normal",
+#     plot_mode="polygon",
+# )
 
 # %%
-print(df_sigs_clean.columns)
 
-# %% #############################################################################
-# Plot the IE vs SE diffferences
-#################################################################################
-
-df_sigs["diff_RCPint_RCPvol"] = df_sigs["R_Pint_RC"] - df_sigs["R_Pvol_RC"]
-df_sigs["diff_IE_SE_thresh"] = df_sigs["IE_thresh"] - df_sigs["SE_thresh"]
-df_sigs["diff_IE_Str_thresh"] = df_sigs["IE_thresh"] - df_sigs["Storage_thresh"]
-df_sigs["diff_SE_Str_thresh"] = df_sigs["SE_thresh"] - df_sigs["Storage_thresh"]
-
-# %%
-plot_sig_map(
-    df_sigs,
-    "diff_RCPint_RCPvol",
-    None,
-    stats="normal",
-    plot_mode="polygon",
-)
-
-# %%
+# # ______________________________________________________________________________
+# # Plot the average percentile per processes
+# # process_name = "Baseflow"
+# # process_name = "Saturation Excess Overlandflow"  # "Infiltration Excess Overlandflow"
+# # process_name = "Storage capacity and retention"  # "Water loss to deep GW or ET"
+# # process_name = "ET impacts on storage and baseflow"
+# # process_name = "Infiltration Excess Overlandflow"
+# process_name = "Saturation Excess Overlandflow"
+# process_columns = plot_sigs_config[plot_sigs_config["process"] == process_name]
+# process_columns
 
 
-plot_sig_map(
-    df_sigs,
-    "diff_IE_SE_thresh",
-    None,
-    stats="normal",
-    plot_mode="polygon",
-)
+# # %%
+# # Recalculate the percentiles based on aggregation
+# def recalculate_percentile(column_data, thresh_value):
+#     new_percentile = column_data.apply(
+#         lambda x: 0 if x > thresh_value else (1 - (x / thresh_value)) * 100
+#     )
+#     return new_percentile
 
 
-plot_sig_map(
-    df_sigs,
-    "diff_IE_Str_thresh",
-    None,
-    stats="normal",
-    plot_mode="polygon",
-)
+# percentiles = []
 
-# %%
-plot_sig_map(
-    df_sigs,
-    "diff_SE_Str_thresh",
-    None,
-    stats="normal",
-    plot_mode="polygon",
-)
+# for _, row in process_columns.iterrows():
+#     column_name = row["column_name"]
+#     relationship = row["relationship"]
+#     percentile_column = column_name + "_perc"
 
-# %%
+#     if relationship == "pos":
+#         percentiles.append(df_sigs[percentile_column])
+#     elif relationship == "neg":
+#         percentiles.append(100 - df_sigs[percentile_column])
+#     elif "thresh" in relationship:
+#         # Extract the threshold value from the relationship string
+#         threshold = float(relationship.split(":")[1])
+#         recalculated_percentile = recalculate_percentile(
+#             df_sigs[column_name], threshold
+#         )
+#         percentiles.append(recalculated_percentile)
+
+# # Combine the percentiles and calculate the average
+# # Do not calculate the median percentile, if there is nan
+# df_sigs[process_name + "_medperc"] = pd.concat(percentiles, axis=1).median(
+#     axis=1, skipna=False
+# )
+# df_sigs
+
+# # %%
+# plot_sig_map(df_sigs, process_name, None, stats="process_perc", plot_mode="scatter")
+# plot_sig_map(df_sigs, process_name, None, stats="process_perc", plot_mode="polygon")
+
+
+# # %% ________________________________________
+# # Plot error map
+# def plot_err_box(df, sig_name):
+#     sample_counts = df["ecoregion"].value_counts()
+#     valid_ecoregions = sample_counts[sample_counts >= 100].index
+#     df_filt = df[df["ecoregion"].isin(valid_ecoregions)].copy()
+#     df_filt["ecoregion_number"] = df_filt["ecoregion"].str.extract(r"(\d+)").astype(int)
+
+#     df_sorted = df_filt.sort_values("ecoregion_number")
+
+#     # Plot the boxplot using Seaborn
+#     ecoregion_colors = [
+#         "#9ACDCF",
+#         "#5DC05A",
+#         "#4DCAC2",
+#         "#BBDD90",
+#         "#FECE9F",
+#         "#FFDB71",
+#         "#D1E8BA",
+#         "#BBDD90",
+#     ]
+
+#     plt.figure(figsize=(12, 5))
+#     boxplot = sns.boxplot(
+#         x=f"{sig_name}_medperc",
+#         y="ecoregion",
+#         data=df_sorted,
+#         palette=ecoregion_colors,
+#         order=df_sorted["ecoregion"].unique(),
+#     )
+
+#     # Customize the plot
+#     boxplot.set_xlabel("Median percentile")
+#     boxplot.set_ylabel("Ecoregion")
+#     boxplot.set_title(sig_name)
+#     boxplot.set_xlim([0, 100])
+
+#     plt.tight_layout()
+#     plt.savefig(os.path.join(fig_dir, f"medpercbox_{sig_name}.png"))
+#     plt.show()
+
+
+# plot_err_box(df_sigs, process_name)
