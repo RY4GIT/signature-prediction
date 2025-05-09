@@ -1,18 +1,17 @@
 # %%
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 import os
-import matplotlib as mpl
-import json
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-import yaml
+import pandas as pd
 import geopandas as gpd
+from tqdm import tqdm
+
+import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Rectangle
-import geopandas as gdp
-from tqdm import tqdm
+import matplotlib as mpl
+
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
 # %% ######################
 # PREPARATION
 ##########################
