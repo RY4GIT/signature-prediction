@@ -1,4 +1,5 @@
-# %%
+# %% Script to cluster watersheds based on watershed attributes (currently set up to use climate-related attributes) and plot the results
+
 import os
 import numpy as np
 import pandas as pd
@@ -360,7 +361,7 @@ data_output[["CLASS", "cluster"]].groupby("cluster").count().to_clipboard()
 
 # %% #########################################################################
 #
-# POST PROTTING WITH ECOREGIONS
+# POST PROTTING WITH ECOREGIONS (CAN RUN STANDALONE)
 #
 ##############################################################################
 
@@ -439,7 +440,7 @@ for cluster in range(num_clusters):
 
     # Add labels only to ecoregion polygons that overlap with cluster data
     # First do a spatial join to find overlapping ecoregions
-    overlapping_regions = gpd.sjoin(
+    overlapping_regions = gpd.join(
         ecoregion_overlay, df_cluster, how="inner", predicate="intersects"
     )
 
