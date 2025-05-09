@@ -55,51 +55,23 @@ camels_polygon_file = os.path.join(caravan_shp_dir, "camels", "camels_basin_shap
 camels_polygon = gpd.read_file(camels_polygon_file).to_crs(epsg=4326)
 hysets_polygon_file = os.path.join(caravan_shp_dir, "hysets", "hysets_basin_shapes.shp")
 hysets_polygon = gpd.read_file(hysets_polygon_file).to_crs(epsg=4326)
-cara_polygon = pd.concat([camels_polygon, hysets_polygon], ignore_index=True)
+cara_polygons = pd.concat([camels_polygon, hysets_polygon], ignore_index=True)
 # %%
-cara_polygon = cara_polygon.join(
+cara_polygons = cara_polygons.join(
     cara_attrs.set_index("gauge_id"), on="gauge_id", rsuffix="_attrs"
 )
-cara_polygon = cara_polygon[cara_polygon["country"] == "United States of America"]
-cara_polygon["usgs_gauge_id"] = cara_polygon["gauge_id"].apply(
+cara_polygons = cara_polygons[cara_polygons["country"] == "United States of America"]
+cara_polygons["usgs_gauge_id"] = cara_polygons["gauge_id"].apply(
     lambda x: x.split("_")[1]
 )
-cara_polygon.set_index("gauge_id", inplace=True)
-
+cara_polygons.set_index("gauge_id", inplace=True)
 
 # %%
 print("Loading GAGES-II watershed shapefiles...")
-gages2_shp_dir = os.path.join(
-    data_dir,
-    "GAGES2",
-    "GAGES_II_Geospa",
-    "boundaries_shapefiles_by_aggeco",
+gages2_shp_dir = output_shapefile_path = os.path.join(
+    data_dir, "GAGES2", "GAGES_II_Geospa", "gages2_polygons.shp"
 )
-# Find all .shp files in the directory
-shapefile_paths = glob.glob(os.path.join(gages2_shp_dir, "*.shp"))
-print(f"Found {len(shapefile_paths)} shapefiles in directory")
-
-# Read each shapefile into a GeoDataFrame and store in a dictionary
-gages2_polygons = {}
-for shapefile_path in shapefile_paths:
-    # Extract the filename without extension to use as dictionary key
-    filename = os.path.splitext(os.path.basename(shapefile_path))[0]
-    print(f"Reading {filename}...")
-
-    # Read the shapefile and project to EPSG:4326
-    gdf = gpd.read_file(shapefile_path).to_crs(epsg=4326)
-    gages2_polygons[filename] = gdf
-
-    # Print some info about the shapefile
-    print(f"  - Contains {len(gdf)} features")
-
-# If you want to combine all shapefiles into one GeoDataFrame
-# Be careful with this if the shapefiles have different schemas
-if gages2_polygons:
-    all_gages2_polygons = pd.concat(gages2_polygons.values(), ignore_index=True)
-    print(f"Combined GeoDataFrame contains {len(all_gages2_polygons)} features")
-else:
-    print("No shapefiles found in directory")
+gages2_polygons = gpd.read_file(gages2_shp_dir).to_crs(epsg=4326)
 
 # %% #########################################################################
 #
@@ -191,7 +163,7 @@ print(
 ##############################################################################
 
 
-def plot_watershed_categories(cara_polygon, all_gages2_polygons, sigs):
+def plot_watershed_categories(cara_polygons, gages2_polygons, sigs):
     """
     Plot watersheds with different colors based on their availability in datasets:
     - Light grey: Caravan watersheds where signatures are observed
@@ -212,16 +184,16 @@ def plot_watershed_categories(cara_polygon, all_gages2_polygons, sigs):
     ax.set_extent([-125.5, -66.95, 24.396308, 50.5], crs=ccrs.PlateCarree())
 
     # Sort by area so that it appears nice in the map
-    cara_polygon = cara_polygon.sort_values(by="area")
-    all_gages2_polygons = all_gages2_polygons.sort_values(by="AREA")
+    cara_polygons = cara_polygons.sort_values(by="area")
+    gages2_polygons = gages2_polygons.sort_values(by="AREA")
 
     # Get the different categories of watersheds
 
     # 1. Caravan watersheds with signatures (light grey)
     print("Plotting Caravan watersheds with signatures...")
     sig_gauge_ids = set(sigs["gauge_id"])
-    cara_with_sigs = cara_polygon.loc[
-        cara_polygon.index.intersection(sig_gauge_ids)
+    cara_with_sigs = cara_polygons.loc[
+        cara_polygons.index.intersection(sig_gauge_ids)
     ].copy()
 
     cara_with_sigs.plot(
@@ -235,8 +207,10 @@ def plot_watershed_categories(cara_polygon, all_gages2_polygons, sigs):
 
     # 2. Caravan watersheds without signatures but in GAGES-II (orange)
     print("Plotting Caravan watersheds without signatures but in GAGES-II...")
-    cara_without_sigs = cara_polygon.loc[~cara_polygon.index.isin(sig_gauge_ids)].copy()
-    gages2_gauge_ids = set(all_gages2_polygons["GAGE_ID"])
+    cara_without_sigs = cara_polygons.loc[
+        ~cara_polygons.index.isin(sig_gauge_ids)
+    ].copy()
+    gages2_gauge_ids = set(gages2_polygons["GAGE_ID"])
     cara_in_gages2 = cara_without_sigs[
         cara_without_sigs["usgs_gauge_id"].isin(gages2_gauge_ids)
     ].copy()
@@ -265,12 +239,12 @@ def plot_watershed_categories(cara_polygon, all_gages2_polygons, sigs):
 
     # 4. GAGES-II watersheds not in Caravan (blue)
     print("Plotting GAGES-II watersheds not in Caravan...")
-    caravan_usgs_ids = set(cara_polygon["usgs_gauge_id"])
+    caravan_usgs_ids = set(cara_polygons["usgs_gauge_id"])
     sig_usgs_ids = set(sigs["gauge_id"].apply(lambda x: x.split("_")[1]))
-    gages2_not_in_cara = all_gages2_polygons[
+    gages2_not_in_cara = gages2_polygons[
         ~(
-            all_gages2_polygons["GAGE_ID"].isin(caravan_usgs_ids)
-            | all_gages2_polygons["GAGE_ID"].isin(sig_usgs_ids)
+            gages2_polygons["GAGE_ID"].isin(caravan_usgs_ids)
+            | gages2_polygons["GAGE_ID"].isin(sig_usgs_ids)
         )
     ].copy()
     gages2_not_in_cara.plot(
@@ -327,6 +301,7 @@ def plot_watershed_categories(cara_polygon, all_gages2_polygons, sigs):
     ax.legend(handles=legend_elements, loc="lower right", fontsize=12)
 
     plt.tight_layout()
+    print("Saving figure...")
     plt.savefig(
         os.path.join(
             data_dir,
@@ -338,16 +313,15 @@ def plot_watershed_categories(cara_polygon, all_gages2_polygons, sigs):
         dpi=300,
         bbox_inches="tight",
     )
-    plt.show()
-
+    # plt.show()
+    print("Figure saved.")
     return fig, ax
 
 
 # Call the function
-fig, ax = plot_watershed_categories(cara_polygon, all_gages2_polygons, sigs)
+fig, ax = plot_watershed_categories(cara_polygons, gages2_polygons, sigs)
 
-# %%
-all_gages2_polygons.columns
+
 # %%
 # # %%
 # # Check the number of samples for each class in the Caravan-GAGES2 overlap
