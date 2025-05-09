@@ -44,3 +44,7 @@ else:
 output_shapefile_path = os.path.join(
     data_dir, "GAGES2", "GAGES_II_Geospa", "all_gages2_polygons.shp"
 )
+
+# Save the combined GeoDataFrame to a shapefile
+all_gages2_polygons.to_file(output_shapefile_path, driver="ESRI Shapefile")
+print(f"Combined shapefile saved to {output_shapefile_path}")

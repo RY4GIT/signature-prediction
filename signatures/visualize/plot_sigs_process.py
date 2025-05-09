@@ -314,7 +314,7 @@ def get_bivariate_class(df, sig1, sig2, sig1_label, sig2_label):
         else:
             # Use quantile-based binning for non-percentile columns
             df_clean[class_col] = pd.qcut(
-                df_clean[col_name], q=len(label), labels=label, duplicates="drop"
+                df_clean[col_name], q=len(label), labels=label
             )
 
     df_clean["bivariate_class"] = (

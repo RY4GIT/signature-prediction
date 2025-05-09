@@ -1,6 +1,5 @@
 # %% Script to check the overlap between GAGES2 and Caravan watersheds
 import os
-import glob
 import pandas as pd
 import geopandas as gpd
 
@@ -42,7 +41,11 @@ gages2_all = pd.read_csv(gages2_file_path)
 print("Loading Signature file...")
 # Signature output path after quality control
 sig_file_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20250223_withWu\out_calc_All_custom_filt_qc_snow_area.csv"
-sigs = pd.read_csv(sig_file_path)
+_sigs = pd.read_csv(sig_file_path)
+sigs = _sigs[_sigs["BFI"].notna()]
+bad_sigs = _sigs[_sigs["BFI"].isna()]
+print(f"Number of signatures: {len(sigs)}")
+print(f"Number of bad signatures: {len(bad_sigs)}")
 
 # #########################################################################
 #
@@ -69,7 +72,7 @@ cara_polygons.set_index("gauge_id", inplace=True)
 # %%
 print("Loading GAGES-II watershed shapefiles...")
 gages2_shp_dir = output_shapefile_path = os.path.join(
-    data_dir, "GAGES2", "GAGES_II_Geospa", "gages2_polygons.shp"
+    data_dir, "GAGES2", "GAGES_II_Geospa", "all_gages2_polygons.shp"
 )
 gages2_polygons = gpd.read_file(gages2_shp_dir).to_crs(epsg=4326)
 
@@ -184,8 +187,8 @@ def plot_watershed_categories(cara_polygons, gages2_polygons, sigs):
     ax.set_extent([-125.5, -66.95, 24.396308, 50.5], crs=ccrs.PlateCarree())
 
     # Sort by area so that it appears nice in the map
-    cara_polygons = cara_polygons.sort_values(by="area")
-    gages2_polygons = gages2_polygons.sort_values(by="AREA")
+    cara_polygons = cara_polygons.sort_values(by="area", ascending=False)
+    gages2_polygons = gages2_polygons.sort_values(by="AREA", ascending=False)
 
     # Get the different categories of watersheds
 
@@ -300,6 +303,8 @@ def plot_watershed_categories(cara_polygons, gages2_polygons, sigs):
     ]
     ax.legend(handles=legend_elements, loc="lower right", fontsize=12)
 
+    ax.set_title("Potential Caravan and GAGES-II watersheds to predict")
+
     plt.tight_layout()
     print("Saving figure...")
     plt.savefig(
@@ -308,7 +313,7 @@ def plot_watershed_categories(cara_polygons, gages2_polygons, sigs):
             "derived_attrs",
             "assembled_RA",
             "figs",
-            "watershed_overlap.pdf",
+            "watershed_overlap.png",
         ),
         dpi=300,
         bbox_inches="tight",
@@ -321,6 +326,131 @@ def plot_watershed_categories(cara_polygons, gages2_polygons, sigs):
 # Call the function
 fig, ax = plot_watershed_categories(cara_polygons, gages2_polygons, sigs)
 
+
+def plot_only_with_sigs(cara_polygons, sigs):
+    """
+    Plot watersheds with different colors based on their availability in datasets:
+    - Light grey: Caravan watersheds where signatures are observed
+    - Orange: Caravan watersheds without signatures but present in GAGES-II
+    - Red: Caravan watersheds without signatures and not in GAGES-II
+    - Blue: GAGES-II watersheds not in Caravan
+    """
+    # Set up the figure and axis
+    fig = plt.figure(figsize=(15, 10))
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+
+    # Add base map features
+    ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
+    ax.add_feature(cfeature.BORDERS, linestyle=":", linewidth=0.5)
+    ax.add_feature(cfeature.STATES, linestyle="-", linewidth=0.2, edgecolor="gray")
+
+    # Set extent to CONUS
+    ax.set_extent([-125.5, -66.95, 24.396308, 50.5], crs=ccrs.PlateCarree())
+
+    # Sort by area so that it appears nice in the map
+    cara_polygons = cara_polygons.sort_values(by="area", ascending=False)
+    # Get the different categories of watersheds
+
+    # 1. Caravan watersheds with signatures (light grey)
+    print("Plotting Caravan watersheds with signatures...")
+    sig_gauge_ids = set(sigs["gauge_id"])
+    cara_with_sigs = cara_polygons.loc[
+        cara_polygons.index.intersection(sig_gauge_ids)
+    ].copy()
+
+    cara_with_sigs.plot(
+        ax=ax,
+        color="lightgrey",
+        alpha=0.6,
+        label="Caravan (sig - obs)",
+        edgecolor="white",
+        linewidth=0.3,
+    )
+
+    ax.set_title("Current (Caravan watershed with signatures)")
+
+    plt.tight_layout()
+    print("Saving figure...")
+    plt.savefig(
+        os.path.join(
+            data_dir,
+            "derived_attrs",
+            "assembled_RA",
+            "figs",
+            "watershed_sigs_obs.png",
+        ),
+        dpi=300,
+        bbox_inches="tight",
+    )
+    # plt.show()
+    print("Figure saved.")
+    return fig, ax
+
+
+fig, ax = plot_only_with_sigs(cara_polygons, sigs)
+
+
+def plot_only_with_badsigs(cara_polygons, sigs):
+    """
+    Plot watersheds with different colors based on their availability in datasets:
+    - Light grey: Caravan watersheds where signatures are observed
+    - Orange: Caravan watersheds without signatures but present in GAGES-II
+    - Red: Caravan watersheds without signatures and not in GAGES-II
+    - Blue: GAGES-II watersheds not in Caravan
+    """
+    # Set up the figure and axis
+    fig = plt.figure(figsize=(15, 10))
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+
+    # Add base map features
+    ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
+    ax.add_feature(cfeature.BORDERS, linestyle=":", linewidth=0.5)
+    ax.add_feature(cfeature.STATES, linestyle="-", linewidth=0.2, edgecolor="gray")
+
+    # Set extent to CONUS
+    ax.set_extent([-125.5, -66.95, 24.396308, 50.5], crs=ccrs.PlateCarree())
+
+    # Sort by area so that it appears nice in the map
+    cara_polygons = cara_polygons.sort_values(by="area", ascending=False)
+    # Get the different categories of watersheds
+
+    # 1. Caravan watersheds with signatures (light grey)
+    print("Plotting Caravan watersheds bad data signatures...")
+    sig_gauge_ids = set(sigs["gauge_id"])
+    cara_with_sigs = cara_polygons.loc[
+        cara_polygons.index.intersection(sig_gauge_ids)
+    ].copy()
+
+    cara_with_sigs.plot(
+        ax=ax,
+        color="pink",
+        alpha=0.6,
+        label="Caravan (sig - obs)",
+        edgecolor="white",
+        linewidth=0.3,
+    )
+
+    ax.set_title("Current (Caravan watershed with bad quality data or area estimates)")
+
+    plt.tight_layout()
+    print("Saving figure...")
+    plt.savefig(
+        os.path.join(
+            data_dir,
+            "derived_attrs",
+            "assembled_RA",
+            "figs",
+            "watershed_bad_dataquality.png",
+        ),
+        dpi=300,
+        bbox_inches="tight",
+    )
+    # plt.show()
+    print("Figure saved.")
+    return fig, ax
+
+
+fig, ax = plot_only_with_badsigs(cara_polygons, bad_sigs)
 
 # %%
 # # %%
