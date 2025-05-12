@@ -29,10 +29,6 @@ library(dplyr)
 library(doParallel)
 library(foreach)
 library(yaml)
-if (!requireNamespace("iml", quietly = TRUE)) {
-  install.packages("iml")
-}
-
 library(iml)
 
 #############################################
@@ -46,19 +42,17 @@ Sys.setenv(R_CONFIG_ACTIVE = "default")
 # _______________________________________________________________________________________________________________
 # (1) Load configuration from a file path
 # Set the configuration file path directly
-# config_file <- "./random_forest/configs/win/config_test.yml"
+config_file <- "./random_forest/configs/win/config_test.yml"
 
-# # Check if the file exists to avoid runtime errors
-# if (!file.exists(config_file)) {
-#   stop("Configuration file not found: ", config_file)
-# }
-
-# config <- yaml::read_yaml(config_file)
+# Check if the file exists to avoid runtime errors
+if (!file.exists(config_file)) {
+  stop("Configuration file not found: ", config_file)
+}
 
 # _______________________________________________________________________________________________________________
 # (2) Load configuration as an argument
-args <- commandArgs(trailingOnly = TRUE)
-config_file <- args[1]
+# args <- commandArgs(trailingOnly = TRUE)
+# config_file <- args[1]
 
 # If you choose this, run the code using bash/shell
 #
@@ -152,6 +146,7 @@ if (config$filter_by_cluster$run) {
 # EXECUTION
 #############################################
 
+
 # _______________________________________________________________________________________________________________
 # Random forest initialization
 
@@ -159,8 +154,33 @@ set.seed(config$settings$seed)
 
 # Define repeated cross-validation with 10 folds and three repeats
 # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
-hyper_grid <- expand.grid(mtry = 1:(ncol(attrs_train)-1))
-kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, search = "grid", verboseIter = TRUE)
+hyper_grid <- expand.grid(
+  mtry = c(1:(length(attrs_train)-1))
+)
+
+# Set up properly structured seeds for reproducibility
+num_folds <- config$settings$num_folds
+
+# Create a vector of seeds for each iteration (for parallel reproducibility)
+# For regular CV: we need folds + 1
+seeds <- vector(mode = "list", length = num_folds + 1)
+
+# For each fold, we need a vector with length = number of tuning parameter combinations
+for(i in 1:num_folds) {
+  seeds[[i]] <- sample.int(1000, nrow(hyper_grid))
+}
+
+# For the final model, we need a single integer
+seeds[[num_folds + 1]] <- sample.int(1000, 1)
+
+# Set up the training control with CV and the proper seeds
+kfold_cv <- trainControl(
+  method = "cv", 
+  number = num_folds,
+  search = "grid", 
+  verboseIter = TRUE, 
+  seeds = seeds
+)
 
 # Prepare output list
 out_r2 <- list()
@@ -215,16 +235,24 @@ for(sig in config$sigs_predict){
   print(forest$finalModel)
   
   # _______________________________________________________________________________________________________________
-  # Save the model output
+  # Predict signature values on test set
   
-  # append r2 value
+  test_data <- attrs_test %>%
+    drop_na() 
+  
+  predictions <- predict(forest, test_data%>%select(-gauge_id))
+
+  # _______________________________________________________________________________________________________________
+  # Append results
+  
+  # append r2 value for the signature
   if(length(forest$finalModel$rsq) == 0) {
       out_r2[[sig]] <- NA  # Use NA when no r_squared value is calculated
     } else {
       out_r2[[sig]] <- mean(forest$final$rsq)
     }
   
-  #  append variable importance
+  #  append variable importance for the signature
   if(nrow(importance(forest$finalModel, type = 1, scale = TRUE)) == 0) {
     out_var_importance[[sig]] <- data.frame(predictor = NA, Importance = NA, sig_name = sig)
   } else {
@@ -234,8 +262,15 @@ for(sig in config$sigs_predict){
       dplyr::mutate(sig_name = sig)
   }
   
+  # append predicted signature values 
+  if(length(predictions) == 0) {
+    out_sig_predictions[[sig]] <- data.frame(gauge_id = NA, prediction = NA, sig_name = sig)
+  } else {
+    out_sig_predictions[[sig]] <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
+  }
+
   # _______________________________________________________________________________________________________________
-  # Calculate SHAP values
+  # Calculate SHAP values for the signature
   # https://cran.r-project.org/web/packages/iml/vignettes/intro.html
   # https://christophm.github.io/interpretable-ml-book/agnostic.html
   
@@ -258,20 +293,8 @@ for(sig in config$sigs_predict){
     ) %>%
     select(feature, phi, phi.var, feature_value, sig_name)
 
-  # _______________________________________________________________________________________________________________
-  # Predict signature values on test set
-  
-  test_data <- attrs_test %>%
-    drop_na() 
-  
-  predictions <- predict(forest, test_data%>%select(-gauge_id))
-  
-  # Store predictions in the list
-  if(length(predictions) == 0) {
-    out_sig_predictions[[sig]] <- data.frame(gauge_id = NA, prediction = NA, sig_name = sig)
-  } else {
-    out_sig_predictions[[sig]] <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
-  }
+
+
   # }, error = function(e) {
   # print(paste("An error occurred:", e$message))
   # # Return NA values if an error occurs

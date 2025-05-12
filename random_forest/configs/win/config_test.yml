@@ -9,15 +9,15 @@ paths:
     signatures: "RAraki/out/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
     # On Google Drive: "RAraki/out/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
     # On UCSB server: "/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
-    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_camels.csv"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
     # On Google Drive: "RAraki/data/derived_attrs/assembled_RA/attrs_camels.csv"
     # On UCSB server: "/derived_attrs/assembled_RA/attrs_camels.csv"
   test:
-    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_camels.csv"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
 experiment_name: "test"
-filter_by_ecoregion: 
+filter_by_cluster:
   run: true
-  name: "82 South Eastern Forests"
+  name: 1
 settings:
   seed: 0
   ntree: 10

@@ -156,7 +156,7 @@ for attr_name in attr_names:
 
         # Set up the map
         fig = plt.figure(figsize=(12, 6))
-        ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+        ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
 
         ax.add_feature(land)
         ax.add_feature(states, linewidth=0.5)  # , linestyle=":", alpha=0.5)
