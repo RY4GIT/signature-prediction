@@ -14,7 +14,10 @@ paths:
     # On UCSB server: "/derived_attrs/assembled_RA/attrs_camels.csv"
   test:
     attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
-experiment_name: "test"
+  predict:
+    model_dir: "RAraki/out/rf/output_flipl_20250513_test"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
+experiment_name: "prediction"
 filter_by_cluster:
   run: true
   name: 1

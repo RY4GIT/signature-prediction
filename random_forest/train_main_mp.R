@@ -305,13 +305,13 @@ all_var_importance <- bind_rows(out_var_importance)
 all_shap_values <- bind_rows(out_shap_values)
 
 # Save output to CSV
-write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures.csv"), row.names = FALSE)
+write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures_train.csv"), row.names = FALSE)
 write.csv(all_var_importance, file.path(out_path, "var_importance.csv"), row.names = FALSE)
 write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
 write.csv(all_shap_values, file.path(out_path, "shap_values.csv"), row.names = FALSE)
 
 # Save config file
-yaml::write_yaml(config, file.path(out_path, "config.yaml"))
+yaml::write_yaml(config, file.path(out_path, "config_train.yaml"))
 
 # # ______________________________________________________
 # # After the loop, write all log messages to file

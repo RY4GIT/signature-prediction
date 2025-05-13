@@ -6,19 +6,19 @@
 #
 # # Set CRAN mirror
 # options(repos = c(CRAN = "https://cran.rstudio.com/"))
-# 
+#
 # # Function to install packages if not already installed
 # install_if_missing <- function(packages) {
 #   new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
 #   if (length(new_packages)) install.packages(new_packages, dependencies = TRUE)
 # }
-# 
+#
 # # List of all required packages
 # packages <- c(
-#   "tidyverse", "randomForest", "caret", 
+#   "tidyverse", "randomForest", "caret",
 #   "doParallel", "dplyr", "foreach", "yaml"
 # )
-# 
+#
 # # Install missing packages
 # install_if_missing(packages)
 
@@ -35,8 +35,8 @@ library(iml)
 # INITIALIZATION
 #############################################
 
-# Load configuration. Choose from (1) or (2) and 
-# comment out the ones that you didn't select. 
+# Load configuration. Choose from (1) or (2) and
+# comment out the ones that you didn't select.
 Sys.setenv(R_CONFIG_ACTIVE = "default")
 
 # _______________________________________________________________________________________________________________
@@ -56,11 +56,11 @@ if (!file.exists(config_file)) {
 
 # If you choose this, run the code using bash/shell
 #
-# How to run in Windows: 
+# How to run in Windows:
 # > cd signature-prediction\random_forest
 # > run.bat
 
-# How to run in Linux: 
+# How to run in Linux:
 # > cd signature-prediction\random_forest
 # > .\run.sh
 
@@ -97,7 +97,7 @@ start_time <- proc.time()
 load_signatures <- function(file_path) {
   # Read the data from the specified file path
   data <- read.csv(file_path, stringsAsFactors = FALSE)
-  
+
   # Select the gauge_id and the signatures of interest
   # and return it as a data frame
   data %>%
@@ -113,7 +113,7 @@ sigs_train <- load_signatures(sigs_train_path)
 load_attrs <- function(file_path) {
   # Read the data from the specified file path
   data <- read.csv(file_path, stringsAsFactors = FALSE)
-  
+
   # Select the gauge_id and the attributes of interest
   # and return it as a data frame
   data %>%
@@ -139,7 +139,7 @@ if (config$filter_by_cluster$run) {
   message("Selected ", nrow(attrs_train), " gauges in: ", config$filter_by_cluster$name)
 } else {
   attrs_train <- attrs_train %>%
-  select(-cluster)
+    select(-cluster)
 }
 
 #############################################
@@ -155,7 +155,7 @@ set.seed(config$settings$seed)
 # Define repeated cross-validation with 10 folds and three repeats
 # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
 hyper_grid <- expand.grid(
-  mtry = c(1:(length(attrs_train)-1))
+  mtry = c(1:(length(attrs_train) - 1))
 )
 
 # Set up properly structured seeds for reproducibility
@@ -166,7 +166,7 @@ num_folds <- config$settings$num_folds
 seeds <- vector(mode = "list", length = num_folds + 1)
 
 # For each fold, we need a vector with length = number of tuning parameter combinations
-for(i in 1:num_folds) {
+for (i in 1:num_folds) {
   seeds[[i]] <- sample.int(1000, nrow(hyper_grid))
 }
 
@@ -175,10 +175,10 @@ seeds[[num_folds + 1]] <- sample.int(1000, 1)
 
 # Set up the training control with CV and the proper seeds
 kfold_cv <- trainControl(
-  method = "cv", 
+  method = "cv",
   number = num_folds,
-  search = "grid", 
-  verboseIter = TRUE, 
+  search = "grid",
+  verboseIter = TRUE,
   seeds = seeds
 )
 
@@ -189,10 +189,10 @@ out_sig_predictions <- list()
 out_shap_values <- list()
 
 # Loop through signatures (1 RF model per signature)
-for(sig in config$sigs_predict){
+for (sig in config$sigs_predict) {
   # tryCatch({
   #   print(paste0("Processing:", sig))
-    
+
   # _______________________________________________________________________________________________________________
   # TRAINING
   # # Print dimensions of attrs_train
@@ -230,30 +230,30 @@ for(sig in config$sigs_predict){
     # return importance, want %IncMSE data
     importance = TRUE
   )
-  
+
   print(forest)
   print(forest$finalModel)
-  
+
   # _______________________________________________________________________________________________________________
   # Predict signature values on test set
-  
+
   test_data <- attrs_test %>%
-    drop_na() 
-  
-  predictions <- predict(forest, test_data%>%select(-gauge_id))
+    drop_na()
+
+  predictions <- predict(forest, test_data %>% select(-gauge_id))
 
   # _______________________________________________________________________________________________________________
   # Append results
-  
+
   # append r2 value for the signature
-  if(length(forest$finalModel$rsq) == 0) {
-      out_r2[[sig]] <- NA  # Use NA when no r_squared value is calculated
-    } else {
-      out_r2[[sig]] <- mean(forest$final$rsq)
-    }
-  
+  if (length(forest$finalModel$rsq) == 0) {
+    out_r2[[sig]] <- NA # Use NA when no r_squared value is calculated
+  } else {
+    out_r2[[sig]] <- mean(forest$final$rsq)
+  }
+
   #  append variable importance for the signature
-  if(nrow(importance(forest$finalModel, type = 1, scale = TRUE)) == 0) {
+  if (nrow(importance(forest$finalModel, type = 1, scale = TRUE)) == 0) {
     out_var_importance[[sig]] <- data.frame(predictor = NA, Importance = NA, sig_name = sig)
   } else {
     out_var_importance[[sig]] <- importance(forest$finalModel, type = 1, scale = TRUE) %>%
@@ -261,9 +261,9 @@ for(sig in config$sigs_predict){
       tibble::rownames_to_column(var = "predictor") %>%
       dplyr::mutate(sig_name = sig)
   }
-  
-  # append predicted signature values 
-  if(length(predictions) == 0) {
+
+  # append predicted signature values
+  if (length(predictions) == 0) {
     out_sig_predictions[[sig]] <- data.frame(gauge_id = NA, prediction = NA, sig_name = sig)
   } else {
     out_sig_predictions[[sig]] <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
@@ -273,12 +273,12 @@ for(sig in config$sigs_predict){
   # Calculate SHAP values for the signature
   # https://cran.r-project.org/web/packages/iml/vignettes/intro.html
   # https://christophm.github.io/interpretable-ml-book/agnostic.html
-  
+
   # Create a predictor object for the model
   # "data" should be the training data (attributes) without the signature column
   # "y" should be the signature column
   predictor <- Predictor$new(forest$finalModel, data = train_data %>% select(-all_of(sig)), y = train_data[[sig]])
-  
+
   # Calculate SHAP values
   shap <- Shapley$new(predictor, x.interest = train_data %>% select(-all_of(sig)))
   shap_values <- shap$results
@@ -293,7 +293,11 @@ for(sig in config$sigs_predict){
     ) %>%
     select(feature, phi, phi.var, feature_value, sig_name)
 
-
+  # _______________________________________________________________________________________________________________
+  # Save the trained model for this signature
+  model_file_name <- file.path(out_path, paste0("model_", sig, ".rds"))
+  saveRDS(forest, model_file_name)
+  message(paste("Saved model for", sig, "to", model_file_name))
 
   # }, error = function(e) {
   # print(paste("An error occurred:", e$message))
@@ -319,7 +323,7 @@ all_var_importance <- bind_rows(out_var_importance)
 all_shap_values <- bind_rows(out_shap_values)
 
 write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
-write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures.csv"), row.names = FALSE)
+write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures_train.csv"), row.names = FALSE)
 write.csv(all_var_importance, file.path(out_path, "var_importance.csv"), row.names = FALSE)
 write.csv(all_shap_values, file.path(out_path, "shap_values.csv"), row.names = FALSE)
 
