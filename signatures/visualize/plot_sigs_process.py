@@ -289,12 +289,14 @@ def get_bivariate_class(df, sig1, sig2, sig1_label, sig2_label):
 
         if "_perc" in col_name:
             # Use fixed percentile bins (0, 25, 50, 75, 100) for percentile columns
+            # Already in percentiles, so use fixed bins
             bins = [0, 25, 50, 75, 100]
             df_clean[class_col] = pd.cut(
                 df_clean[col_name], bins=bins, labels=label, include_lowest=True
             )
         else:
             # Use quantile-based binning for non-percentile columns
+            # Not in percentiles, so use quantiles
             df_clean[class_col] = pd.qcut(
                 df_clean[col_name], q=len(label), labels=label
             )
@@ -683,4 +685,135 @@ for process_name in tqdm(
     create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
 
 
+# %%
+
+# Create custom legend patches
+from matplotlib.patches import Patch
+
+
+def plot_process_dominance_map():
+    """
+    Create a map showing only 1-1 class (high in both variables) watersheds for
+    Baseflow and Overland Flow processes with different colors.
+    """
+    # Set up the map
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+
+    # Add base map features
+    land = cfeature.NaturalEarthFeature(
+        "physical",
+        "land",
+        "50m",
+    )
+    ax.add_feature(
+        land,
+        facecolor="lightgray",
+        edgecolor="black",
+        linewidth=0.5,
+    )
+    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k", alpha=0.5)
+
+    # Process Baseflow data
+    sig1_bf = plot_sigs_config[
+        plot_sigs_config["column_name"] == "BaseflowRecessionK"
+    ].squeeze()
+    sig2_bf = plot_sigs_config[plot_sigs_config["column_name"] == "BFI"].squeeze()
+
+    # Process Overland Flow data
+    sig1_of = plot_sigs_config[
+        plot_sigs_config["column_name"] == "avg_IE_SE_signif"
+    ].squeeze()
+    sig2_of = plot_sigs_config[
+        plot_sigs_config["column_name"] == "avg_IE_SE_thresh"
+    ].squeeze()
+
+    # Update column names for threshold values
+    update_column_name(sig1_of)
+
+    # Get the bivariate class for each process
+    df_baseflow = get_bivariate_class(df_sigs, sig1_bf, sig2_bf, labels, labels)
+    df_overland = get_bivariate_class(df_sigs, sig1_of, sig2_of, labels_rev, labels)
+    df_baseflow.sort_values("area", ascending=False, inplace=True)
+    df_overland.sort_values("area", ascending=False, inplace=True)
+
+    # Define the classes to include with their alpha values
+    classes_alpha = {
+        "1-4": 0.75,  # Strongest class - highest alpha
+        "1-3": 0.5,  # Medium-high class
+        "2-3": 0.25,  # Medium-low class
+        "2-4": 0.5,  # Lowest class - most transparent
+    }
+
+    legend_elements = []
+
+    # Plot each group
+    for df, process, color in [
+        (df_baseflow, "Baseflow", "tab:blue"),
+        (df_overland, "Overland Flow", "tab:orange"),
+    ]:
+        # Plot each class with different transparency
+        for class_name, alpha in classes_alpha.items():
+            df_class = df[df["bivariate_class"] == class_name].copy()
+            df_class.sort_values("area", ascending=False, inplace=True)
+
+            if class_name == "1-4":
+                legend_label = f"{process}"
+                legend_elements.append(
+                    Patch(
+                        facecolor=color,
+                        alpha=1.0,
+                        edgecolor="white",
+                        label=legend_label,
+                    )
+                )
+
+            if len(df_class) > 0:
+                df_class.plot(
+                    ax=ax,
+                    color=color,
+                    edgecolor="white",
+                    linewidth=0.2,
+                    alpha=alpha,
+                    zorder=100,
+                )
+                print(f"{process_name} class {class_name}: {len(df_class)} watersheds")
+
+    # Add ecoregion overlay
+    ecoregion_overlay.plot(
+        ax=ax,
+        edgecolor="grey",
+        facecolor="none",
+        linewidth=0.5,
+        aspect=1.1,
+        zorder=5,
+    )
+
+    # Add legend and title
+    ax.legend(
+        handles=legend_elements,
+        loc="lower right",
+        fontsize=10,
+    )
+
+    ax.set_title("Dominant Processes")
+
+    # Set extent to CONUS
+    ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+
+    # Display the map
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(fig_dir, "dominant_process_map.png"), dpi=300, bbox_inches="tight"
+    )
+
+    # Also create a summary stats
+    print(f"Baseflow dominant watersheds: {len(df_baseflow)}")
+    print(f"Overland Flow dominant watersheds: {len(df_overland)}")
+
+    return fig, ax
+
+
+# Run the function
+plot_process_dominance_map()
 # %%
