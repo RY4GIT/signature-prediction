@@ -1,6 +1,7 @@
 # %%
 import os
 import pandas as pd
+import numpy as np
 import geopandas as gpd
 from tqdm import tqdm
 
@@ -90,12 +91,19 @@ df_sigs = wspolygon.join(df_sigs, how="right")
 # Preprocess the data
 #######################################################
 
+# Calcaulte some signatures
 df_sigs["diff_RCPint_RCPvol"] = df_sigs["R_Pint_RC"] - df_sigs["R_Pvol_RC"]
 df_sigs["diff_IE_SE_thresh"] = df_sigs["IE_thresh"] - df_sigs["SE_thresh"]
 df_sigs["diff_IE_Str_thresh"] = df_sigs["IE_thresh"] - df_sigs["Storage_thresh"]
 df_sigs["diff_SE_Str_thresh"] = df_sigs["SE_thresh"] - df_sigs["Storage_thresh"]
+df_sigs["avg_IE_SE_thresh"] = (df_sigs["IE_thresh"] + df_sigs["SE_thresh"]) / 2
+df_sigs["avg_IE_SE_signif"] = (
+    df_sigs["IE_thresh_signif"] + df_sigs["SE_thresh_signif"]
+) / 2
+df_sigs["avg_IE_SE_thresh"].iloc[df_sigs["avg_IE_SE_thresh"] > 300] = np.nan
 
 
+# Get the percentile
 def below_thresh_percentile(column_data, thresh_value):
     new_percentile = column_data.apply(
         lambda x: 0 if x > thresh_value else (1 - (x / thresh_value)) * 100
@@ -103,9 +111,7 @@ def below_thresh_percentile(column_data, thresh_value):
     return new_percentile
 
 
-# Get the percentile
 for sigs_name in plot_sigs_config["column_name"]:
-    # Get df[sigs_name]
     column_data = df_sigs[sigs_name]
 
     # Calculate the percentile rank for each value in the column
@@ -114,7 +120,12 @@ for sigs_name in plot_sigs_config["column_name"]:
     else:
         df_sigs[sigs_name + "_perc"] = column_data.rank(pct=True) * 100
 
-
+# %%
+df_sigs.to_file(
+    os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_area_postprocess.gpkg"),
+    driver="GPKG",
+    crs="EPSG:4326",
+)
 # %% ######################
 # FUNCTIONS
 ##########################
@@ -237,8 +248,11 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 # _____________________________________________________________________________
 # Plot signature value map
 # For testing
-plot_sig_map(df_sigs, "EventRR", ecoregion_overlay, stats="normal", plot_mode="polygon")
-# %%
+plot_sig_map(
+    df_sigs, "avg_IE_SE_signif", ecoregion_overlay, stats="normal", plot_mode="polygon"
+)
+
+# %% For all signatures
 for sigs_name in tqdm(
     plot_sigs_config.column_name, desc="Plotting maps of signature values", leave=False
 ):
@@ -252,50 +266,18 @@ for sigs_name in tqdm(
     except Exception as e:
         print(f"{sigs_name}: {e}")
 
-# # %%
-# # ______________________________________________________________________________
-# # Plot the percentile map
-# # For testing
-# # plot_sig_map(df_sigs, "TotalRR", ecoregion_overlay, stats="normal")
-# for sigs_name in tqdm(
-#     plot_sigs_config.column_name,
-#     desc="Plotting maps of signature percentiles",
-#     leave=False,
-# ):
-#     try:
-#         plot_sig_map(
-#             df_sigs,
-#             sigs_name,
-#             ecoregion_overlay,
-#             stats="percentile",
-#             plot_mode="scatter",
-#         )
-#         plot_sig_map(
-#             df_sigs,
-#             sigs_name,
-#             ecoregion_overlay,
-#             stats="percentile",
-#             plot_mode="polygon",
-#         )
-#     except Exception as e:
-#         print(f"{sigs_name}: {e}")
-
-# %%
-# %% ######################
-#
-# Plot signature-process interpretation map (linear combination of signatures)
-#
-##########################
 
 # %%
 
 ########################################################################################
+#
 # Plot the bivariate map
 # Color map and the idea from Datawim: https://www.datawim.com/post/creating-professional-bivariate-maps-in-r/
+#
 ########################################################################################
 
 
-# %% __________________________________________________
+# Functions
 # Get quantile & bivariate classes of data
 def get_bivariate_class(df, sig1, sig2, sig1_label, sig2_label):
     df_clean = df.dropna(subset=[sig1.column_name, sig2.column_name]).copy()
@@ -444,6 +426,7 @@ def update_column_name(signal):
         "IE_thresh_signif": "IE_thresh_signif_perc",
         "SE_thresh_signif": "SE_thresh_signif_perc",
         "Storage_thresh_signif": "Storage_thresh_signif_perc",
+        "avg_IE_SE_signif": "avg_IE_SE_signif_perc",
     }
     if signal.column_name in label_to_column:
         signal.column_name = label_to_column[signal.column_name]
@@ -483,10 +466,11 @@ processes = [
     # "Storage capacity and retention",
     # "Infiltration Excess Overlandflow",
     # "Saturation Excess Overlandflow",
-    "ET impacts on storage and baseflow",
+    # "ET impacts on storage and baseflow",
     # "IE vs SE significance",
     # "IE vs SE (SSF2 & GW) significance",
     # "SSF1 vs SSF2 & GW significance",
+    "Overland Flow",
 ]
 
 for process_name in tqdm(
@@ -554,10 +538,10 @@ for process_name in tqdm(
     if process_name == "Infiltration Excess Overlandflow":
         sig1 = process_columns.loc[
             process_columns.column_name == "IE_thresh_signif"
-        ].squeeze()  # X variable, IE_thresh_signif
+        ].squeeze()  # X variable
         sig2 = process_columns.loc[
             process_columns.column_name == "IE_thresh"
-        ].squeeze()  # Y variable, IE_thresh
+        ].squeeze()  # Y variable
 
         sig1_label = labels_rev
         sig2_label = labels
@@ -576,13 +560,6 @@ for process_name in tqdm(
         sig2 = process_columns.loc[
             process_columns.column_name == "Storage_thresh"
         ].squeeze()  # Y variable, IE_thresh
-
-        # sig1 = process_columns.loc[
-        #     process_columns.column_name == "SE_thresh_signif"
-        # ].squeeze()  # X variable, IE_thresh_signif
-        # sig2 = process_columns.loc[
-        #     process_columns.column_name == "SE_thresh"
-        # ].squeeze()  # Y variable, IE_thresh
 
         sig1_label = labels_rev
         sig2_label = labels
@@ -658,7 +635,22 @@ for process_name in tqdm(
         sig1_dir = dir_label
         sig2_dir = dir_label
 
-    # If looking at the significance of the threshold values, use the percentile columns, instead of the original p-values
+    if process_name == "Overland Flow":
+        sig1 = process_columns.loc[
+            process_columns.column_name == "avg_IE_SE_signif"
+        ].squeeze()  # X variable
+        sig2 = process_columns.loc[
+            process_columns.column_name == "avg_IE_SE_thresh"
+        ].squeeze()  # Y variable
+
+        sig1_label = labels_rev
+        sig2_label = labels
+
+        sig1_dir = dir_label_rev
+        sig2_dir = dir_label
+
+    # If looking at the significance of the threshold values,
+    # use the percentile columns, instead of the original p-values
     update_column_name(sig1)
     update_column_name(sig2)
 
@@ -689,5 +681,6 @@ for process_name in tqdm(
     x_ticks = sig1_dir
     y_ticks = sig2_dir
     create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
+
 
 # %%

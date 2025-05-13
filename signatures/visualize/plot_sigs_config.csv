@@ -7,7 +7,7 @@ RecessionParameters_b,RecessionParameters_b,[-],0,5,groundwater,Storage capacity
 RecessionParameters_T0,RecessionParameters_T0,[d],0.5,30,groundwater,Storage capacity and retention,pos
 First_Recession_Slope,First_Recession_Slope,[1/d],0,1.5,groundwater,Storage capacity and retention,neg
 Mid_Recession_Slope,Mid_Recession_Slope,[1/d],0,0.6,groundwater,Storage capacity and retention,neg
-EventRR_TotalRR_ratio,EventRR_TotalRR_ratio,[-],0,1.0,groundwater,Storage capacity and retention,neg
+EventRR_TotalRR_ratio,EventRR_TotalRR_ratio,[-],0,1,groundwater,Storage capacity and retention,neg
 BFI,BFI,[-],0,1,groundwater,Baseflow,pos
 BaseflowRecessionK,BaseflowRecessionK,[1/d],0,0.3,groundwater,Baseflow,neg
 IE_thresh_signif,IE_thresh (p-value),[-],0,0.05,overlandflow,Infiltration Excess Overlandflow,thresh:0.05:neg
@@ -23,6 +23,8 @@ diff_RCPint_RCPvol,IE_minus_SE_corr,[-],-0.1,0.1,overlandflow,Infiltration Exces
 RR_Seasonality,RR_Seasonality,[-],0,4,groundwater,ET impacts on storage and baseflow,pos
 Recession_a_Seasonality,Recession_a_Seasonality,[-],0,6,groundwater,ET impacts on storage and baseflow,pos
 VariabilityIndex,VariabilityIndex,[-],0,1,groundwater,ET impacts on storage and baseflow,pos
-diff_IE_SE_thresh,Differences in threshold (IE minus SE),[mm],-20,20,,,
-diff_IE_Str_thresh,Differences in threshold (IE minus Storage),[mm],-40,40,,,
-diff_SE_Str_thresh,Differences in threshold (SE minus Storage),[mm],-20,20,,,
+diff_IE_SE_thresh,Differences in threshold (IE minus SE),[mm],-20,20,overlandflow,Overland Flow,
+diff_IE_Str_thresh,Differences in threshold (IE minus Storage),[mm],-40,40,overlandflow,Overland Flow,
+diff_SE_Str_thresh,Differences in threshold (SE minus Storage),[mm],-20,20,overlandflow,Overland Flow,
+avg_IE_SE_thresh,Average threshold (IE and SE),[mm],0,40,overlandflow,Overland Flow,
+avg_IE_SE_signif,Average threshold significance (IE and SE),[-],0,0.05,overlandflow,Overland Flow,thresh:0.05:neg
