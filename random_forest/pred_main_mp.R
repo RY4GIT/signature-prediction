@@ -115,14 +115,11 @@ results <- foreach(sig = config$sigs_predict,
                    .packages = c("randomForest", "caret", "dplyr")) %dopar% {
   tryCatch({
     # Build the model path for this signature
-    model_path <- file.path(out_path, paste0("rf_model_", sig, ".rds"))
+    model_path <- file.path(out_path, paste0("model_", sig, ".rds"))
     
     # Check if model file exists
     if (!file.exists(model_path)) {
       warning(paste("Model file not found for signature", sig, ":", model_path))
-      return(list(
-        predictions = data.frame(gauge_id = attrs_pred$gauge_id, prediction = NA, sig_name = sig)
-      ))
     }
     
     # Execute the prediction for this signature
@@ -139,9 +136,6 @@ results <- foreach(sig = config$sigs_predict,
   }, error = function(e) {
     # Return NA values if an error occurs
     warning(paste("Error predicting signature", sig, ":", e$message))
-    list(
-      predictions = data.frame(gauge_id = attrs_pred$gauge_id, prediction = NA, sig_name = sig)
-    )
   })
 }
 
@@ -158,6 +152,8 @@ all_sig_predictions <- bind_rows(out_sig_predictions)
 # Generate output filename with experiment name
 output_filename <- paste0("predicted_signatures_", config$experiment_name, "_mp.csv")
 write.csv(all_sig_predictions, file.path(out_path, output_filename), row.names = FALSE)
+print(paste("Predictions saved to:", output_filename))
+
 
 # Output the config file
 yaml::write_yaml(config, file.path(out_path, "config_pred.yaml"))
