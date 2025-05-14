@@ -1,4 +1,5 @@
-# %%
+# %% Post proces signatures calculated for Caravan gages
+
 import pandas as pd
 import os
 import numpy as np

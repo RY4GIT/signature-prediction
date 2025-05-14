@@ -1,4 +1,8 @@
-# %%
+# %% Post proces signatures calculated using GAGES2-based surface water input
+# Calculate signatures from GAGES2 catchment, that are overlapping with
+# Caravan (CAMELS + HYSETS) gauges. Q, PET, T are from Caravan (ERA-5),
+# while the P is replaced with surface water input data from Hammond, 2024:
+
 import os
 import pandas as pd
 import matplotlib.pyplot as plt

@@ -44,7 +44,7 @@ caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
-caravan_data = 'camels'; %'camels', 'hysets';
+caravan_data = 'hysets'; %'camels', 'hysets';
 
 currentDate = datestr(now, 'yyyymmdd');
 out_dir = fullfile(home_dir, 'out', 'signatures', ['caravan_', caravan_data, '_AvgStr_', currentDate]);
