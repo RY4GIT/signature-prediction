@@ -54,85 +54,85 @@ if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
 attr_names = [
-    "ELEV_MEAN_M_BASIN",
-    "DRAIN_SQKM",
-    "SLOPE_PCT",
-    "FORESTNLCD06",
-    "CROPSNLCD06",
-    "PASTURENLCD06",
-    "PCT_IRRIG_AG",
-    "SNOWICENLCD06",
-    "PADCAT1_AND_2",
-    "isowet_areafrac",
-    "CLAYAVE",
-    "SILTAVE",
-    "OMAVE",
-    "kar_pc_sse",
-    "geol_weighted_ave_age_ma",
+    # "ELEV_MEAN_M_BASIN",
+    # "DRAIN_SQKM",
+    # "SLOPE_PCT",
+    # "FORESTNLCD06",
+    # "CROPSNLCD06",
+    # "PASTURENLCD06",
+    # "PCT_IRRIG_AG",
+    # "SNOWICENLCD06",
+    # "PADCAT1_AND_2",
+    # "isowet_areafrac",
+    # "CLAYAVE",
+    # "SILTAVE",
+    # "OMAVE",
+    # "kar_pc_sse",
+    # "geol_weighted_ave_age_ma",
     "PDEN_2000_BLOCK",
-    "gdp_ud_sav",
-    "FRAGUN_BASIN",
-    "P_mm_day",
-    "PET_mm_day",
-    "ARIDITY_GAGES2",
-    "SNOW_PCT_PRECIP",
-    "PRECIP_SEAS_IND",
-    "high_prec_freq",
-    "low_prec_freq",
-    "low_prec_dur",
-    "PERDUN",
-    "PERHOR",
-    "TOPWET",
-    "HIRES_LENTIC_DENS",
-    "PADCAT1_PCT_BASIN",
-    "PADCAT2_PCT_BASIN",
-    "PADCAT3_PCT_BASIN",
-    "ASPECT_NORTHNESS",
-    "ASPECT_EASTNESS",
-    "BAS_COMPACTNESS",
-    "RH_BASIN",
-    "T_AVG_BASIN",
-    "WD_BASIN",
-    "STREAMS_KM_SQ_KM",
-    "MAINSTEM_SINUOUSITY",
-    "ARTIFPATH_PCT",
-    "ARTIFPATH_MAINSTEM_PCT",
-    "PCT_1ST_ORDER",
-    "PCT_6TH_ORDER_OR_MORE",
-    "PCT_NO_ORDER",
-    "CANALS_PCT",
-    "CANALS_MAINSTEM_PCT",
-    "FRESHW_WITHDRAWAL",
-    "FRAGUN_BASIN",
-    "HIRES_LENTIC_DENS",
-    "HIRES_LENTIC_MEANSIZ",
-    "DEVNLCD06",
-    "PLANTNLCD06",
-    "WATERNLCD06",
-    "BARRENNLCD06",
-    "DECIDNLCD06",
-    "EVERGRNLCD06",
-    "MIXEDFORNLCD06",
-    "SHRUBNLCD06",
-    "GRASSNLCD06",
-    "WOODYWETNLCD06",
-    "EMERGWETNLCD06",
-    "HGA",
-    "HGB",
-    "HGAD",
-    "HGC",
-    "HGD",
-    "HGAC",
-    "HGBD",
-    "HGCD",
-    "HGBC",
-    "HGVAR",
-    "WTDEPAVE",
-    "ROCKDEPAVE",
-    "SANDAVE",
-    "RRMEAN",
-    "input_seasonality",
-    "input_PET_synchrony",
+    # "gdp_ud_sav",
+    # "FRAGUN_BASIN",
+    # "P_mm_day",
+    # "PET_mm_day",
+    # "ARIDITY_GAGES2",
+    # "SNOW_PCT_PRECIP",
+    # "PRECIP_SEAS_IND",
+    # "high_prec_freq",
+    # "low_prec_freq",
+    # "low_prec_dur",
+    # "PERDUN",
+    # "PERHOR",
+    # "TOPWET",
+    # "HIRES_LENTIC_DENS",
+    # "PADCAT1_PCT_BASIN",
+    # "PADCAT2_PCT_BASIN",
+    # "PADCAT3_PCT_BASIN",
+    # "ASPECT_NORTHNESS",
+    # "ASPECT_EASTNESS",
+    # "BAS_COMPACTNESS",
+    # "RH_BASIN",
+    # "T_AVG_BASIN",
+    # "WD_BASIN",
+    # "STREAMS_KM_SQ_KM",
+    # "MAINSTEM_SINUOUSITY",
+    # "ARTIFPATH_PCT",
+    # "ARTIFPATH_MAINSTEM_PCT",
+    # "PCT_1ST_ORDER",
+    # "PCT_6TH_ORDER_OR_MORE",
+    # "PCT_NO_ORDER",
+    # "CANALS_PCT",
+    # "CANALS_MAINSTEM_PCT",
+    # "FRESHW_WITHDRAWAL",
+    # "FRAGUN_BASIN",
+    # "HIRES_LENTIC_DENS",
+    # "HIRES_LENTIC_MEANSIZ",
+    # "DEVNLCD06",
+    # "PLANTNLCD06",
+    # "WATERNLCD06",
+    # "BARRENNLCD06",
+    # "DECIDNLCD06",
+    # "EVERGRNLCD06",
+    # "MIXEDFORNLCD06",
+    # "SHRUBNLCD06",
+    # "GRASSNLCD06",
+    # "WOODYWETNLCD06",
+    # "EMERGWETNLCD06",
+    # "HGA",
+    # "HGB",
+    # "HGAD",
+    # "HGC",
+    # "HGD",
+    # "HGAC",
+    # "HGBD",
+    # "HGCD",
+    # "HGBC",
+    # "HGVAR",
+    # "WTDEPAVE",
+    # "ROCKDEPAVE",
+    # "SANDAVE",
+    # "RRMEAN",
+    # "input_seasonality",
+    # "input_PET_synchrony",
 ]
 
 land = cfeature.NaturalEarthFeature(
@@ -170,10 +170,21 @@ for attr_name in attr_names:
         # ax.add_feature(cfeature.STATES, linestyle=":", color="white")
 
         # Plotting the filtered data
+        cmap = "YlGnBu"
+        if attr_name == "PDEN_2000_BLOCK":
+            # Use log scale normalization for population density
+            from matplotlib.colors import LogNorm
+
+            norm = LogNorm(
+                vmin=cara_polygons[attr_name].quantile(0.10),
+                vmax=cara_polygons[attr_name].quantile(0.90),
+            )
+            cmap = plt.get_cmap(cmap)
+
         sheds = cara_polygons.plot(
             ax=ax,
             column=attr_name,
-            cmap="YlGnBu",  # Use this colormap consistently
+            cmap=cmap,  # Use this colormap consistently
             alpha=0.7,
             edgecolor="white",
             linewidth=0.3,
@@ -184,9 +195,16 @@ for attr_name in attr_names:
         # Create a colorbar using the normalization and colormap from the plot
         vmin = cara_polygons[attr_name].quantile(0.10)
         vmax = cara_polygons[attr_name].quantile(0.90)
+
+        if attr_name == "PDEN_2000_BLOCK":
+            vmin = 0
+            vmax = 0.01
         sm = ScalarMappable(
             norm=Normalize(vmin=vmin, vmax=vmax), cmap="YlGnBu"
         )  # Match the cmap used in plot
+        # If PDEN_2000_BLOCK, the colormap should be in log scale
+        if attr_name == "PDEN_2000_BLOCK":
+            sm = ScalarMappable(norm=norm, cmap="YlGnBu")  # Match the cmap used in plot
         sm.set_array([])
         cbar = plt.colorbar(sm, ax=ax, shrink=0.5)
         # cbar.set_label(attr_name)
@@ -200,3 +218,8 @@ for attr_name in attr_names:
     except Exception as e:
         print(f"Error plotting {attr_name}: {e}")
         continue
+
+# %%
+# cara_polygons["PDEN_2000_BLOCK"].hist()
+
+# %%

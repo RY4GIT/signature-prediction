@@ -44,11 +44,11 @@ caravan_dir = 'Caravan1.4';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
-caravan_data = 'hysets'; %'camels', 'hysets';
+caravan_data = 'camels'; %'camels', 'hysets';
 
 currentDate = datestr(now, 'yyyymmdd');
 out_dir = fullfile(home_dir, 'out', 'signatures', ['caravan_', caravan_data, '_AvgStr_', currentDate]);
-out_filename = ['out_AvgStr.csv'];
+out_filename = ['out_AvgStr_test.csv'];
 if ~exist(out_dir, 'dir')
     mkdir(out_dir);  % This will create the directory and any necessary subdirectories
     fprintf('Directory created: %s\n', out_dir);
@@ -67,7 +67,7 @@ us_gauges = attrs_geo(strcmp(attrs_geo.country, 'United States of America'), :);
 % disp(head(us_gauges));
 
 % Number of gauges
-numGauges = height(us_gauges);
+numGauges = 3 %height(us_gauges);
 
 
 %___________________________________________________________________________________
@@ -115,7 +115,7 @@ for idx = 1:numGauges
 
         [AverageStorage(idx),~,AverageStorage_error_str(idx)] = ...
             sig_StorageFromBaseflow(Q, t, P,PET,'start_water_year',start_water_year,'plot_results',plot_results,'recession_length',recession_length,'n_start',n_start,'eps',eps);
-
+        util_StorageAndAET(Q, t, P, PET, 'plot_results', true)
         % Check high/low flow in config_recession
         % Recession
         p95 = prctile(Q, 95);

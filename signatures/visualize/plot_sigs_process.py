@@ -28,6 +28,8 @@ plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 fig_dir = os.path.join(out_dir, "figs")
 if not os.path.exists(fig_dir):
     os.makedirs(fig_dir)
+
+
 # %%
 # ____________________________________________________________________________________
 # Load overlay layer for plotting
@@ -40,6 +42,16 @@ ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
 # %%
 # ____________________________________________________________________________________
 # Load data
+
+# # %% If have run the postprocess script already:
+# df_sigs = gpd.read_file(
+#     os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_area_postprocess.gpkg")
+# )
+# df_sigs.head()
+# # %%
+# df_sigs.set_index("gauge_id", inplace=True)
+
+# %% If haven't run the postprocess script yet:
 print("Loading attributes data...")
 
 caravan_attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\attributes"
@@ -74,7 +86,7 @@ wspolygon.set_index("gauge_id", inplace=True)
 
 # %% #######################################################
 # Loading the data
-#######################################################
+############################################################
 print("Loading signatures results file ...")
 _df_sigs = pd.read_csv(
     os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_area.csv"),
@@ -136,6 +148,7 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 
     # Set up the map
     fig = plt.figure(figsize=(12, 6))
+    # fig = plt.figure(figsize=(6, 5))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
     # Add a legend
@@ -193,6 +206,7 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 
     # Create a colormap and normalize
     cmap = plt.cm.Blues
+    # cmap = plt.cm.YlGnBu
     if "diff_" in sig_name:
         cmap = plt.cm.RdBu_r
     norm = mpl.colors.Normalize(vmin=llim, vmax=ulim)
@@ -249,7 +263,11 @@ def plot_sig_map(df, sig_name, overlay_layer, stats="normal", plot_mode="scatter
 # Plot signature value map
 # For testing
 plot_sig_map(
-    df_sigs, "avg_IE_SE_signif", ecoregion_overlay, stats="normal", plot_mode="polygon"
+    df_sigs,
+    "StorageFromBaseflow",
+    ecoregion_overlay,
+    stats="normal",
+    plot_mode="scatter",
 )
 
 # %% For all signatures

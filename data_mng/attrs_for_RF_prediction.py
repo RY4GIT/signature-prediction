@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 shared_drive = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 cara_attrs_dir = os.path.join(shared_drive, "data", "Caravan1.4", "attributes")
 derived_attrs_dir = os.path.join(shared_drive, "data", "derived_attrs", "assembled_RA")
+gages2_attrs_dir = os.path.join(shared_drive, "data", "GAGES2", "GAGES_II_attrs")
 out_dir = derived_attrs_dir
 fig_dir = os.path.join(derived_attrs_dir, "figs")
 # %% ____________________________________________________________
@@ -35,8 +36,10 @@ camels_attrs_file = os.path.join(derived_attrs_dir, "attrs_camels.csv")
 camels_attrs = pd.read_csv(camels_attrs_file, index_col="gauge_id")
 
 # Get the attributes of GAGES2
-gages2_attrs_file = os.path.join(derived_attrs_dir, "attrs_gages2_epa.csv")
-gages2_attrs = pd.read_csv(gages2_attrs_file, index_col="gauge_id")
+gages2_attrs_file = os.path.join(gages2_attrs_dir, "gagesII_sept30_2011_concat.csv")
+gages2_attrs = pd.read_csv(gages2_attrs_file)
+gages2_attrs["usgs_gauge_id"] = gages2_attrs["STAID"].astype(str).str.zfill(8)
+gages2_attrs = gages2_attrs.set_index("usgs_gauge_id")
 
 # Get quality control statistics of HYSETS
 hys_qa_file = os.path.join(
@@ -213,6 +216,13 @@ for i, (cara_varname, gages2_varname, title) in enumerate(attr_pairs):
 
     if gages2_varname == "SNOW_PCT_PRECIP":
         gages2_var = gages2_var / 100
+
+    if gages2_varname == "SLOPE_PCT":
+        gages2_var = gages2_var / 100 * 1000
+        # SLOPE_PCT / 100 (conversion factor to fraction) * 1000 (rise or drop per 1000m) ~ sgr_dk_sav
+
+    if gages2_varname == "OMAVE":
+        cara_var = cara_var * 10000000 / 1500 / (100 - 10) / 30
 
     axs[i].scatter(cara_var, gages2_var, s=1, alpha=0.5)
 
