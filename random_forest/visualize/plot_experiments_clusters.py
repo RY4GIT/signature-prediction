@@ -168,6 +168,7 @@ def plot_average_r2(dfs_r2, cluster_info):
     fig.savefig(
         os.path.join(fig_dir, f"r2_average.{file_type}"), dpi=300
     )  # Save as PNG or PDF}"))
+    df_avg_r2.to_csv(os.path.join(fig_dir, f"r2_average.csv"), index=True)
 
 
 dfs_r2 = load_data_r2(rf_dir, user_name, output_date, cluster_info)
