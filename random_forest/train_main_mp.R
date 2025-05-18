@@ -89,63 +89,16 @@ sigs_train_path <- file.path(home_dir, config$paths$train$signatures)
 sigs_train <- load_signatures(sigs_train_path)
 
 print("Loading attributes")
-# Define a function to load and process the attribute data
+# Define a function to load and process the attributes data
 load_attrs <- function(file_path) {
-  tryCatch({
-    # Use fread which is more robust for problematic CSVs
-    data <- data.table::fread(
-      file_path,
-      select = c("gauge_id", "cluster", config$attrs_of_interest),
-      data.table = FALSE,
-      fill = TRUE,
-      na.strings = c("NA", "", "NULL"),
-      verbose = TRUE  # Will print details about the file reading process
-    )
-    
-    # If fread fails to find some columns, it will exclude them
-    # Check and add missing columns with NA values
-    all_cols <- c("gauge_id", "cluster", config$attrs_of_interest)
-    missing_cols <- setdiff(all_cols, names(data))
-    
-    if (length(missing_cols) > 0) {
-      message("Adding missing columns with NA values: ", paste(missing_cols, collapse=", "))
-      for (col in missing_cols) {
-        data[[col]] <- NA
-      }
-    }
-    
-    # Convert to data frame and return
-    return(as.data.frame(data))
-    
-  }, error = function(e) {
-    # Fallback to a very simple method for reading the file
-    message("Trying fallback method: ", e$message)
-    
-    # Read the first few lines to diagnose
-    con <- file(file_path, "r")
-    header <- readLines(con, n=1)
-    closeAllConnections()
-    
-    message("File header: ", header)
-    
-    # Try to manually parse the header
-    header_cols <- strsplit(header, ",")[[1]]
-    message("Detected columns: ", paste(header_cols, collapse=", "))
-    
-    # Create empty data frame with required columns
-    empty_df <- data.frame(
-      gauge_id = character(0),
-      cluster = character(0)
-    )
-    
-    # Add attr columns
-    for (col in config$attrs_of_interest) {
-      empty_df[[col]] <- numeric(0)
-    }
-    
-    message("ERROR: Could not read attributes file. Using empty dataframe instead.")
-    return(empty_df)
-  })
+  # Read the data from the specified file path
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+
+  # Select the gauge_id and the attributes of interest
+  # and return it as a data frame
+  data %>%
+    select(gauge_id, all_of(config$attrs_of_interest), cluster) %>%
+    as.data.frame()
 }
 
 print("Loading training attributes")
