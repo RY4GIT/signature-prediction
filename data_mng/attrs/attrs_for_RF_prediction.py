@@ -179,7 +179,7 @@ hys_gages_not_pred_not_in_gages2.to_csv(
 
 # Create a list of all attribute pairs to plot
 attr_pairs = [
-    ("sgr_dk_sav", "SLOPE_PCT", "Slope"),
+    ("slp_dg_sav", "SLOPE_PCT", "Slope"),
     ("soc_th_sav", "OMAVE", "Soil organic matter"),
     ("hdi_ix_sav", "FRAGUN_BASIN", "Development index"),
     ("pet_mean", "PET_mm_day", "PET"),
@@ -218,7 +218,14 @@ for i, (cara_varname, gages2_varname, title) in enumerate(attr_pairs):
         gages2_var = gages2_var / 100
 
     if gages2_varname == "SLOPE_PCT":
-        gages2_var = gages2_var / 100 * 1000
+        # Convert slope percent to slope degree
+        # slope percent = rise/run * 100
+        # slope degree = arctan(rise/run)
+        # therefore: slope degree = arctan(slope_percent/100)
+        gages2_var = np.arctan(gages2_var / 100) * 180 / np.pi * 10
+
+        # In case of conversion from sgr_dk_sav (dm/km)to SLOPE_PCT
+        # gages2_var = gages2_var / 100 * 1000
         # SLOPE_PCT / 100 (conversion factor to fraction) * 1000 (rise or drop per 1000m) ~ sgr_dk_sav
 
     if gages2_varname == "OMAVE":

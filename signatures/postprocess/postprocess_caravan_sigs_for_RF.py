@@ -9,28 +9,26 @@ import numpy as np
 
 shared_drive = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 
+# Signature output directory
 sig_outdir = os.path.join(shared_drive, "out", "signatures")
-
 hys_dir = "caravan_hysets_20250223_withWu"
 camels_dir = "caravan_camels_20250223_withWu"
-caravan_dir = "caravan_us_20250223_withWu"  # "caravan_us_20240609_tunedparams" "gages2_caravan_us_20250211"
+caravan_dir = "caravan_us_20250223_withWu"
+results_filename = "out_calc_All_custom"
+results_file = f"{results_filename}.csv"
 
 out_dir = os.path.join(sig_outdir, caravan_dir)
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
-results_filename = "out_calc_All_custom"
-results_file = f"{results_filename}.csv"
-
+# Caravan attributes directory
 attrs_dir = os.path.join(shared_drive, "data", "Caravan1.4", "attributes")
 derived_attrs_dir = (
     r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs"
 )
-
 hys_qa_file = os.path.join(
     shared_drive, "out", "caravan_datacheck", "hysets_summary.csv"
 )
-
 attrs_gages2_file = os.path.join(
     derived_attrs_dir, "assembled_RA", "attrs_gages2_epa.csv"
 )
@@ -54,7 +52,7 @@ area_err_thresh = 0.25  # in fraction (-)
 # %% ____________________________________________________________
 # Load signatures
 
-# Hysets
+# Hysets signatures
 _sigs_hys = pd.read_csv(os.path.join(sig_outdir, hys_dir, results_file))
 attrs_hys = pd.read_csv(
     os.path.join(attrs_dir, "hysets", "attributes_other_hysets.csv")
@@ -68,7 +66,7 @@ print(
 qa_hys = pd.read_csv(hys_qa_file)
 
 # ____________________________________________________________
-# Quality control of Hysets Signautres
+# (1) Quality control of Hysets Signautres
 
 # Filter signatures by duration of the record, use "duration_thresh"
 qa_hys["start_date"] = pd.to_datetime(qa_hys["start_date"])
@@ -106,7 +104,7 @@ print(
 )
 
 # %% ____________________________________________________________
-# Filter out the Hysets gauge_id that are overlapping with CAMELS
+# (2) Filter out the Hysets gauge_id that are overlapping with CAMELS
 
 # get the USGS gauge number from gauge ID
 # get gauge_num in each df by getting the second element of gauge_id, deliminating it with _ (underscore)
@@ -154,7 +152,7 @@ print(
 sigs.to_csv(os.path.join(out_dir, f"{results_filename}_filt_qc.csv"))
 
 # %% ____________________________________________________________
-# Mask overland flow signature calculated for snowy area, use "frac_snow_thresh"
+# (3) Mask overland flow signature calculated for snowy area, use "frac_snow_thresh"
 # TODO: This is temporary solution. Consider snow or temprature when calculating signature calculation for more regirous analysis
 
 attrs_caravan_hys = pd.read_csv(
@@ -166,12 +164,6 @@ attrs_caravan_camels = pd.read_csv(
     index_col="gauge_id",
 )
 attrs_caravan = pd.concat([attrs_caravan_hys, attrs_caravan_camels])
-
-# Alternatively, just load the sigs and mask
-# sigs = pd.read_csv(
-#     os.path.join(sig_outdir, caravan_dir, "out_calc_All_custom_caravanoverlap.csv"),
-#     index_col="gauge_id",
-# )
 
 sigs_fs = sigs.join(attrs_caravan.frac_snow, how="left")
 row_mask_idx = sigs_fs["frac_snow"] > frac_snow_thresh
@@ -191,15 +183,15 @@ columns_mask = [
 ]
 
 sigs.loc[row_mask_idx, columns_mask] = np.nan
-# %%
+
 print(
-    f"{(~pd.isna(sigs.IE_effect)).sum()} survived ({(~pd.isna(sigs.IE_effect)).sum() / len(sigs) * 100:.1f} %)"
+    "After quality controlling the IE/SE signatures by snow"
+    + f"{(~pd.isna(sigs.IE_effect)).sum()} survived ({(~pd.isna(sigs.IE_effect)).sum() / len(sigs) * 100:.1f} %)"
 )
-# %%  ____________________________________________________________
 # Save
 sigs.to_csv(os.path.join(out_dir, f"{results_filename}_filt_qc_snow.csv"))
 
-# %%
+# %% (4) Join GAGES2 attributes to check the area error. Drop the rows with area error > 25%
 attrs_gages2 = pd.read_csv(attrs_gages2_file, index_col="gauge_id").drop(
     columns=["gauge_name", "country", "gauge_lat", "gauge_lon", "area"]
 )
@@ -208,9 +200,7 @@ sigs_gages2["area_err"] = abs(
     (sigs_gages2["area"] - sigs_gages2["DRAIN_SQKM"]) / sigs_gages2["DRAIN_SQKM"]
 )
 area_err_idx = sigs_gages2[sigs_gages2["area_err"] > 0.25].index
-print(area_err_idx)
-# %%
-# Drop the rows with the area_err_idx from sigs dataframe
+
 sigs_qa_area = sigs.drop(index=area_err_idx)
 
 print(
@@ -220,9 +210,41 @@ print(
     f"{len(area_err_idx)} gages were dropped due to area error ({len(area_err_idx) / len(sigs) * 100:.1f} %)"
 )
 
-# %%
-
 # Save the updated sigs dataframe
 sigs_qa_area.to_csv(os.path.join(out_dir, f"{results_filename}_filt_qc_snow_area.csv"))
 
+# %% ###################################################################
+# GET THE SUBSET OF SIGNATURES
+########################################################################
+
+# Skip the gauges with BFI = NaN
+bfi_nan_count = sigs_qa_area["BFI"].isna().sum()
+sigs_qa_area = sigs_qa_area[~sigs_qa_area["BFI"].isna()]
+print(
+    f"After dropping the gauges with BFI = NaN ({bfi_nan_count}, {bfi_nan_count / len(sigs_qa_area) * 100:.1f} %): {len(sigs_qa_area)}"
+)
+# %% Get the CAMELS subset
+sigs_qced_camels_subset = sigs_qa_area[sigs_qa_area.index.str.contains("camels")]
+print(len(sigs_qced_camels_subset))
+sigs_qced_camels_subset.to_csv(
+    os.path.join(out_dir, f"{results_filename}_filt_qc_snow_area_subset_camels.csv")
+)
+
+# %% Get the GAGES2 subset
+not_in_gages2_idx = sigs_gages2["DRAIN_SQKM"].isna()
+sigs_gages2_subset = sigs_qa_area[~not_in_gages2_idx].copy()
+print(len(sigs_gages2_subset))
+sigs_gages2_subset.to_csv(
+    os.path.join(out_dir, f"{results_filename}_filt_qc_snow_area_subset_gages2.csv")
+)
+
 # %%
+ref_gage_idx = sigs_gages2["CLASS"] == "Ref"
+ref_gages = sigs_gages2[ref_gage_idx]
+print(len(ref_gages))
+common_gages = list(set(ref_gages.index) & set(sigs_gages2_subset.index))
+sigs_gages2_ref_subset = sigs_gages2_subset.loc[common_gages].copy()
+print(len(sigs_gages2_ref_subset))
+sigs_gages2_ref_subset.to_csv(
+    os.path.join(out_dir, f"{results_filename}_filt_qc_snow_area_subset_gages2_ref.csv")
+)

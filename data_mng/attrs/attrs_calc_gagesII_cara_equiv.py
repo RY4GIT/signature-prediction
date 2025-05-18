@@ -2,6 +2,7 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 # %%
 attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA"
@@ -34,6 +35,7 @@ attrs["delineation_err"] = (
 attrs[["gauge_id", "delineation_err", "area", "DRAIN_SQKM"]][
     attrs["delineation_err"] > 25
 ].to_csv(os.path.join(attrs_dir, "delineation_err.csv"), index=False)
+
 # %% ####################################
 # PROTECTED AREA PERCENTAGE
 ########################################
@@ -57,10 +59,13 @@ attrs["P_mm_day"] = (attrs["PPTAVG_BASIN"] * 10) / 365  # cm/year to mm/day
 attrs["ARIDITY_GAGES2"] = attrs["PET"] / (
     attrs["PPTAVG_BASIN"] * 10
 )  # PET/P, convert both in mm/year
-
 attrs["ARIDITY_GAGES2"].hist(bins=100)
+attrs["SNOW_FRAC_PRECIP"] = attrs["SNOW_PCT_PRECIP"] / 100  # percent to fraction
 
-
+# %% ####################################
+# TERRAIN SLOPE EQUIVALENTs
+########################################
+attrs["SLOPE_DEG_x10"] = np.arctan(attrs["SLOPE_PCT"] / 100) * 180 / np.pi * 10
 # %% ####################################
 # CLIMATE EQUIVALENTs
 ########################################
