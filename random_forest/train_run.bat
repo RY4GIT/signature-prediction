@@ -17,20 +17,20 @@ REM )
 @REM Rscript train_main_mp.R %config_dir%\config_20250517_baseline.yml
 @REM echo Experiment with %config_dir%\config_20250517_baseline.yml finished
 
-echo Running experiment with %config_dir%\config_20250517_camels.yml
-Rscript train_main_mp.R %config_dir%\config_20250517_camels.yml
-echo Experiment with %config_dir%\config_20250517_camels.yml finished
+@REM echo Running experiment with %config_dir%\config_20250517_camels.yml
+@REM Rscript train_main_mp.R %config_dir%\config_20250517_camels.yml
+@REM echo Experiment with %config_dir%\config_20250517_camels.yml finished
 
-echo Running experiment with %config_dir%\config_20250517_gages2_attrs.yml
-Rscript train_main_mp.R %config_dir%\config_20250517_gages2_attrs.yml
-echo Experiment with %config_dir%\config_20250517_gages2_attrs.yml finished
+@REM echo Running experiment with %config_dir%\config_20250517_gages2_attrs.yml
+@REM Rscript train_main_mp.R %config_dir%\config_20250517_gages2_attrs.yml
+@REM echo Experiment with %config_dir%\config_20250517_gages2_attrs.yml finished
 
 @REM echo Running experiment with %config_dir%\config_20250517_gages2_ref.yml
 @REM Rscript train_main_mp.R %config_dir%\config_20250517_gages2_ref.yml
 @REM echo Experiment with %config_dir%\config_20250517_gages2_ref.yml finished
 
-@REM echo Running experiment with %config_dir%\config_20250517_gages2.yml
-@REM Rscript train_main_mp.R %config_dir%\config_20250517_gages2.yml
-@REM echo Experiment with %config_dir%\config_20250517_gages2.yml finished
+echo Running experiment with %config_dir%\config_20250517_gages2.yml
+Rscript train_main_mp.R %config_dir%\config_20250517_gages2.yml
+echo Experiment with %config_dir%\config_20250517_gages2.yml finished
 
 pause

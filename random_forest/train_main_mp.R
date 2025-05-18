@@ -197,6 +197,68 @@ for (sig in config$sigs_predict) {
       drop_na() %>%
       filter_all(all_vars(!is.infinite(.)))
     
+    # More aggressive NA handling to ensure no missing values remain
+    # Check for any problematic values before proceeding
+    na_count_before <- sum(is.na(train_data))
+    inf_count_before <- sum(sapply(train_data, function(x) sum(is.infinite(x), na.rm = TRUE)))
+    nan_count_before <- sum(sapply(train_data, function(x) sum(is.nan(x), na.rm = TRUE)))
+    
+    if (na_count_before > 0 || inf_count_before > 0 || nan_count_before > 0) {
+      message(paste("Found problematic values before cleaning:", 
+                    na_count_before, "NAs,", 
+                    inf_count_before, "Inf values,", 
+                    nan_count_before, "NaN values"))
+    }
+    
+    # Replace NaN with NA
+    train_data <- train_data %>%
+      mutate_all(function(x) {
+        x[is.nan(x)] <- NA
+        return(x)
+      })
+    
+    # More aggressive filtering of problematic values
+    train_data <- train_data %>%
+      mutate_all(function(x) {
+        if (is.numeric(x)) {
+          # Replace Inf/-Inf with NA
+          x[is.infinite(x)] <- NA
+          # Replace extreme values with NA (optional)
+          # x[abs(x) > 1e10] <- NA
+        }
+        return(x)
+      }) %>%
+      drop_na()  # Drop rows with any NA values again
+    
+    # Double-check after cleaning
+    na_count_after <- sum(is.na(train_data))
+    inf_count_after <- sum(sapply(train_data, function(x) sum(is.infinite(x), na.rm = TRUE)))
+    nan_count_after <- sum(sapply(train_data, function(x) sum(is.nan(x), na.rm = TRUE)))
+    
+    # Log the results of the cleaning
+    message(paste("After cleaning:", nrow(train_data), "rows remain with",
+                  na_count_after, "NAs,", 
+                  inf_count_after, "Inf values,",
+                  nan_count_after, "NaN values"))
+    
+    # Check if we have enough data to proceed
+    if (nrow(train_data) < 10) {
+      message(paste("Not enough data for signature", sig, "- only", nrow(train_data), "rows after cleaning"))
+      results[[sig]] <- list(
+        sig_predictions = data.frame(gauge_id = attrs_test$gauge_id, prediction = NA, sig_name = sig),
+        r2 = data.frame(sig_name = sig, r_squared = NA),
+        var_importance = data.frame(predictor = names(train_data)[names(train_data) != sig], 
+                                  Importance = NA, 
+                                  sig_name = sig),
+        shap_values = data.frame(feature = names(train_data)[names(train_data) != sig],
+                               phi = NA,
+                               phi.var = NA,
+                               feature_value = NA,
+                               sig_name = sig)
+      )
+      next  # Skip to the next signature
+    }
+    
     # Ensure we're using a numeric target for regression
     train_data[[sig]] <- as.numeric(train_data[[sig]])
     
