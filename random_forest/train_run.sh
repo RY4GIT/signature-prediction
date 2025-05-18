@@ -1,7 +1,6 @@
+#!/bin/bash
 # Script to execute Random Forest models, predicting hydrologic signatures based on catchment attribute datasets
 # This code runs Random Forest in a parallel computing mode
-
-#!/bin/bash
 
 # cd random_forest/
 # ./train_run.sh
@@ -26,16 +25,10 @@ for i in 0 1 2 3 4 5; do
     run_experiment "config_cluster_$i"
 done
 
-# Run additional experiments
-configs=(
-    "config_cluster_all"
-    "config_20250517_baseline"
-    "config_20250517_camels"
-    "config_20250517_gages2_attrs"
-    "config_20250517_gages2_ref"
-    "config_20250517_gages2"
-)
+# Define configs as space-separated string instead of array for better sh compatibility
+configs="config_cluster_all config_20250517_baseline config_20250517_camels config_20250517_gages2_attrs config_20250517_gages2_ref config_20250517_gages2"
 
-for config in "${configs[@]}"; do
+# Loop through configs
+for config in $configs; do
     run_experiment "$config"
 done

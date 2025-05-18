@@ -31,6 +31,7 @@ library(doParallel)
 library(dplyr)
 library(foreach)
 library(iml)
+library(data.table)
 
 #############################################
 # INITIALIZATION
@@ -90,26 +91,61 @@ sigs_train <- load_signatures(sigs_train_path)
 print("Loading attributes")
 # Define a function to load and process the attribute data
 load_attrs <- function(file_path) {
-  # Read only the necessary columns from the specified file path
-  required_cols <- c("gauge_id", "cluster", config$attrs_of_interest)
-  
-  # Use colClasses to specify which columns to read
-  # NA for columns we don't want to read at all
-  all_cols <- read.csv(file_path, nrows = 1, stringsAsFactors = FALSE)
-  col_classes <- rep("NULL", ncol(all_cols))
-  col_match <- match(required_cols, names(all_cols))
-  col_match <- col_match[!is.na(col_match)]
-  col_classes[col_match] <- "character"
-  
-  # Read the data, ignoring extra columns
-  data <- read.csv(file_path, stringsAsFactors = FALSE, 
-                  colClasses = col_classes,
-                  na.strings = c("NA", ""))
-  
-  # Select only the columns we need
-  data %>%
-    select(gauge_id, all_of(config$attrs_of_interest), cluster) %>%
-    as.data.frame()
+  tryCatch({
+    # Use fread which is more robust for problematic CSVs
+    data <- data.table::fread(
+      file_path,
+      select = c("gauge_id", "cluster", config$attrs_of_interest),
+      data.table = FALSE,
+      fill = TRUE,
+      na.strings = c("NA", "", "NULL"),
+      verbose = TRUE  # Will print details about the file reading process
+    )
+    
+    # If fread fails to find some columns, it will exclude them
+    # Check and add missing columns with NA values
+    all_cols <- c("gauge_id", "cluster", config$attrs_of_interest)
+    missing_cols <- setdiff(all_cols, names(data))
+    
+    if (length(missing_cols) > 0) {
+      message("Adding missing columns with NA values: ", paste(missing_cols, collapse=", "))
+      for (col in missing_cols) {
+        data[[col]] <- NA
+      }
+    }
+    
+    # Convert to data frame and return
+    return(as.data.frame(data))
+    
+  }, error = function(e) {
+    # Fallback to a very simple method for reading the file
+    message("Trying fallback method: ", e$message)
+    
+    # Read the first few lines to diagnose
+    con <- file(file_path, "r")
+    header <- readLines(con, n=1)
+    closeAllConnections()
+    
+    message("File header: ", header)
+    
+    # Try to manually parse the header
+    header_cols <- strsplit(header, ",")[[1]]
+    message("Detected columns: ", paste(header_cols, collapse=", "))
+    
+    # Create empty data frame with required columns
+    empty_df <- data.frame(
+      gauge_id = character(0),
+      cluster = character(0)
+    )
+    
+    # Add attr columns
+    for (col in config$attrs_of_interest) {
+      empty_df[[col]] <- numeric(0)
+    }
+    
+    message("ERROR: Could not read attributes file. Using empty dataframe instead.")
+    return(empty_df)
+  })
 }
 
 print("Loading training attributes")
