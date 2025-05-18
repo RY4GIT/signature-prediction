@@ -106,8 +106,35 @@ cara_ecoregion = load_and_concat_datasets(
     "EPA Ecoregions ",
 )
 
-# %%
+# %% A few postprocessing steps
 cara_niw.drop(columns=["0", "est"], inplace=True)
+cara_giw = cara_giw[["area_frac"]].rename(columns={"area_frac": "isowet_areafrac"})
+cara_wetland = cara_niw[["fresh", "lake", "other", "usgs_gauge_id"]].join(
+    cara_giw, how="left"
+)
+cara_wetland["conwet_areafrac"] = (
+    cara_wetland["fresh"] + cara_wetland["lake"] - cara_wetland["isowet_areafrac"]
+)
+cara_wetland["isowet_areafrac"] = cara_wetland["isowet_areafrac"].clip(lower=0)
+cara_wetland["conwet_areafrac"] = cara_wetland["conwet_areafrac"].clip(lower=0)
+
+cara_ageweighted = cara_ageweighted[["av_age_w", "usgs_gauge_id"]].rename(
+    columns={"av_age_w": "geol_weighted_ave_age_ma"}
+)
+cara_agemajor = cara_agemajor[["major_lith", "av_age", "usgs_gauge_id"]].rename(
+    columns={"av_age": "geol_major_age_ma", "major_lith": "geol_major_lith"}
+)
+cara_agemajor["lith_sed_carb"] = (
+    cara_agemajor["geol_major_lith"] == "Sedimentary, carbonate"
+).astype(int)
+cara_agemajor["lith_sed_clast"] = (
+    cara_agemajor["geol_major_lith"] == "Sedimentary, clastic"
+).astype(int)
+cara_agemajor["lith_ig_volc"] = (
+    cara_agemajor["geol_major_lith"] == "Igneous, volcanic"
+).astype(int)
+
+
 # %% ##############################################################################
 # Load a few other attributes
 hammond_clim_dir = os.path.join(data_dir, "GAGES2", "climate_attrs_Hammond")
@@ -169,8 +196,7 @@ original_cara_attrs_columns = assembled_attrs.columns.tolist()
 for attr_df, attr_name in [
     (cara_HA_attrs, "HydroAtlas"),
     (cara_geo_attrs, "Geographic"),
-    (cara_giw, "GIW"),
-    (cara_niw, "NWI"),
+    (cara_wetland, "Wetland"),
     (cara_agemajor, "Age Major"),
     (cara_ageweighted, "Age Weighted"),
     (cara_ecoregion, "Ecoregion"),
@@ -270,8 +296,7 @@ index_based_datasets = [
     (cara_attrs, "Caravan"),
     (cara_HA_attrs, "HydroAtlas"),
     (cara_geo_attrs, "Geographic"),
-    (cara_giw, "GIW"),
-    (cara_niw, "NWI"),
+    (cara_wetland, "Wetland"),
     (cara_agemajor, "Age Major"),
     (cara_ageweighted, "Age Weighted"),
     (cara_ecoregion, "Ecoregion"),

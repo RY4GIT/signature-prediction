@@ -83,9 +83,11 @@ load_signatures <- function(file_path) {
     as.data.frame() # Ensure the output is a data frame
 }
 
+print("Loading signatures")
 sigs_train_path <- file.path(home_dir, config$paths$train$signatures)
 sigs_train <- load_signatures(sigs_train_path)
 
+print("Loading attributes")
 # Define a function to load and process the attribute data
 load_attrs <- function(file_path) {
   # Read the data from the specified file path
@@ -98,14 +100,17 @@ load_attrs <- function(file_path) {
     as.data.frame()
 }
 
+print("Loading training attributes")
 attrs_train_path <- file.path(home_dir, config$paths$train$attributes)
 attrs_train <- load_attrs(attrs_train_path)
 
+print("Loading test attributes")
 attrs_test_path <- file.path(home_dir, config$paths$test$attributes)
 attrs_test <- load_attrs(attrs_test_path)
 
 # _______________________________________________________________________________________________________________
 # If running the model by cluster, filter and get the subset of the data
+print("Filtering by cluster")
 if (config$filter_by_cluster$run) {
   attrs_train <- attrs_train %>%
     filter(cluster == config$filter_by_cluster$name) %>%
@@ -143,16 +148,32 @@ set.seed(config$settings$seed)
 # Define repeated cross-validation with 10 folds and three repeats
 # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
 hyper_grid <- expand.grid(
-  mtry = c(1:(length(attrs_train)-1))
+  mtry = c(1:(length(attrs_train) - 1))
 )
 
-# Create a vector of seeds for each iteration (for parallel reproducibility)
-n_models <- length(config$sigs_predict)
-seeds <- vector(mode = "list", length = n_models + 1) # +1 for final model
-for(i in 1:n_models) seeds[[i]] <- sample.int(1000, nrow(hyper_grid))
-seeds[[n_models + 1]] <- sample.int(1000, 1) # for final model
+# Set up properly structured seeds for reproducibility
+num_folds <- config$settings$num_folds
 
-kfold_cv <- trainControl(method = "cv", number = config$settings$num_folds, search = "grid", verboseIter = TRUE, seeds = seeds)
+# Create a vector of seeds for each iteration (for parallel reproducibility)
+# For regular CV: we need folds + 1
+seeds <- vector(mode = "list", length = num_folds + 1)
+
+# For each fold, we need a vector with length = number of tuning parameter combinations
+for (i in 1:num_folds) {
+  seeds[[i]] <- sample.int(1000, nrow(hyper_grid))
+}
+
+# For the final model, we need a single integer
+seeds[[num_folds + 1]] <- sample.int(1000, 1)
+
+# Set up the training control with CV and the proper seeds
+kfold_cv <- trainControl(
+  method = "cv",
+  number = num_folds,
+  search = "grid",
+  verboseIter = TRUE,
+  seeds = seeds
+)
 
 # Prepare output list
 out_r2 <- list()
@@ -162,7 +183,7 @@ out_shap_values <- list()
 
 print("Start multiple RFs")
 # Multi-threadding --- each thread receives one RF model for one signature prediction 
-results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dplyr", "tidyr", "caret", "purrr")) %dopar% {
+results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dplyr", "tidyr", "caret", "purrr", "iml")) %dopar% {
   # tryCatch({
   library(dplyr)  # Ensure dplyr is loaded
   library(tidyr)  # Ensure tidyr is loaded
@@ -268,6 +289,13 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
   # Store SHAP values in the list
   out_shap_values <- shap_values
 
+  # Save the trained model for this signature
+  if (!config$filter_by_cluster$run) {
+    model_file_name <- file.path(out_path, paste0("model_", sig, ".rds"))
+    saveRDS(forest, model_file_name)
+    message(paste("Saved model for", sig, "to", model_file_name))
+  }
+
   # Summarize all output from one thread run in a list
   list(
     sig_predictions = out_sig_predictions, 
@@ -275,7 +303,6 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
     var_importance = out_var_importance,
     shap_values = out_shap_values
   )
-
 
   # }, error = function(e) {
   #   print(paste("An error occurred:", e$message))
@@ -292,6 +319,7 @@ results <- foreach(sig = config$sigs_predict, .packages = c("randomForest", "dpl
 # FINALIZE
 #############################################
 
+print("Finished the training and unlisting results")
 # Unlist results
 out_sig_predictions <- lapply(results, `[[`, "sig_predictions")
 out_r2 <- lapply(results, `[[`, "r2")
@@ -304,12 +332,15 @@ all_r2 <- bind_rows(out_r2)
 all_var_importance <- bind_rows(out_var_importance)
 all_shap_values <- bind_rows(out_shap_values)
 
+
 # Save output to CSV
+print("Saving output to CSV")
 write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures_train.csv"), row.names = FALSE)
 write.csv(all_var_importance, file.path(out_path, "var_importance.csv"), row.names = FALSE)
 write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
 write.csv(all_shap_values, file.path(out_path, "shap_values.csv"), row.names = FALSE)
 
+print("Saving config file")
 # Save config file
 yaml::write_yaml(config, file.path(out_path, "config_train.yaml"))
 

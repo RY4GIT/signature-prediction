@@ -47,6 +47,10 @@ attrs["SNOW_FRAC_PRECIP"] = attrs["SNOW_PCT_PRECIP"] / 100  # percent to fractio
 attrs["SLOPE_DEG_x10"] = np.arctan(attrs["SLOPE_PCT"] / 100) * 180 / np.pi * 10
 
 # %% ####################################
+# TERRAIN SLOPE EQUIVALENTs
+########################################
+attrs["cluster"] = "temp"
+# %% ####################################
 # CLIMATE EQUIVALENTs
 ########################################
 
