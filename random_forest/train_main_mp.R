@@ -90,11 +90,23 @@ sigs_train <- load_signatures(sigs_train_path)
 print("Loading attributes")
 # Define a function to load and process the attribute data
 load_attrs <- function(file_path) {
-  # Read the data from the specified file path
-  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  # Read only the necessary columns from the specified file path
+  required_cols <- c("gauge_id", "cluster", config$attrs_of_interest)
   
-  # Select the gauge_id and all the specified columns from the data
-  # and return it as a data frame
+  # Use colClasses to specify which columns to read
+  # NA for columns we don't want to read at all
+  all_cols <- read.csv(file_path, nrows = 1, stringsAsFactors = FALSE)
+  col_classes <- rep("NULL", ncol(all_cols))
+  col_match <- match(required_cols, names(all_cols))
+  col_match <- col_match[!is.na(col_match)]
+  col_classes[col_match] <- "character"
+  
+  # Read the data, ignoring extra columns
+  data <- read.csv(file_path, stringsAsFactors = FALSE, 
+                  colClasses = col_classes,
+                  na.strings = c("NA", ""))
+  
+  # Select only the columns we need
   data %>%
     select(gauge_id, all_of(config$attrs_of_interest), cluster) %>%
     as.data.frame()

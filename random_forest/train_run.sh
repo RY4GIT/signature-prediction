@@ -10,18 +10,32 @@
 project_dir="/home/raraki/signature-prediction/random_forest"
 config_dir="$project_dir/configs/linux"
 
-# List of cluster codes
-clusters="0 1 2 3 4 5"
+# Function to run an experiment with a given config
+run_experiment() {
+    local config_name="$1"
+    local config_path="$config_dir/$config_name.yml"
+    
+    echo "Running experiment with $config_path"
+    Rscript train_main_mp.R "$config_path"
+    echo "Experiment with $config_path finished"
+    echo "----------------------------------------"
+}
 
-# Loop through each cluster
-for i in $clusters
-do
-    echo "Running experiment with $config_dir/config_cluster_$i.yml"
-    Rscript train_main_mp.R "$config_dir/config_cluster_$i.yml"
-    echo "Experiment with $config_dir/config_cluster_$i.yml finished"
+# Run experiments for individual clusters
+for i in 0 1 2 3 4 5; do
+    run_experiment "config_cluster_$i"
 done
 
-# For the all clusters
-echo "Running experiment with $config_dir/config_cluster_all.yml"
-Rscript train_main_mp.R "$config_dir/config_cluster_all.yml"
-echo "Experiment with $config_dir/config_cluster_all.yml finished"
+# Run additional experiments
+configs=(
+    "config_cluster_all"
+    "config_20250517_baseline"
+    "config_20250517_camels"
+    "config_20250517_gages2_attrs"
+    "config_20250517_gages2_ref"
+    "config_20250517_gages2"
+)
+
+for config in "${configs[@]}"; do
+    run_experiment "$config"
+done
