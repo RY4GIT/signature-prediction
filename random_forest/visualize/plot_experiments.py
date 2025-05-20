@@ -11,8 +11,8 @@ import yaml
 
 # %%
 ########################## CHANGE HERE #################
-output_date = r"output_raraki_20250307"
-experiment_name = "climattrs"
+output_date = r"output_raraki_20250517"
+experiment_name = "subset"
 ########################################################
 
 # # GROSSARY OF EXPERIMENTS
@@ -42,7 +42,10 @@ experiment_name = "climattrs"
 # experiment_name = "climattrs"
 # ########################################################
 
-
+# ########## SUBSETS ##############
+# output_date = r"output_raraki_20250517"
+# experiment_name = "subset"
+########################################################
 # ____________________________________________________________________________________
 # Config
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\random_forest\visualize")
@@ -101,7 +104,8 @@ def load_data_r2(output_date, out_dir_rf, exp_info, exp_types, experiment_name):
     # Read by ecoregion
     for exp_n in exp_types:
         exp_shortname = exp_info[exp_n]["shortname"]
-        output_dir = f"{output_date}_{experiment_name}_{exp_shortname}"
+        output_dir = f"{output_date}_{exp_shortname}"
+        # output_dir = f"{output_date}_{experiment_name}_{exp_shortname}"
         file_path = os.path.join(out_dir_rf, output_dir, "r_squared.csv")
         if os.path.exists(file_path):
             df_temp = pd.read_csv(file_path, index_col="sig_name")
@@ -123,15 +127,18 @@ def plot_r2_values(df, exp_info, exp_type):
     ]
     # colors.insert(0, "grey")
 
-    fig, ax = plt.subplots(figsize=(18, 6))
+    # fig, ax = plt.subplots(figsize=(18, 6))
+    fig, ax = plt.subplots(figsize=(6, 4))
     df.plot(kind="bar", color=colors, ax=ax)
-    ax.set_title(r"$R^2$ for Different Experiments")
+    # ax.set_title(r"$R^2$ for Different Experiments")
     ax.set_xlabel("Signature")
     ax.set_ylabel(r"$R^2$")
     ax.set_xticklabels(df.index, rotation=45, ha="right")
-    ax.legend(title="Experiment", bbox_to_anchor=(1.05, 1), loc="upper left")
+    ax.legend()
+    ax.set_ylim(-0.1, 1)
+    # ax.legend(title="Experiment", bbox_to_anchor=(1.05, 1), loc="upper left")
     fig.tight_layout()
-    fig.savefig(os.path.join(fig_dir, f"r2_per_sig.png"))
+    fig.savefig(os.path.join(fig_dir, f"r2_per_sig.pdf"))
 
 
 def plot_average_r2(dfs_r2, exp_info):
@@ -154,8 +161,18 @@ def plot_average_r2(dfs_r2, exp_info):
 
 
 dfs_r2 = load_data_r2(output_date, out_dir_rf, exp_info, exp_types, experiment_name)
+selected_rows = [
+    "TotalRR",
+    "AverageStorage",
+    "BFI",
+    "BaseflowRecessionK",
+    "IE_thresh",
+    "SE_thresh",
+]
+dfs_r2 = dfs_r2.loc[selected_rows].copy()
 plot_r2_values(dfs_r2, exp_info, exp_types)
 plot_average_r2(dfs_r2, exp_info)
+# %%
 
 
 # %%

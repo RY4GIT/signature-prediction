@@ -1,0 +1,7 @@
+{
+    "0": {"name": "All Caravan", "shortname":"baseline", "color": "#D3D3D3"},
+    "1": {"name": "CAMELS subset", "shortname":"camels_subset", "color": "#dfc27d"},
+    "2": {"name": "GAGES2 subset", "shortname":"gages2_subset", "color": "#b2e1d9"},
+    "3": {"name": "GAGES2 subset & attrs.", "shortname":"gages2_subset_and_attrs", "color": "#80cdc1"},
+    "4": {"name": "GAGES2 subset (Refs.)", "shortname":"gages2_ref_subset", "color": "#66a49a"}
+}

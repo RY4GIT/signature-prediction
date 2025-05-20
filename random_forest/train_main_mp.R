@@ -251,10 +251,10 @@ for (sig in config$sigs_predict) {
                                   Importance = NA, 
                                   sig_name = sig),
         shap_values = data.frame(feature = names(train_data)[names(train_data) != sig],
-                               phi = NA,
-                               phi.var = NA,
-                               feature_value = NA,
-                               sig_name = sig)
+                              phi = NA,
+                              phi.var = NA,
+                              feature_value = NA,
+                              sig_name = sig)
       )
       next  # Skip to the next signature
     }
@@ -299,10 +299,10 @@ for (sig in config$sigs_predict) {
                                   Importance = NA, 
                                   sig_name = sig),
         shap_values = data.frame(feature = names(train_data)[names(train_data) != sig],
-                               phi = NA,
-                               phi.var = NA,
-                               feature_value = NA,
-                               sig_name = sig)
+                              phi = NA,
+                              phi.var = NA,
+                              feature_value = NA,
+                              sig_name = sig)
       )
       next  # Skip to the next signature
     }
@@ -389,7 +389,7 @@ for (sig in config$sigs_predict) {
     out_shap_values <- shap_result
 
     # Save the trained model for this signature
-    if (!config$filter_by_cluster$run) {
+    if (!config$save_models) {
       model_file_name <- file.path(out_path, paste0("model_", sig, ".rds"))
       saveRDS(forest, model_file_name)
       message(paste("Saved model for", sig, "to", model_file_name))
