@@ -1,7 +1,7 @@
 {
-    "0": {"name": "All Caravan", "shortname":"baseline", "color": "#D3D3D3"},
-    "1": {"name": "CAMELS subset", "shortname":"camels_subset", "color": "#dfc27d"},
-    "2": {"name": "GAGES2 subset", "shortname":"gages2_subset", "color": "#b2e1d9"},
-    "3": {"name": "GAGES2 subset + attrs", "shortname":"gages2_subset_and_attrs", "color": "#80cdc1"},
-    "4": {"name": "GAGES2-Ref subset", "shortname":"gages2_ref_subset", "color": "#66a49a"}
+    "0": {"name": "All Caravan", "shortname":"baseline", "color": "#d3d3d3"},
+    "1": {"name": "CAMELS subset", "shortname":"camels_subset", "color": "#828a8e"},
+    "2": {"name": "GAGES2 subset", "shortname":"gages2_subset", "color": "#d6dce0"},
+    "3": {"name": "GAGES2 subset + attrs", "shortname":"gages2_subset_and_attrs", "color": "#c1cbd1"},
+    "4": {"name": "GAGES2-Ref subset", "shortname":"gages2_ref_subset", "color": "#a8b2b7"}
 }

@@ -7,7 +7,6 @@ import json
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import yaml
-import yaml
 
 # %%
 ########################## CHANGE HERE #################
@@ -15,37 +14,6 @@ output_date = r"output_raraki_20250517"
 experiment_name = "subset"
 ########################################################
 
-# # GROSSARY OF EXPERIMENTS
-
-# ############# GAGES2 VS CARAVAN EXPERIMENT #################
-# output_date = r"output_raraki_20250220"
-# experiment_name = "gages2exp"
-# ########################################################
-
-# ############# GAGES2 VS CARAVAN EXPERIMENT #################
-# output_date = r"output_raraki_20250220"
-# experiment_name = "gages2exp"
-# ########################################################
-
-# ############# CARAVAN EQUIV RECALC & NORTHNESS and EASTNESS EXP #################
-# output_date = r"output_raraki_20250311"
-# experiment_name = "20250311"
-# ################################################################################
-
-# ########### EXTRA ATTRIBUTES FROM PRANCEVIC ###########
-# output_date = r"output_raraki_20250223"
-# experiment_name = "extraattrs"
-# ########################################################
-
-# ########## EXTRA ATTRIBUTES FROM HAMMOND CLIMATE ##############
-# output_date = r"output_raraki_20250307"
-# experiment_name = "climattrs"
-# ########################################################
-
-# ########## SUBSETS ##############
-# output_date = r"output_raraki_20250517"
-# experiment_name = "subset"
-########################################################
 # ____________________________________________________________________________________
 # Config
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\random_forest\visualize")
@@ -80,7 +48,9 @@ def read_json_file(file_path):
     return data
 
 
-exp_info = read_json_file(f"plot_config_expcolors_{experiment_name}.json")
+exp_info = read_json_file(
+    r"C:\Users\flipl\dev\signature-prediction\plotting\HydroML\plot_config_expcolors_subset.json"
+)
 exp_info = {int(k): v for k, v in exp_info.items()}
 exp_types = exp_info.keys()
 
@@ -90,9 +60,8 @@ sigs_config = pd.read_csv(
     r"C:\Users\flipl\dev\signature-prediction\signatures\visualize\plot_sigs_config.csv"
 )
 sigs = sigs_config.column_name
-
+exp_info
 # %%
-
 ######################################################
 # R-squares comparison by region
 #####################################################
