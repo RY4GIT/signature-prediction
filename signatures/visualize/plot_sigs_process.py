@@ -20,11 +20,24 @@ import cartopy.feature as cfeature
 # ____________________________________________________________________________________
 # Config
 print("Loading config...")
+
+# Current directory
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\signatures\visualize")
-out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20250223_withWu"
+
+# Google Drive directory
+gdrive_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
+
+# Local directory (For Caravan data)
+local_dir = r"D:\data"
+
+# Output directory (For signatures results, change name to match the current run dates)
+out_dir = os.path.join(gdrive_dir, "out", "signatures", "caravan_us_20250525")
+
+# Plotting config
 plot_sigs_config_path = "plot_sigs_config.csv"
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
+# Figure directory
 fig_dir = os.path.join(out_dir, "figs")
 if not os.path.exists(fig_dir):
     os.makedirs(fig_dir)
@@ -35,26 +48,16 @@ if not os.path.exists(fig_dir):
 # Load overlay layer for plotting
 print("Loading overlay layer...")
 _ecoregion_overlay = gpd.read_file(
-    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\EcoRegions\NA_CEC_Eco_Level2.shp"
+    os.path.join(gdrive_dir, "data", "EcoRegions", "NA_CEC_Eco_Level2.shp")
 )
 _ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
 ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
 # %%
 # ____________________________________________________________________________________
 # Load data
-
-# # %% If have run the postprocess script already:
-# df_sigs = gpd.read_file(
-#     os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_area_postprocess.gpkg")
-# )
-# df_sigs.head()
-# # %%
-# df_sigs.set_index("gauge_id", inplace=True)
-
-# %% If haven't run the postprocess script yet:
 print("Loading attributes data...")
 
-caravan_attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\attributes"
+caravan_attrs_dir = os.path.join(local_dir, "Caravan1.5", "attributes")
 attrs_camels_file = os.path.join(
     caravan_attrs_dir,
     "camels",
@@ -69,17 +72,26 @@ attrs_camels = pd.read_csv(attrs_camels_file, index_col="gauge_id")
 attrs_hysets = pd.read_csv(attrs_hysets_file, index_col="gauge_id")
 attrs_caravan = pd.concat([attrs_camels, attrs_hysets])
 
-eco_camels_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\EcoRegions\Ecoregion_camels.csv"
-eco_hysets_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\EcoRegions\Ecoregion_hysets.csv"
+eco_camels_file = os.path.join(
+    gdrive_dir, "data", "derived_attrs", "EcoRegions", "Ecoregion_camels.csv"
+)
+eco_hysets_file = os.path.join(
+    gdrive_dir, "data", "derived_attrs", "EcoRegions", "Ecoregion_hysets.csv"
+)
 eco_camels = pd.read_csv(eco_camels_file, index_col="gauge_id")
 eco_hysets = pd.read_csv(eco_hysets_file, index_col="gauge_id")
 eco_caravan = pd.concat([eco_camels, eco_hysets])
 
 # %%
 print("Loading watershed shapefiles...")
-wspolygon_camels_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\shapefiles\camels\camels_basin_shapes.shp"
+# cARAVAN 1.5 shapefile is somehow corrupted, so use Caravan 1.4
+wspolygon_camels_file = os.path.join(
+    local_dir, "Caravan1.4", "shapefiles", "camels", "camels_basin_shapes.shp"
+)
 wspolygon_camels = gpd.read_file(wspolygon_camels_file).to_crs(epsg=4326)
-wspolygon_hysets_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\shapefiles\hysets\hysets_basin_shapes.shp"
+wspolygon_hysets_file = os.path.join(
+    local_dir, "Caravan1.4", "shapefiles", "hysets", "hysets_basin_shapes.shp"
+)
 wspolygon_hysets = gpd.read_file(wspolygon_hysets_file).to_crs(epsg=4326)
 wspolygon = pd.concat([wspolygon_camels, wspolygon_hysets], ignore_index=True)
 wspolygon.set_index("gauge_id", inplace=True)

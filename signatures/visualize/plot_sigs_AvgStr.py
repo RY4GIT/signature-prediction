@@ -21,7 +21,7 @@ import cartopy.feature as cfeature
 # Config
 print("Loading config...")
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\signatures\visualize")
-out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_camels_AvgStr_20250514"
+out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_camels_20250525"
 plot_sigs_config_path = "plot_sigs_config.csv"
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
@@ -42,7 +42,7 @@ ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
 # Load data
 print("Loading attributes data...")
 
-caravan_attrs_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\attributes"
+caravan_attrs_dir = r"D:\data\Caravan1.5\attributes"
 attrs_camels_file = os.path.join(
     caravan_attrs_dir,
     "camels",
@@ -65,9 +65,9 @@ eco_caravan = pd.concat([eco_camels, eco_hysets])
 
 # %%
 print("Loading watershed shapefiles...")
-wspolygon_camels_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\shapefiles\camels\camels_basin_shapes.shp"
+wspolygon_camels_file = r"D:\data\Caravan1.5\shapefiles\camels\camels_basin_shapes.shp"
 wspolygon_camels = gpd.read_file(wspolygon_camels_file).to_crs(epsg=4326)
-wspolygon_hysets_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\shapefiles\hysets\hysets_basin_shapes.shp"
+wspolygon_hysets_file = r"D:\data\Caravan1.4\shapefiles\hysets\hysets_basin_shapes.shp"
 wspolygon_hysets = gpd.read_file(wspolygon_hysets_file).to_crs(epsg=4326)
 wspolygon = pd.concat([wspolygon_camels, wspolygon_hysets], ignore_index=True)
 wspolygon.set_index("gauge_id", inplace=True)
@@ -77,7 +77,7 @@ wspolygon.set_index("gauge_id", inplace=True)
 #######################################################
 print("Loading signatures results file ...")
 _df_sigs = pd.read_csv(
-    os.path.join(out_dir, "out_AvgStr.csv"),
+    os.path.join(out_dir, "out_calc_ALL_custom.csv"),
     index_col="gauge_id",
 )
 _df_sigs = _df_sigs.join(attrs_caravan, how="left")

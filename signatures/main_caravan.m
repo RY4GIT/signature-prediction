@@ -1,5 +1,6 @@
 % Calculate signatures from Caravan dataset
 % Ryoko Araki (@ry4git), 2024
+% Current directly should be ..\signature-prediction\signatures\.
 
 % Cleaning
 close all
@@ -20,7 +21,7 @@ sig_cat = 'calc_All_custom';
 % 'calc_Addor', 'calc_Sawicz', 'calc_Euser',  'calc_BasicSet'
 
 % Choose which Caravan gaguges to run: 'hysets' or 'camels'
-caravan_data = 'camels';
+caravan_data = 'hysets';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -31,15 +32,15 @@ TOSSHDir = 'TOSSH\TOSSH_code';
 addpath(genpath(fullfile(baseDir, TOSSHDir)));
 
 % Define directories and file type
-home_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki'; % 'G:\Araki' on lab computer
-data_dir = fullfile(home_dir, 'data');
-caravan_dir = 'Caravan1.4';
+cloud_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki'; % 'G:\Araki' on lab computer
+data_dir = 'D:\data';
+caravan_dir = 'Caravan1.5';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
 
 currentDate = datestr(now, 'yyyymmdd');
-out_dir = fullfile(home_dir, 'out', 'signatures', ['caravan_', caravan_data, '_', currentDate]);
+out_dir = fullfile(cloud_dir, 'out', 'signatures', ['caravan_', caravan_data, '_', currentDate]);
 out_filename = ['out_' sig_cat '.csv'];
 if ~exist(out_dir, 'dir')
     mkdir(out_dir);  % This will create the directory and any necessary subdirectories
@@ -106,7 +107,7 @@ parfor idx = 1:numGauges
         Q = num2cell(data.streamflow,1); %mm/day
         t = num2cell(data.date,1);
         P = num2cell(data.total_precipitation_sum,1);
-        PET = num2cell(data.potential_evaporation_sum,1);
+        PET = num2cell(data.potential_evaporation_sum_FAO_PENMAN_MONTEITH,1);
         T = num2cell(data.temperature_2m_mean,1);
         
         %___________________________________________________________________________________
