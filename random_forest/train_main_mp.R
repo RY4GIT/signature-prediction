@@ -131,7 +131,7 @@ if (config$filter_by_cluster$run) {
 print("initiating parallel pool")
 
 # Set up parallel backend for caret
-num_cores <- min(4, detectCores())
+num_cores <- min(config$parallel$num_cores, detectCores())
 cl <- makeCluster(num_cores)
 registerDoParallel(cl)
 print(paste("Using", num_cores, "cores for parallel processing"))
@@ -389,7 +389,7 @@ for (sig in config$sigs_predict) {
     out_shap_values <- shap_result
 
     # Save the trained model for this signature
-    if (!config$save_models) {
+    if (config$save_models) {
       model_file_name <- file.path(out_path, paste0("model_", sig, ".rds"))
       saveRDS(forest, model_file_name)
       message(paste("Saved model for", sig, "to", model_file_name))
