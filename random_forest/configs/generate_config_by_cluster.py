@@ -14,29 +14,31 @@ os_type = "linux"  # "linux" or "win"
 # List of clusters
 clusters = [0, 1, 2, 3, 4, 5]
 
+config_out_dir = (
+    rf"C:\Users\flipl\dev\signature-prediction\random_forest\configs\{os_type}"
+)
+if not os.path.exists(config_out_dir):
+    os.makedirs(config_out_dir)
+
 # %%
-# File path
+# File path that goes into the config
 if os_type == "win":
     home_dir = "G:/Shared drives/Signatures -- large scale/baseflow"
     rf_out_dir = "RAraki/out/rf"
-    sigs_file = "RAraki/out/signatures/caravan_us_20240609_tunedparams/out_calc_All_custom_filt.csv"
-    attrs_file = "AHolt/data/derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv"
-
-    config_out_dir = (
-        rf"C:\Users\flipl\dev\signature-prediction\random_forest\configs\{os_type}"
-    )
+    sigs_file = "RAraki/out/signatures/caravan_us_20250525/out_calc_All_custom_filt_qc_snow_area.csv"
+    attrs_file = "AHolt/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
 
 elif os_type == "linux":
     home_dir = "/home/raraki/data/signature-prediction"
     rf_out_dir = "/out/rf"
-    sigs_file = "/signatures/caravan_us_20250223_withWu/out_calc_All_custom_filt_qc_snow_area_gages2subset.csv"
-    attrs_file = "/derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
-
-    config_out_dir = (
-        rf"C:\Users\flipl\dev\signature-prediction\random_forest\configs\{os_type}"
+    sigs_file = (
+        "/signatures/caravan_us_20250525/out_calc_All_custom_filt_qc_snow_area.csv"
     )
-if not os.path.exists(config_out_dir):
-    os.makedirs(config_out_dir)
+    attrs_file = (
+        "/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
+    )
+
+
 # %%
 # ________________________________________________________________________________________________________
 # Template YAML content
@@ -69,7 +71,8 @@ template_yaml = {
     },
     "experiment_name": "cluster_template",
     "filter_by_cluster": {"run": True, "name": "cluster_template"},
-    "settings": {"seed": 0, "ntree": 500, "num_folds": 10, "eval_metric": "RMSE"},
+    "settings": {"seed": 0, "ntree": 500, "num_folds": 10, "eval_metric": "MSE"},
+    "save_models": True,
     "parallel": {"nCores": 16},
     "sigs_predict": [
         "TotalRR",
@@ -100,7 +103,7 @@ template_yaml = {
     "attrs_of_interest": [
         "ELEV_MEAN_M_BASIN",
         "DRAIN_SQKM",
-        "SLOPE_PCT",
+        "SLOPE_DEG_x10",
         "FORESTNLCD06",
         "CROPSNLCD06",
         "PASTURENLCD06",
@@ -110,17 +113,17 @@ template_yaml = {
         "isowet_areafrac",
         "CLAYAVE",
         "SILTAVE",
-        "OMAVE",
+        "soc_th_sav",
         "kar_pc_sse",
         "geol_weighted_ave_age_ma",
         "PDEN_2000_BLOCK",
         "gdp_ud_sav",
-        "FRAGUN_BASIN",
+        "hdi_ix_sav",
         "P_mm_day",
         "PET_mm_day",
         "ARIDITY_GAGES2",
-        "SNOW_PCT_PRECIP",
-        "PRECIP_SEAS_IND",
+        "SNOW_FRAC_PRECIP",
+        "seasonality_FAO_PM",
         "high_prec_freq",
         "low_prec_freq",
         "low_prec_dur",
@@ -145,6 +148,7 @@ def generate_yaml_files(clusters, template_yaml, out_dir):
 
         yaml_content["experiment_name"] = f"cluster_{cluster_num}"
         yaml_content["filter_by_cluster"]["name"] = cluster_num
+        yaml_content["save_models"] = False
 
         # Define the output filename
         output_filename = f"config_cluster_{cluster_num}.yml"
@@ -162,12 +166,12 @@ generate_yaml_files(clusters, template_yaml, config_out_dir)
 yaml_content = template_yaml.copy()
 
 # Modify the experiment_name and filter_by_cluster$name
-yaml_content["experiment_name"] = f"cluster_all"
+yaml_content["experiment_name"] = "cluster_all"
 yaml_content["filter_by_cluster"]["run"] = False
 yaml_content["filter_by_cluster"]["name"] = "NA"
 
 # Define the output filename
-output_filename = f"config_cluster_all.yml"
+output_filename = "config_cluster_all.yml"
 
 # Write the YAML content to the file
 with open(os.path.join(config_out_dir, output_filename), "w") as file:

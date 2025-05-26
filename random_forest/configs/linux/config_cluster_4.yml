@@ -2,10 +2,10 @@ paths:
   home_dir: /home/raraki/data/signature-prediction
   out_dir: /out/rf
   train:
-    signatures: /signatures/caravan_us_20250223_withWu/out_calc_All_custom_filt_qc_snow_area_gages2subset.csv
-    attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv
+    signatures: /signatures/caravan_us_20250525/out_calc_All_custom_filt_qc_snow_area.csv
+    attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
   test:
-    attributes: /derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv
+    attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
 experiment_name: cluster_4
 filter_by_cluster:
   run: true
@@ -14,7 +14,8 @@ settings:
   seed: 0
   ntree: 500
   num_folds: 10
-  eval_metric: RMSE
+  eval_metric: MSE
+save_models: false
 parallel:
   nCores: 16
 sigs_predict:
@@ -45,7 +46,7 @@ sigs_predict:
 attrs_of_interest:
 - ELEV_MEAN_M_BASIN
 - DRAIN_SQKM
-- SLOPE_PCT
+- SLOPE_DEG_x10
 - FORESTNLCD06
 - CROPSNLCD06
 - PASTURENLCD06
@@ -55,17 +56,17 @@ attrs_of_interest:
 - isowet_areafrac
 - CLAYAVE
 - SILTAVE
-- OMAVE
+- soc_th_sav
 - kar_pc_sse
 - geol_weighted_ave_age_ma
 - PDEN_2000_BLOCK
 - gdp_ud_sav
-- FRAGUN_BASIN
+- hdi_ix_sav
 - P_mm_day
 - PET_mm_day
 - ARIDITY_GAGES2
-- SNOW_PCT_PRECIP
-- PRECIP_SEAS_IND
+- SNOW_FRAC_PRECIP
+- seasonality_FAO_PM
 - high_prec_freq
 - low_prec_freq
 - low_prec_dur

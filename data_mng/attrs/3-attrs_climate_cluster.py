@@ -23,21 +23,18 @@ import cartopy.feature as cfeature
 # LOAD ATTRIBUTES
 #
 ##############################################################################
-file_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_and_gages2+climate+morph+padcat.csv"
+file_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara1p4_gages2_etc_20250311.csv"
 num_clusters = 6
 seed = 0
+
 
 selected_columns = [
     "P_mm_day",
     "T_AVG_BASIN",
-    # "T_MAX_BASIN", # Maybe redundant pretty similar to T_AVG_BASIN
-    # "T_MIN_BASIN", # Maybe redundant pretty similar to T_AVG_BASIN
     "PET_mm_day",
     "RH_BASIN",
     "ARIDITY_GAGES2",
     "moisture_index",  # ? Sometimes shows different patterns than ARIDITY_GAGES2
-    # "T_MAXSTD_BASIN", # Redundant, we are not looking at the inter-annual change
-    # "T_MINSTD_BASIN", # Redundant, we are not looking at the inter-annual change
     "SNOW_PCT_PRECIP",
     "PRECIP_SEAS_IND",
     "input_seasonality",
@@ -50,13 +47,14 @@ selected_columns = [
     "low_prec_dur",
     "FST32F_BASIN",
     "LST32F_BASIN",
-    # "WDMAX_BASIN", # Redundant, we are not looking at the inter-annual change
-    # "WDMIN_BASIN", # Redundant, we are not looking at the inter-annual change
-    # "PETdivP", # Use ARIDITY_GAGES2 instead (used in the main experiment)
     "gauge_lat",
     "gauge_lon",
 ]
-
+# "WDMAX_BASIN", # Redundant, we are not looking at the inter-annual change
+# "WDMIN_BASIN", # Redundant, we are not looking at the inter-annual change
+# "PETdivP", # Use ARIDITY_GAGES2 instead (used in the main experiment)
+# "T_MAXSTD_BASIN", # Redundant, we are not looking at the inter-annual change
+# "T_MINSTD_BASIN", # Redundant, we are not looking at the inter-annual change
 custom_colors = [
     "#a6d854",
     "#66c2a5",
@@ -347,7 +345,7 @@ data_output = data.merge(
     data_filtered[["cluster"]], left_index=True, right_index=True, how="left"
 )
 
-cluster_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
+cluster_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara1p4_gages2_etc_20250311+cluster.csv"
 data_output.to_csv(
     cluster_file,
     index=True,
@@ -358,7 +356,32 @@ data_output[["CLASS", "AGGECOREGION"]].groupby("AGGECOREGION").count().to_clipbo
 # %% Check the number of gauges in each cluster
 data_output[["CLASS", "cluster"]].groupby("cluster").count().to_clipboard()
 
+# %% #########################################################################
+#
+# Need to replace the cluster column in Caravan 1.5 attributes with this clustering
+#
+##############################################################################
+cara15_attrs_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_gages2_etc_20250517.csv"
+cara15_attrs = pd.read_csv(cara15_attrs_file, index_col="gauge_id").drop(
+    columns=["cluster"]
+)
+cara15_attrs.head()
 
+
+cara14_attrs = data_output[["cluster"]].copy()
+cara14_attrs.head()
+
+
+cara15_attrs = cara15_attrs.join(cara14_attrs, how="left")
+print(len(cara15_attrs))
+print((~pd.isna(cara15_attrs["cluster"])).sum())
+print((~pd.isna(cara14_attrs)).sum())
+print((~pd.isna(cara15_attrs["DRAIN_SQKM"])).sum())
+# %%
+cara15_attrs.to_csv(
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_gages2_etc_20250517+cluster.csv",
+    index=True,
+)
 # %% #########################################################################
 #
 # POST PROTTING WITH ECOREGIONS (CAN RUN STANDALONE)

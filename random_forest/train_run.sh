@@ -4,7 +4,17 @@
 
 # cd random_forest/
 # ./train_run.sh
-# parallel --jobs 2 Rscript train_main_serial.R ::: $config_dir/config_ecoregion_{5..6}.yml
+
+# To change the permission
+# chmod +x train_run.sh
+
+# To run in the background, use 
+# nohup ./train_run.sh > experiment.log 2>&1 &
+
+# To stop the background process, use
+# pkill -f "train_run.sh"
+# Or, 
+# kill {PID}
 
 project_dir="/home/raraki/signature-prediction/random_forest"
 config_dir="$project_dir/configs/linux"
@@ -26,7 +36,10 @@ for i in 0 1 2 3 4 5; do
 done
 
 # Define configs as space-separated string instead of array for better sh compatibility
-configs="config_cluster_all config_20250517_baseline config_20250517_camels config_20250517_gages2_attrs config_20250517_gages2_ref config_20250517_gages2"
+configs="config_cluster_all"
+
+# For non-clustering experiments
+# "config_20250517_baseline config_20250517_camels config_20250517_gages2_attrs config_20250517_gages2_ref config_20250517_gages2"
 
 # Loop through configs
 for config in $configs; do
