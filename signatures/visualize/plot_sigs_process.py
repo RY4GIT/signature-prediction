@@ -493,15 +493,15 @@ dir_label_rev = ["high", "", "", "low"]
 # CHANGE HERE ################
 
 processes = [
-    # "Baseflow",
-    # "Water loss to deep GW or ET",
-    # "Storage capacity and retention",
-    # "Infiltration Excess Overlandflow",
-    # "Saturation Excess Overlandflow",
-    # "ET impacts on storage and baseflow",
-    # "IE vs SE significance",
-    # "IE vs SE (SSF2 & GW) significance",
-    # "SSF1 vs SSF2 & GW significance",
+    "Baseflow",
+    "Water loss to deep GW or ET",
+    "Storage capacity and retention",
+    "Infiltration Excess Overlandflow",
+    "Saturation Excess Overlandflow",
+    "ET impacts on storage and baseflow",
+    "IE vs SE significance",
+    "IE vs SE (SSF2 & GW) significance",
+    "SSF1 vs SSF2 & GW significance",
     "Overland Flow",
 ]
 
@@ -610,7 +610,7 @@ for process_name in tqdm(
         #     process_columns.column_name == "Recession_a_Seasonality"
         # ].squeeze()  # Y variable,
         sig2 = process_columns.loc[
-            process_columns.column_name == "RR_Seasonality"
+            process_columns.column_name == "Recession_a_Seasonality"
         ].squeeze()  # Y variable,
 
         sig1_label = labels_rev

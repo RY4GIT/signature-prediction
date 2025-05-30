@@ -10,7 +10,7 @@ import numpy as np
 
 # %%
 ########################## CHANGE HERE #################
-output_date = r"20250430"
+output_date = r"20250526"
 user_name = "raraki"
 # file_type = "png"  # or "pdf" if you prefer PDF output
 file_type = "pdf"
@@ -435,19 +435,19 @@ for cluster_num in clusters:
         df_imp, cluster_num=cluster_num, cluster_info=cluster_info
     )
 
-# %%
-# Main function to loop through cluster_nums
-for cluster_num in clusters:
-    print(f"Processing category plots for {cluster_num}...")
+# # %%
+# # Main function to loop through cluster_nums
+# for cluster_num in clusters:
+#     print(f"Processing category plots for {cluster_num}...")
 
-    df_imp = load_data_incRMSE(rf_dir, user_name, output_date, cluster_num, attrs_info)
-    plot_bar_plots_by_category(
-        df_imp,
-        cluster_num=cluster_num,
-        cluster_info=cluster_info,
-        top_n=10,
-        subset_top=True,
-    )
+#     df_imp = load_data_incRMSE(rf_dir, user_name, output_date, cluster_num, attrs_info)
+#     plot_bar_plots_by_category(
+#         df_imp,
+#         cluster_num=cluster_num,
+#         cluster_info=cluster_info,
+#         top_n=10,
+#         subset_top=True,
+#     )
 
 
 # %%
@@ -643,9 +643,9 @@ def plot_relative_category_importance(
 
 # Run the function
 plot_relative_category_importance(rf_dir, user_name, output_date, cluster_info)
-plot_relative_category_importance(
-    rf_dir, user_name, output_date, cluster_info, subset_top=True, top_n=10
-)
+# plot_relative_category_importance(
+#     rf_dir, user_name, output_date, cluster_info, subset_top=True, top_n=10
+# )
 
 
 # %%

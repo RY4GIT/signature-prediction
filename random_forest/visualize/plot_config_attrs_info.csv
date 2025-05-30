@@ -8,6 +8,7 @@ Topography,,DRAIN_SQKM,
 Topography,,beta_ave,
 Topography,,ASPECT_NORTHNESS,
 Topography,,ASPECT_EASTNESS,
+Topography,,SLOPE_DEG_x10,
 Land Cover,Forest cover extent ,for_pc_sse,% cover
 Land Cover,Cropland extent ,crp_pc_sse,% cover
 Land Cover,Pasture extent ,pst_pc_sse,% cover
@@ -30,11 +31,13 @@ Soils & Geology,Weighted average of geologic age (Annie's),geol_weighted_ave_age
 Soils & Geology,,SILTAVE,
 Soils & Geology,,CLAYAVE,
 Soils & Geology,,OMAVE,
+Soils & Geology,,soc_th_sav,
 Human alteration,Population density ,ppd_pk_sav,people per km²
 Human alteration,Gross domestic product ,gdp_ud_sav,USD ($)
 Human alteration,Human development index ,hdi_ix_sav,index value (x1000)
 Human alteration,,PDEN_2000_BLOCK,
 Human alteration,,FRAGUN_BASIN,
+Climate,,SNOW_FRAC_PRECIP,
 Climate,Mean daily precipitation,p_mean,mm/day
 Climate,Mean daily potential evaporation,pet_mean,mm/day
 Climate,"Aridity index, ratio of mean PET and mean precipitation",aridity,-
@@ -56,3 +59,4 @@ Climate,,SNOWICENLCD06,
 Climate,,PPTAVG_BASIN,
 Climate,,SNOW_PCT_PRECIP,
 Climate,,PRECIP_SEAS_IND,
+Climate,,seasonality_FAO_PM,

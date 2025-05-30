@@ -308,7 +308,7 @@ for (sig in config$sigs_predict) {
     }
     
     # Use the result if successful
-    forest <- forest_result  
+    forest <- forest_result
     print(forest)
     print(forest$finalModel)
 

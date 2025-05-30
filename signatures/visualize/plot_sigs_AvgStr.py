@@ -21,7 +21,7 @@ import cartopy.feature as cfeature
 # Config
 print("Loading config...")
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\signatures\visualize")
-out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_camels_20250525"
+out_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20250525"
 plot_sigs_config_path = "plot_sigs_config.csv"
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
@@ -77,9 +77,17 @@ wspolygon.set_index("gauge_id", inplace=True)
 #######################################################
 print("Loading signatures results file ...")
 _df_sigs = pd.read_csv(
-    os.path.join(out_dir, "out_calc_ALL_custom.csv"),
+    os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_area.csv"),
     index_col="gauge_id",
 )
+_df_sigs = _df_sigs.drop(
+    columns=["area", "country", "gauge_lat", "gauge_lon", "gauge_name"]
+)
+# _df_sigs = pd.read_csv(
+#     os.path.join(out_dir, "out_calc_All_custom"),
+#     index_col="gauge_id",
+# )
+
 _df_sigs = _df_sigs.join(attrs_caravan, how="left")
 df_sigs = _df_sigs.join(eco_caravan, how="left")
 
