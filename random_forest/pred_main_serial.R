@@ -75,6 +75,7 @@ print(config)
 # ___________________________________________________________________________
 # Load directory paths
 home_dir <- config$paths$home_dir
+# Output to the model directory
 out_path <- file.path(home_dir, config$paths$predict$model_dir)
 # Check if the output path exists
 if (!dir.exists(out_path)) {
@@ -159,7 +160,8 @@ output_filename <- paste0("predicted_signatures_", config$experiment_name, ".csv
 write.csv(all_sig_predictions, file.path(out_path, output_filename), row.names = FALSE)
 
 # Output the config file
-yaml::write_yaml(config, file.path(out_path, "config_pred.yaml"))
+out_config_filename <- paste0("config_pred_", config$experiment_name, ".yaml")
+yaml::write_yaml(config, file.path(out_path, out_config_filename))
 
 # Stop the timer
 end_time <- proc.time()

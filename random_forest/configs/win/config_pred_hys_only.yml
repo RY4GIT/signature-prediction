@@ -1,0 +1,65 @@
+paths:
+  home_dir: "G:/Shared drives/Signatures -- large scale/baseflow"
+  # On Google Drive: G:/Shared drives/Signatures -- large scale/baseflow
+  # On UCSB server: /home/raraki/data/signature-prediction
+  out_dir: "RAraki/out/rf"
+  # On Google Drive: RAraki/out/rf
+  # On UCSB server: /out/rf
+  predict:
+    model_dir: "RAraki/out/rf/output_raraki_20250526_cluster_all"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
+experiment_name: "pred_hys_only"
+parallel:
+  nCores: 16
+sigs_predict:
+- TotalRR
+- RR_Seasonality
+- EventRR
+- Recession_a_Seasonality
+- AverageStorage
+- RecessionParameters_b
+- RecessionParameters_T0
+- First_Recession_Slope
+- Mid_Recession_Slope
+- EventRR_TotalRR_ratio
+- VariabilityIndex
+- BFI
+- BaseflowRecessionK
+- IE_thresh_signif
+- SE_thresh_signif
+- Storage_thresh_signif
+- IE_thresh
+- SE_thresh
+- IE_effect
+- SE_effect
+- Storage_thresh
+- SE_slope
+- R_Pvol_RC
+- R_Pint_RC
+attrs_of_interest:
+- ELEV_MEAN_M_BASIN
+- DRAIN_SQKM
+- SLOPE_DEG_x10
+- FORESTNLCD06
+- CROPSNLCD06
+- PASTURENLCD06
+- PCT_IRRIG_AG
+- SNOWICENLCD06
+- PADCAT1_AND_2
+- isowet_areafrac
+- CLAYAVE
+- SILTAVE
+- soc_th_sav
+- kar_pc_sse
+- geol_weighted_ave_age_ma
+- PDEN_2000_BLOCK
+- gdp_ud_sav
+- hdi_ix_sav
+- P_mm_day
+- PET_mm_day
+- ARIDITY_GAGES2
+- SNOW_FRAC_PRECIP
+- seasonality_FAO_PM
+- high_prec_freq
+- low_prec_freq
+- low_prec_dur

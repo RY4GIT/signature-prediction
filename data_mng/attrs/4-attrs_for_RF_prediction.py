@@ -22,9 +22,8 @@ fig_dir = os.path.join(derived_attrs_dir, "figs")
 # Caravan(Camels) should have a good data quality (except area error), so no filtering was applied
 
 # Get the derived attributes of Caravan+GAGES2
-attrs_file = os.path.join(
-    derived_attrs_dir, "attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
-)
+file_name = "attrs_cara_gages2_etc_20250517+cluster"
+attrs_file = os.path.join(derived_attrs_dir, file_name + ".csv")
 attrs = pd.read_csv(attrs_file, index_col="gauge_id")
 
 # Get the attributes of Caravan
@@ -47,11 +46,44 @@ hys_qa_file = os.path.join(
 )
 qa_hys = pd.read_csv(hys_qa_file, index_col="gauge_id")
 
-print(f"There are {len(attrs)} Caravan+GAGES2 gauges")
+print(f"There are {len(attrs)} Caravan+GAGES2 attribute file")
 print(f"There are {len(cara_attrs)} Caravan gauges")
 print(f"There are {len(camels_attrs)} CAMELS gauges")
 print(f"There are {len(gages2_attrs)} GAGES2 gauges")
 print(f"There are {len(qa_hys)} HYSETS gauges")
+
+# %%
+length_before = len(attrs)
+attrs = attrs[attrs["country"] == "United States of America"]
+print(
+    f"There are {len(attrs)} Caravan+GAGES2 gauges after dropping {length_before - len(attrs)} gauges not in the US"
+)
+
+# Drop HYSETS gages with the same gauge_id as CAMELS
+camels_attrs["usgs_gauge_id"] = camels_attrs.index.str.split("_").str[1].str.zfill(8)
+attrs["usgs_gauge_id"] = attrs.index.str.split("_").str[1].str.zfill(8)
+attrs["hysets"] = attrs.index.str.startswith("hysets_")
+overlap_idx = (
+    attrs["usgs_gauge_id"].isin(camels_attrs["usgs_gauge_id"]) & attrs["hysets"]
+)
+attrs = attrs[~overlap_idx].copy()
+print(
+    f"There are {len(attrs)} Caravan+GAGES2 gauges after dropping {overlap_idx.sum()} ovrelapping CAMELS gauges"
+)
+
+# %%
+# Drop data that are not in the CONUS (use the gage_lat and gage_lon)
+conus_bbox = (20, -125, 50, -65)
+length_before = len(attrs)
+attrs = attrs[attrs["gauge_lat"] > conus_bbox[0]]
+attrs = attrs[attrs["gauge_lon"] > conus_bbox[1]]
+attrs = attrs[attrs["gauge_lat"] < conus_bbox[2]]
+attrs = attrs[attrs["gauge_lon"] < conus_bbox[3]]
+print(
+    f"There are {len(attrs)} Caravan+GAGES2 gauges after dropping {length_before - len(attrs)} gauges not in CONUS"
+)
+
+
 # %%
 ##################################################################
 # QUALITY CONTROL THRESHOLDS (same ones used in postprocess_caravan_sigs_for_RF.py)
@@ -83,8 +115,11 @@ qa_hys["qf_subset_nan_fraction"] = (
 # Combine all the criteria
 qa_hys["qf_overall"] = qa_hys["qf_subset_nan_fraction"] & qa_hys["qf_duration"]
 
+# Replace qf_overall to True where index starts from "camels_"
+qa_hys.loc[qa_hys.index.str.startswith("camels_"), "qf_overall"] = True
+
 print(
-    f"{qa_hys['qf_overall'].sum()} gauges passed the criteria ({qa_hys['qf_overall'].sum() / len(qa_hys['qf_overall']) * 100:.1f} percent)"
+    f"Out of {len(qa_hys)} HYSETS gauges, {qa_hys['qf_overall'].sum()} passed the criteria ({qa_hys['qf_overall'].sum() / len(qa_hys['qf_overall']) * 100:.1f} percent)"
 )
 print(
     f"There are {len(qa_hys[qa_hys['qf_overall'] == False])} gauges ({len(qa_hys[qa_hys['qf_overall'] == False]) / len(qa_hys) * 100:.1f} percent) that were not predicted because of the bad data quality"
@@ -93,66 +128,53 @@ print(
 
 # %%  Join the attributes with the quality control statistics
 attrs = attrs.join(qa_hys, how="left", rsuffix="_qa")
-
+attrs["area_err"] = abs((attrs["area"] - attrs["DRAIN_SQKM"]) / attrs["DRAIN_SQKM"])
 print(len(attrs))
 
 # Get the gauge_id of the gauges that were not predicted because of the bad data quality
-hys_gauges_not_pred = attrs[attrs["qf_overall"] == False]
+hys_gauges_not_pred = attrs[
+    (attrs["qf_overall"] == False) | (attrs["area_err"] > area_err_thresh)
+].copy()
 
 print(
-    f"There are {len(hys_gauges_not_pred)} gauges that were not predicted because of the bad data quality"
+    f"There are {len(hys_gauges_not_pred)} gauges that were not predicted because of the bad data quality + bad area error"
 )
-
-# %% Make sure hys_gauges_not_pred do not include any gauge_id that is in camels_attrs
-# Remove any gauge_id from hys_gauges_not_pred that exists in camels_attrs
-hys_gauges_not_pred = hys_gauges_not_pred[
-    ~hys_gauges_not_pred.index.isin(camels_attrs.index)
-]
-
-
-# Count gauges removed in each filtering step
-n_camels_removed = len(
-    hys_gauges_not_pred[hys_gauges_not_pred.index.isin(camels_attrs.index)]
-)
-
-n_remaining = len(hys_gauges_not_pred)
-
 print(
-    f"Summary of gauge filtering:"
-    f"\n- Removed {n_camels_removed} CAMELS gauges"
-    f"\n- {n_remaining} gauges remain that were not predicted due to bad data quality"
+    f"because of bad quality: {len(hys_gauges_not_pred[hys_gauges_not_pred['qf_overall'] == False])}"
+)
+print(
+    f"because of area error: {len(hys_gauges_not_pred[hys_gauges_not_pred['area_err'] > area_err_thresh])}"
 )
 
 # %% ######################################################
-# (A) Get the subset of Caravan(HYSETS) + GAGES2 overlapping gauges
+# (A) Get the subset of Caravan + GAGES2 overlapping gauges
 # that were not predicted because of the bad data quality
 ###########################################################
 
-# Get the hys_gauges_not_pred that are overlapping with GAGES2
+# Get the hys_gauges_not_pred that ARE overlapping with GAGES2
 hys_gages_not_pred_in_gages2 = hys_gauges_not_pred[
     ~hys_gauges_not_pred["DRAIN_SQKM"].isna()
 ]
-# Make sure the area error is not too high
-hys_gages_not_pred_in_gages2["area_err"] = abs(
-    (hys_gages_not_pred_in_gages2["area"] - hys_gages_not_pred_in_gages2["DRAIN_SQKM"])
-    / hys_gages_not_pred_in_gages2["DRAIN_SQKM"]
-)
-hys_gages_not_pred_in_gages2 = hys_gages_not_pred_in_gages2[
-    (hys_gages_not_pred_in_gages2["area_err"] < area_err_thresh)
-]
-n_area_err_removed = len(
-    hys_gages_not_pred_in_gages2[
-        hys_gages_not_pred_in_gages2["area_err"] > area_err_thresh
-    ]
-)
-print(f"Out of {len(hys_gauges_not_pred)} data with bad quality, ")
+
+# print(f"Out of {len(hys_gauges_not_pred)} data with bad quality, ")
+
+# # Make sure the area error is not too high
+# n_area_err_removed = len(
+#     hys_gages_not_pred_in_gages2[
+#         hys_gages_not_pred_in_gages2["area_err"] > area_err_thresh
+#     ]
+# )
+# hys_gages_not_pred_in_gages2 = hys_gages_not_pred_in_gages2[
+#     (hys_gages_not_pred_in_gages2["area_err"] < area_err_thresh)
+# ]
+
 print(
     f"There are {len(hys_gages_not_pred_in_gages2)} gauges that were not predicted because of bad data quality but overlapping with GAGES2"
 )
-print(f"- Removed {n_area_err_removed} gauges with area error > {area_err_thresh}")
+# print(f"- Removed {n_area_err_removed} gauges with area error > {area_err_thresh}")
 
 hys_gages_not_pred_in_gages2.to_csv(
-    os.path.join(out_dir, "attrs_for_RF_pred_baddata_hys_gages2.csv")
+    os.path.join(out_dir, file_name + "_forRF_hys2_gg2_baddata.csv")
 )
 # %%
 # ######################################################
@@ -166,12 +188,61 @@ hys_gages_not_pred_not_in_gages2 = hys_gauges_not_pred[
 ]
 
 print(
-    f"There are {len(hys_gages_not_pred_not_in_gages2)} gauges that were not predicted because of bad data quality but overlapping with GAGES2"
+    f"There are {len(hys_gages_not_pred_not_in_gages2)} gauges that were not predicted because of bad data quality and not overlapping with GAGES2"
 )
 hys_gages_not_pred_not_in_gages2.to_csv(
-    os.path.join(out_dir, "attrs_for_RF_pred_baddata_hys_not_gages2.csv")
+    os.path.join(out_dir, file_name + "_forRF_hys_only.csv")
 )
 
+# %% ######################################################
+# Check the count of predicted gauges
+# ######################################################
+
+attrs_goodq = attrs[(attrs["qf_overall"] == True) | (attrs["qf_overall"].isna())]
+attrs_goodq = attrs_goodq[
+    (attrs_goodq["area_err"] < area_err_thresh) | (attrs_goodq["area_err"].isna())
+]
+# attrs_goodq = attrs_goodq[attrs_goodq["DRAIN_SQKM"].notna()]
+print(f"There are {len(attrs_goodq)} gauges that have good quality")
+
+attrs_goodq_gg2 = attrs_goodq[attrs_goodq["DRAIN_SQKM"].notna()]
+print(
+    f"There are {len(attrs_goodq_gg2)} gauges that have good quality and are in GAGES2"
+)
+
+attrs_goodq_hys = attrs_goodq[~attrs_goodq.index.isin(attrs_goodq_gg2.index)]
+print(
+    f"There are {len(attrs_goodq_hys)} gauges that have good quality and are only in Caravan"
+)
+
+# %%
+sig_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_us_20250525\out_calc_All_custom_filt_qc_snow_area.csv"
+sig = pd.read_csv(sig_file)
+print(f"There are {len(sig)} Caravan gages in the signature file")
+
+# %%
+# What are the differences between the predicted and the signature file?
+gages_predicted_not_in_sig = attrs_goodq[~attrs_goodq.index.isin(sig["gauge_id"])]
+print(
+    f"There are {len(gages_predicted_not_in_sig)} gages that were deemed good quality but not in the signature file"
+)
+gages_predicted_not_in_sig
+# %%%
+sigs_not_in_pred = sig[~sig["gauge_id"].isin(attrs_goodq.index)]
+print(
+    f"There are {len(sigs_not_in_pred)} gages that were in the signature file but not deemed good quality"
+)  # Likley they are GAGES2
+sigs_not_in_pred
+
+
+# %%
+
+# %%
+# ######################################################
+# (C) the subset of GAGES2 gages, because there were no Caravan gages
+# ######################################################
+
+attrs_predicted
 # %% ######################################################
 # Check some Caravan-GAGES2 equivalent attributes
 # ######################################################
@@ -180,11 +251,11 @@ hys_gages_not_pred_not_in_gages2.to_csv(
 # Create a list of all attribute pairs to plot
 attr_pairs = [
     ("slp_dg_sav", "SLOPE_PCT", "Slope"),
-    ("soc_th_sav", "OMAVE", "Soil organic matter"),
-    ("hdi_ix_sav", "FRAGUN_BASIN", "Development index"),
+    # ("soc_th_sav", "OMAVE", "Soil organic matter"),
+    # ("hdi_ix_sav", "FRAGUN_BASIN", "Development index"),
     ("pet_mean", "PET_mm_day", "PET"),
     ("aridity", "ARIDITY_GAGES2", "Aridity"),
-    ("seasonality", "PRECIP_SEAS_IND", "Seasonality"),
+    # ("seasonality", "PRECIP_SEAS_IND", "Seasonality"),
     ("area", "DRAIN_SQKM", "Area"),
     ("ele_mt_sav", "ELEV_MEAN_M_BASIN", "Elevation"),
     ("for_pc_sse", "FORESTNLCD06", "Forest cover"),
@@ -261,8 +332,6 @@ for i in range(len(attr_pairs), len(axs)):
 
 plt.tight_layout()
 fig.savefig(os.path.join(fig_dir, "all_attrs_comparison.png"))
-
-# %%
 
 
 # %%
