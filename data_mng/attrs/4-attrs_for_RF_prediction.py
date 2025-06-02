@@ -80,7 +80,7 @@ attrs = attrs[attrs["gauge_lon"] > conus_bbox[1]]
 attrs = attrs[attrs["gauge_lat"] < conus_bbox[2]]
 attrs = attrs[attrs["gauge_lon"] < conus_bbox[3]]
 print(
-    f"There are {len(attrs)} Caravan+GAGES2 gauges after dropping {length_before - len(attrs)} gauges not in CONUS"
+    f"There are {len(attrs)} Caravan+GAGES2 gauges after dropping {length_before - len(attrs)} gauges not in CONUS based on lat/lon"
 )
 
 
@@ -118,12 +118,12 @@ qa_hys["qf_overall"] = qa_hys["qf_subset_nan_fraction"] & qa_hys["qf_duration"]
 # Replace qf_overall to True where index starts from "camels_"
 qa_hys.loc[qa_hys.index.str.startswith("camels_"), "qf_overall"] = True
 
-print(
-    f"Out of {len(qa_hys)} HYSETS gauges, {qa_hys['qf_overall'].sum()} passed the criteria ({qa_hys['qf_overall'].sum() / len(qa_hys['qf_overall']) * 100:.1f} percent)"
-)
-print(
-    f"There are {len(qa_hys[qa_hys['qf_overall'] == False])} gauges ({len(qa_hys[qa_hys['qf_overall'] == False]) / len(qa_hys) * 100:.1f} percent) that were not predicted because of the bad data quality"
-)
+# print(
+#     f"Out of {len(qa_hys)} Caravan(HYSETS+CAMELS) gauges, {qa_hys['qf_overall'].sum()} passed the criteria ({qa_hys['qf_overall'].sum() / len(qa_hys['qf_overall']) * 100:.1f} percent)"
+# )
+# print(
+#     f"There are {len(qa_hys[qa_hys['qf_overall'] == False])} gauges ({len(qa_hys[qa_hys['qf_overall'] == False]) / len(qa_hys) * 100:.1f} percent) that were not predicted because of the bad data quality"
+# )
 
 
 # %%  Join the attributes with the quality control statistics
@@ -136,6 +136,9 @@ hys_gauges_not_pred = attrs[
     (attrs["qf_overall"] == False) | (attrs["area_err"] > area_err_thresh)
 ].copy()
 
+print(
+    f"Out of {len(attrs)} Caravan(HYSETS+CAMELS) gauges, {len(attrs) - len(hys_gauges_not_pred)} passed the criteria ({qa_hys['qf_overall'].sum() / len(qa_hys['qf_overall']) * 100:.1f} percent)"
+)
 print(
     f"There are {len(hys_gauges_not_pred)} gauges that were not predicted because of the bad data quality + bad area error"
 )
@@ -240,9 +243,18 @@ sigs_not_in_pred
 # %%
 # ######################################################
 # (C) the subset of GAGES2 gages, because there were no Caravan gages
+# (count the numbers for now)
 # ######################################################
+gages2_attrs["usgs_gauge_id"] = gages2_attrs.index.str.zfill(8)
+gages2_attrs_not_in_cara = gages2_attrs[
+    ~gages2_attrs["usgs_gauge_id"].isin(attrs["usgs_gauge_id"])
+]
+print(f"There are {len(gages2_attrs_not_in_cara)} GAGES2 gages that are not in Caravan")
 
-attrs_predicted
+gages2_in_cara = gages2_attrs[
+    gages2_attrs["usgs_gauge_id"].isin(attrs["usgs_gauge_id"])
+]
+print(f"There are {len(gages2_in_cara)} GAGES2 gages that are in Caravan")
 # %% ######################################################
 # Check some Caravan-GAGES2 equivalent attributes
 # ######################################################
@@ -250,25 +262,25 @@ attrs_predicted
 
 # Create a list of all attribute pairs to plot
 attr_pairs = [
-    ("slp_dg_sav", "SLOPE_PCT", "Slope"),
-    # ("soc_th_sav", "OMAVE", "Soil organic matter"),
-    # ("hdi_ix_sav", "FRAGUN_BASIN", "Development index"),
-    ("pet_mean", "PET_mm_day", "PET"),
-    ("aridity", "ARIDITY_GAGES2", "Aridity"),
-    # ("seasonality", "PRECIP_SEAS_IND", "Seasonality"),
-    ("area", "DRAIN_SQKM", "Area"),
     ("ele_mt_sav", "ELEV_MEAN_M_BASIN", "Elevation"),
+    ("area", "DRAIN_SQKM", "Area"),
+    ("slp_dg_sav", "SLOPE_DEG_x10", "Slope"),
     ("for_pc_sse", "FORESTNLCD06", "Forest cover"),
     ("crp_pc_sse", "CROPSNLCD06", "Crop cover"),
     ("pst_pc_sse", "PASTURENLCD06", "Pasture"),
-    ("prm_pc_sse", "SNOWICENLCD06", "Permanent snow/ice"),
     ("ire_pc_sse", "PCT_IRRIG_AG", "Irrigation"),
+    ("prm_pc_sse", "SNOWICENLCD06", "Permanent snow/ice"),
     ("pac_pc_sse", "PADCAT1_AND_2", "Protected areas"),
     ("cly_pc_sav", "CLAYAVE", "Clay"),
     ("slt_pc_sav", "SILTAVE", "Silt"),
-    ("p_mean", "P_mm_day", "Precipitation"),
-    ("frac_snow", "SNOW_PCT_PRECIP", "Snow fraction"),
     ("ppd_pk_sav", "PDEN_2000_BLOCK", "Population density"),
+    ("p_mean", "P_mm_day", "Precipitation"),
+    ("pet_mean_FAO_PM", "PET_mm_day", "PET"),
+    ("aridity_FAO_PM", "ARIDITY_GAGES2", "Aridity"),
+    ("frac_snow", "SNOW_FRAC_PRECIP", "Snow fraction"),
+    # ("soc_th_sav", "OMAVE", "Soil organic matter"),
+    # ("hdi_ix_sav", "FRAGUN_BASIN", "Development index"),
+    # ("seasonality", "PRECIP_SEAS_IND", "Seasonality"),
 ]
 
 # Calculate number of rows and columns needed
@@ -285,24 +297,27 @@ for i, (cara_varname, gages2_varname, title) in enumerate(attr_pairs):
     cara_var = attrs[cara_varname]
     gages2_var = attrs[gages2_varname]
 
-    if gages2_varname == "SNOW_PCT_PRECIP":
-        gages2_var = gages2_var / 100
+    # if gages2_varname == "SNOW_PCT_PRECIP":
+    #     gages2_var = gages2_var / 100
 
-    if gages2_varname == "SLOPE_PCT":
-        # Convert slope percent to slope degree
-        # slope percent = rise/run * 100
-        # slope degree = arctan(rise/run)
-        # therefore: slope degree = arctan(slope_percent/100)
-        gages2_var = np.arctan(gages2_var / 100) * 180 / np.pi * 10
+    # if gages2_varname == "SLOPE_PCT":
+    #     # Convert slope percent to slope degree
+    #     # slope percent = rise/run * 100
+    #     # slope degree = arctan(rise/run)
+    #     # therefore: slope degree = arctan(slope_percent/100)
+    #     gages2_var = np.arctan(gages2_var / 100) * 180 / np.pi * 10
 
-        # In case of conversion from sgr_dk_sav (dm/km)to SLOPE_PCT
-        # gages2_var = gages2_var / 100 * 1000
-        # SLOPE_PCT / 100 (conversion factor to fraction) * 1000 (rise or drop per 1000m) ~ sgr_dk_sav
+    #     # In case of conversion from sgr_dk_sav (dm/km)to SLOPE_PCT
+    #     # gages2_var = gages2_var / 100 * 1000
+    #     # SLOPE_PCT / 100 (conversion factor to fraction) * 1000 (rise or drop per 1000m) ~ sgr_dk_sav
 
-    if gages2_varname == "OMAVE":
-        cara_var = cara_var * 10000000 / 1500 / (100 - 10) / 30
+    # if gages2_varname == "OMAVE":
+    #     cara_var = cara_var * 10000000 / 1500 / (100 - 10) / 30
 
     axs[i].scatter(cara_var, gages2_var, s=1, alpha=0.5)
+
+    nan_mask = ~np.isnan(cara_var) & ~np.isnan(gages2_var)
+    pearson_corr = np.corrcoef(cara_var[nan_mask], gages2_var[nan_mask])[0, 1]
 
     # Add 1:1 line
     lims = [
@@ -310,6 +325,9 @@ for i, (cara_varname, gages2_varname, title) in enumerate(attr_pairs):
         max(max(cara_var), max(gages2_var)),
     ]
     axs[i].plot(lims, lims, "k--", alpha=0.5, zorder=0)
+
+    axs[i].set_xlim(lims)
+    axs[i].set_ylim(lims)
 
     axs[i].set_title(title)
     axs[i].set_xlabel(f"{cara_varname}")
@@ -319,7 +337,7 @@ for i, (cara_varname, gages2_varname, title) in enumerate(attr_pairs):
     axs[i].text(
         0.05,
         0.95,
-        f"Caravan: {cara_var.median():.2f}\nGAGES2: {gages2_var.median():.2f}",
+        f"Caravan: {cara_var.median():.2f}\nGAGES2: {gages2_var.median():.2f}\n$R$: {pearson_corr:.2f}",
         transform=axs[i].transAxes,
         ha="left",
         va="top",
@@ -334,11 +352,24 @@ plt.tight_layout()
 fig.savefig(os.path.join(fig_dir, "all_attrs_comparison.png"))
 
 
-# %%
+# %% ###########################################################
+# (D) Need to replace the column name "area" with "DRAIN_SQKM"
+# Because the RF model only takes the column names trained for
+################################################################
 
+for i, (cara_varname, gages2_varname, title) in enumerate(attr_pairs):
+    # Drop the column GAGES2_varname from the hys_gages_not_pred_not_in_gages2
+    hys_gages_not_pred_not_in_gages2_psudo_name = hys_gages_not_pred_not_in_gages2.drop(
+        columns=[gages2_varname]
+    )
 
-# %%
+    # Replace the column name in cara_varname with gages2_varname
+    hys_gages_not_pred_not_in_gages2_psudo_name.rename(
+        columns={cara_varname: gages2_varname}, inplace=True
+    )
 
-# %%
+    print(f"Column name {cara_varname} is replaced with {gages2_varname}")
 
-# %%
+hys_gages_not_pred_not_in_gages2_psudo_name.to_csv(
+    os.path.join(out_dir, file_name + "_forRF_hys_only_psudo_name.csv")
+)
