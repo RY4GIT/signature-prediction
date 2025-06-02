@@ -174,7 +174,7 @@ hys_gages_not_pred_in_gages2 = hys_gauges_not_pred[
 print(
     f"There are {len(hys_gages_not_pred_in_gages2)} gauges that were not predicted because of bad data quality but overlapping with GAGES2"
 )
-# print(f"- Removed {n_area_err_removed} gauges with area error > {area_err_thresh}")
+# print(f"Removed {n_area_err_removed} gauges with area error > {area_err_thresh}")
 
 hys_gages_not_pred_in_gages2.to_csv(
     os.path.join(out_dir, file_name + "_forRF_hys2_gg2_baddata.csv")
@@ -312,7 +312,7 @@ for i, (cara_varname, gages2_varname, title) in enumerate(attr_pairs):
     #     # SLOPE_PCT / 100 (conversion factor to fraction) * 1000 (rise or drop per 1000m) ~ sgr_dk_sav
 
     # if gages2_varname == "OMAVE":
-    #     cara_var = cara_var * 10000000 / 1500 / (100 - 10) / 30
+    #     cara_var = cara_var * 10000000 / 1500 / (100 10) / 30
 
     axs[i].scatter(cara_var, gages2_var, s=1, alpha=0.5)
 
@@ -357,19 +357,56 @@ fig.savefig(os.path.join(fig_dir, "all_attrs_comparison.png"))
 # Because the RF model only takes the column names trained for
 ################################################################
 
+# Create a copy of the dataframe to avoid modifying the original
+hys_gages_not_pred_not_in_gages2_psudo_name = hys_gages_not_pred_not_in_gages2.copy()
+
 for i, (cara_varname, gages2_varname, title) in enumerate(attr_pairs):
-    # Drop the column GAGES2_varname from the hys_gages_not_pred_not_in_gages2
-    hys_gages_not_pred_not_in_gages2_psudo_name = hys_gages_not_pred_not_in_gages2.drop(
-        columns=[gages2_varname]
-    )
+    # Only drop gages2_varname if it exists in the dataframe
+    if gages2_varname in hys_gages_not_pred_not_in_gages2_psudo_name.columns:
+        hys_gages_not_pred_not_in_gages2_psudo_name = (
+            hys_gages_not_pred_not_in_gages2_psudo_name.drop(columns=[gages2_varname])
+        )
 
-    # Replace the column name in cara_varname with gages2_varname
-    hys_gages_not_pred_not_in_gages2_psudo_name.rename(
-        columns={cara_varname: gages2_varname}, inplace=True
-    )
+    # Only rename if cara_varname exists
+    if cara_varname in hys_gages_not_pred_not_in_gages2_psudo_name.columns:
+        hys_gages_not_pred_not_in_gages2_psudo_name.rename(
+            columns={cara_varname: gages2_varname}, inplace=True
+        )
+        print(f"Column name {cara_varname} is replaced with {gages2_varname}")
+    else:
+        print(f"Warning: Column {cara_varname} not found in dataframe")
 
-    print(f"Column name {cara_varname} is replaced with {gages2_varname}")
 
-hys_gages_not_pred_not_in_gages2_psudo_name.to_csv(
+selected_attrs = [
+    "ELEV_MEAN_M_BASIN",
+    "DRAIN_SQKM",
+    "SLOPE_DEG_x10",
+    "FORESTNLCD06",
+    "CROPSNLCD06",
+    "PASTURENLCD06",
+    "PCT_IRRIG_AG",
+    "SNOWICENLCD06",
+    "PADCAT1_AND_2",
+    "isowet_areafrac",
+    "CLAYAVE",
+    "SILTAVE",
+    "soc_th_sav",
+    "kar_pc_sse",
+    "geol_weighted_ave_age_ma",
+    "PDEN_2000_BLOCK",
+    "gdp_ud_sav",
+    "hdi_ix_sav",
+    "P_mm_day",
+    "PET_mm_day",
+    "ARIDITY_GAGES2",
+    "SNOW_FRAC_PRECIP",
+    "seasonality_FAO_PM",
+    "high_prec_freq",
+    "low_prec_freq",
+    "low_prec_dur",
+]
+hys_gages_not_pred_not_in_gages2_psudo_name[selected_attrs].to_csv(
     os.path.join(out_dir, file_name + "_forRF_hys_only_psudo_name.csv")
 )
+
+# %%

@@ -45,17 +45,17 @@ start_time <- proc.time()
 # ___________________________________________________________________________
 # (1) Load configuration from a file path
 # Set the configuration file path directly
-config_file <- "./random_forest/configs/win/config_test_pred.yml"
+# config_file <- "./random_forest/configs/win/config_test_pred.yml"
 
-# Check if the file exists to avoid runtime errors
-if (!file.exists(config_file)) {
-  stop("Configuration file not found: ", config_file)
-}
+# # Check if the file exists to avoid runtime errors
+# if (!file.exists(config_file)) {
+#   stop("Configuration file not found: ", config_file)
+# }
 
 # ___________________________________________________________________________
 # (2) Load configuration as an argument
-# args <- commandArgs(trailingOnly = TRUE)
-# config_file <- args[1]
+args <- commandArgs(trailingOnly = TRUE)
+config_file <- args[1]
 
 # If you choose this, run the code using bash/shell
 #
@@ -119,6 +119,8 @@ print(paste("Rows remaining:", nrow(attrs_pred)))
 # Define a function to predict signatures using the trained model
 predict_signature <- function(model_path, new_data) {
 
+  print(paste("Predicting signature from model:", model_path))
+
   # Load the model
   model <- readRDS(model_path)
   
@@ -136,6 +138,7 @@ predict_signature <- function(model_path, new_data) {
 
 }
 
+print(paste("Predicting signatures from models in:", out_path))
 # Loop through signatures (1 RF model per signature)
 out_sig_predictions <- list()
 for (sig in config$sigs_predict) {
@@ -153,6 +156,8 @@ for (sig in config$sigs_predict) {
 #############################################
 # FINALIZE
 #############################################
+
+print(paste("Finalizing predictions. Outputting results to:", out_path))
 
 # Output the results
 all_sig_predictions <- bind_rows(out_sig_predictions)

@@ -7,7 +7,7 @@ paths:
   # On UCSB server: /out/rf
   predict:
     model_dir: "RAraki/out/rf/output_raraki_20250526_cluster_all"
-    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster_forRF_hys_only_psudo_name.csv"
 experiment_name: "pred_hys_only"
 parallel:
   nCores: 16
