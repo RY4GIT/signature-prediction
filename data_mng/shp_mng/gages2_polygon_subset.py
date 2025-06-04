@@ -2,6 +2,7 @@
 import geopandas as gpd
 import os
 import pandas as pd
+import math
 
 # %%
 gages2_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\GAGES2\GAGES_II_Geospa"
@@ -55,4 +56,22 @@ gages2_polygons_not_cara.to_file(
     os.path.join(gages2_dir, "gages2_polygons_not_cara.shp"), driver="ESRI Shapefile"
 )
 
-# %%
+# # %% Divide basins into 6 files
+# import math
+
+# batch_size = 600
+# n_batches = math.ceil(len(gages2_polygons_not_cara) / batch_size)
+# for i in range(n_batches):
+#     print(f"Dividing into {n_batches} files, processing file {i + 1} of {n_batches}")
+#     if i == n_batches - 1:
+#         gages2_polygons_not_cara.iloc[i * batch_size :].to_file(
+#             os.path.join(gages2_dir, f"gages2_polygons_not_cara_{i + 1}.shp"),
+#             driver="ESRI Shapefile",
+#         )
+#     else:
+#         gages2_polygons_not_cara.iloc[i * batch_size : (i + 1) * batch_size].to_file(
+#             os.path.join(gages2_dir, f"gages2_polygons_not_cara_{i + 1}.shp"),
+#             driver="ESRI Shapefile",
+#         )
+
+# # %%
