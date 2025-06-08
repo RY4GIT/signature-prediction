@@ -51,9 +51,7 @@ tmin_df = set_time_index(tmin_df)
 
 non_std_col_gages = []
 # %% Process streamflow data #########################################################
-for q_file in tqdm(
-    q_files, desc="Processing streamflow data", total=len(q_files), leave=False
-):
+for q_file in tqdm(q_files, desc="Processing:", total=len(q_files), leave=False):
     # Get gauge ID
     nonfilled_gauge_id = q_file.split(".")[0]
     gauge_id = q_file.split(".")[0].zfill(8)

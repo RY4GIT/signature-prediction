@@ -21,7 +21,7 @@ sig_cat = 'calc_All_custom';
 % 'calc_Addor', 'calc_Sawicz', 'calc_Euser',  'calc_BasicSet'
 
 ds_name = 'gages2';
-
+data_type = 'csv';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %___________________________________________________________________________________
@@ -33,6 +33,7 @@ addpath(genpath(fullfile(baseDir, TOSSHDir)));
 % Define directories and file type
 cloud_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki'; % 'G:\Araki' on lab computer
 data_dir = 'D:\data';
+gages2_dir = 'GAGES2_concat';
 
 currentDate = datestr(now, 'yyyymmdd');
 out_dir = fullfile(cloud_dir, 'out', 'signatures', [ds_name, '_', currentDate]);
@@ -45,13 +46,23 @@ else
 end
 
 %___________________________________________________________________________________
-% Load the streamflow data
-gages2_gridmet_file = fullfile(data_dir, "GAGES2_gridMET")
+
+% Get list of files in the directory
+files = dir(fullfile(data_dir, gages2_dir, 'gages2_*.csv'));
+
+% Extract gauge IDs from filenames
+gauge_ids = cell(length(files), 1);
+for i = 1:length(files)
+    % Get filename without extension
+    [~, filename] = fileparts(files(i).name);
+    % Extract gauge ID by removing 'gages2_' prefix
+    gauge_ids{i} = erase(filename, 'gages2_');
+end
 
 %___________________________________________________________________________________
 
 % Number of gauges
-numGauges = height(us_gauges);
+numGauges = height(gauge_ids);
 
 % Parameter config
 config_OF = readtable('config_overlandflow.csv');
@@ -75,31 +86,31 @@ end
 resultsCell = cell(numGauges, 1);
 
 % Progress update setup
-fprintf("Starting processing ... %s dataset", caravan_data);
+fprintf("Starting processing ... %s dataset", ds_name);
 
 %___________________________________________________________________________________
 % Loop through each gauge in us_gauges and collect data
 parfor idx = 1:numGauges
     try
         % Get the gauge id
-        gauge_id = cell2mat(us_gauges(idx, :).gauge_id);
+        gauge_id = cell2mat(gauge_ids(idx, :));
         fprintf("Currently processing %s\n", gauge_id)
         
         %___________________________________________________________________________________
         % Data preparation
         % Load data and convert it to datetime table
-        file_path = fullfile(data_dir, caravan_dir, timeseries_dir,data_type, caravan_data, [gauge_id '.' data_type]);
+        file_path = fullfile(data_dir, gages2_dir, ['gages2_' gauge_id '.' data_type]);
         data = readtable(file_path);
         data.date = datetime(data.date, 'InputFormat', 'yyyy-MM-dd');
         data_timetable = table2timetable(data, 'RowTimes', 'date');
         %     disp(head(data_timetable));
         
         % Prepare TOSSH imput
-        Q = num2cell(data.streamflow,1); %mm/day
+        Q = num2cell(data.streamflow_mmd,1); 
         t = num2cell(data.date,1);
-        P = num2cell(data.total_precipitation_sum,1);
-        PET = num2cell(data.potential_evaporation_sum_FAO_PENMAN_MONTEITH,1);
-        T = num2cell(data.temperature_2m_mean,1);
+        P = num2cell(data.total_precipitation_sum_mm,1);
+        PET = num2cell(data.potential_evaporation_sum_mm,1);
+        T = num2cell(data.temperature_mean_degc,1);
         
         %___________________________________________________________________________________
         % Get parameters
@@ -108,13 +119,12 @@ parfor idx = 1:numGauges
             
             try
                 % Overland flow
-                parts = split(gauge_id, '_');
-                gauge_code = parts{2};
+                gauge_code = gauge_id;
                 ws_code = str2double(gauge_code(1:2));
                 OF_param = config_OF(config_OF.ws_code == ws_code, :);
                 
                 % Recession
-                p95 = prctile(data.streamflow, 95);
+                p95 = prctile(data.streamflow_mmd, 95);
                 if (p95 < 1)
                     recession_param = config_recession(string(config_recession.flow) == {'low'}, :);
                 else
@@ -123,6 +133,9 @@ parfor idx = 1:numGauges
                 
             catch ME
                 fprintf('Error at index %d: %s\n', idx, ME.message);
+                % Use the default parameters
+                recession_param = config_recession(string(config_recession.flow) == {'normal'}, :);
+                OF_param = config_OF(config_OF.ws_code == 4, :);
             end
         end
         
@@ -230,7 +243,7 @@ end
 
 % Combine all results into one table after the loop
 results = vertcat(resultsCell{:});
-results.gauge_id = us_gauges.gauge_id(1:numGauges);
+results.gauge_id = gauge_ids(1:numGauges);
 
 if contains(sig_cat, 'calc_All')
     % remove FDC to save space
