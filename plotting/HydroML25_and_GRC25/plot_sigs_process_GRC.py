@@ -632,7 +632,7 @@ plot_process_dominance_map()
 #######################################################
 # Define source colors
 source_colors = {
-    "Caravan_obs": {"color": "lightgrey", "label": "Caravan (Obs.)"},
+    "Caravan_obs": {"color": "white", "label": "Caravan (Obs.)"},
     "GAGES2_obs": {"color": "tab:blue", "label": "GAGES-II (Obs.)"},
     "RF_overlap_baddata": {"color": "tab:red", "label": "RF (Caravan+GAGES-II attrs)"},
     "RF_hys_only": {"color": "tab:orange", "label": "RF (Caravan attrs)"},
@@ -646,27 +646,18 @@ def plot_source(df, overlay_layer):
     fig = plt.figure(figsize=(9, 7))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
-    # Add a legend
-    overlay_layer.plot(
-        ax=ax,
-        edgecolor="grey",
-        facecolor="none",
-        linewidth=0.5,
-        aspect=1.1,
-        zorder=100,
-    )
-
     land = cfeature.NaturalEarthFeature(
         "physical",
         "land",
         "50m",
-        edgecolor="face",
-        facecolor="darkgrey",  # Set land color to light gray
     )
-    ax.add_feature(land)
-
-    # Add map features
-    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
+    ax.add_feature(
+        land,
+        facecolor="lightgray",
+        edgecolor="black",
+        linewidth=2.0,
+    )
+    ax.add_feature(cfeature.BORDERS, linewidth=2.0, linestyle=":", color="k")
 
     # Create legend patches
     legend_patches = []
