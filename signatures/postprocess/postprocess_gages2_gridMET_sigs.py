@@ -11,16 +11,16 @@ out_dir = os.path.join(sig_dir, gridmet_sigs_dir)
 
 
 gridmet_sigs_file = os.path.join(sig_dir, gridmet_sigs_dir, "out_calc_All_custom.csv")
-caravan_sigs_file = os.path.join(
-    sig_dir, caravan_sigs_dir, "out_calc_All_custom_filt_qc.csv"
-)
+caravan_attrs_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_caravan_us_epa.csv"
 
 # %%
 gridmet_sigs = pd.read_csv(gridmet_sigs_file)
-gridmet_sigs["gauge_id"] = gridmet_sigs["gauge_id"].astype(str)
-caravan_sigs = pd.read_csv(caravan_sigs_file)
-caravan_sigs["gauge_num"] = caravan_sigs["gauge_num"].astype(str).str.zfill(8)
-
+gridmet_sigs["gauge_id"] = gridmet_sigs["gauge_id"].astype(str).str.zfill(8)
+# %%
+caravan_attrs = pd.read_csv(caravan_attrs_file)
+caravan_attrs["usgs_gauge_id"] = (
+    caravan_attrs["gauge_id"].str.split("_").str[1].astype(str).str.zfill(8)
+)
 # %%
 attrs_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\GAGES2\GAGES_II_attrs\gagesII_sept30_2011_concat.csv"
 gages2_attrs = pd.read_csv(attrs_file)
@@ -34,16 +34,45 @@ qa_gages2["gauge_id"] = qa_gages2["gauge_id"].astype(str).str.zfill(8)
 
 # %% (1) Get GAGES-II gauges that are not overlapping with caravan
 gridmet_sigs_not_in_caravan = gridmet_sigs[
-    ~gridmet_sigs["gauge_id"].isin(caravan_sigs["gauge_num"])
+    ~gridmet_sigs["gauge_id"].isin(caravan_attrs["usgs_gauge_id"])
 ]
 gages2_attrs_not_in_caravan = gages2_attrs[
-    ~gages2_attrs["gauge_id"].isin(caravan_sigs["gauge_num"])
+    ~gages2_attrs["gauge_id"].isin(caravan_attrs["usgs_gauge_id"])
 ]
 print("Original number of GAGES-II gauges: \n", len(gages2_attrs))
 print(
     f"GAGES-II gauges not overlapping with caravan:\n {len(gridmet_sigs_not_in_caravan)} ({len(gages2_attrs_not_in_caravan) / len(gages2_attrs) * 100:.2f}%)"
 )
 
+# %% (1.2) Filter by lat lon (limit to US)
+# Get the bounding box of the US
+us_bbox = (
+    -124.848974,
+    24.396308,
+    -66.885444,
+    49.384358,
+)
+gages2_attrs["gauge_id"] = gages2_attrs["gauge_id"].astype(str).str.zfill(8)
+gridmet_sigs_not_in_caravan["gauge_id"] = (
+    gridmet_sigs_not_in_caravan["gauge_id"].astype(str).str.zfill(8)
+)
+print(len(gridmet_sigs_not_in_caravan))
+gridmet_sigs = gridmet_sigs_not_in_caravan.merge(gages2_attrs, on="gauge_id")
+print(len(gridmet_sigs))
+
+# %% Filter by lat and long
+mask = (
+    (gridmet_sigs["LAT_GAGE"] > us_bbox[1])
+    & (gridmet_sigs["LAT_GAGE"] < us_bbox[3])
+    & (gridmet_sigs["LNG_GAGE"] > us_bbox[0])
+    & (gridmet_sigs["LNG_GAGE"] < us_bbox[2])
+)
+print(len(gridmet_sigs))
+gridmet_sigs = gridmet_sigs[mask]
+print(len(gridmet_sigs))
+
+
+# %%
 
 # %% (2) Get GAGES-II gauges with good data quality based on QA results
 
@@ -111,9 +140,7 @@ print(
 
 # %% (3) Filter out overland flow signatures where significant snow
 print(len(sigs_gages2_filt))
-df = sigs_gages2_filt.merge(
-    gages2_attrs[["gauge_id", "SNOW_PCT_PRECIP"]], on="gauge_id"
-)
+df = sigs_gages2_filt.copy()
 print(len(df))
 
 
@@ -135,13 +162,13 @@ columns_mask = [
     "R_Pint_RC",
 ]
 
-# Check which columns exist in the dataframe
-print("\nChecking columns:")
-for col in columns_mask:
-    if col in df.columns:
-        print(f"{col} exists, non-null count before masking: {df[col].count()}")
-    else:
-        print(f"{col} does NOT exist in dataframe")
+# # Check which columns exist in the dataframe
+# print("\nChecking columns:")
+# for col in columns_mask:
+#     if col in df.columns:
+#         print(f"{col} exists, non-null count before masking: {df[col].count()}")
+#     else:
+#         print(f"{col} does NOT exist in dataframe")
 
 
 # Apply the mask using the boolean values directly
@@ -155,6 +182,7 @@ print(
     "After quality controlling the IE/SE signatures by snow, "
     + f"{(~pd.isna(df.IE_effect)).sum()} gauges survived ({(~pd.isna(df.IE_effect)).sum() / len(df) * 100:.1f} %)"
 )
+
 
 # Save
 df.to_csv(os.path.join(out_dir, f"out_calc_All_custom_filt_qc_snow.csv"), index=False)
