@@ -95,19 +95,41 @@ def _get_moisture_and_seasonality_index(precipitation, pet) -> tuple[float, floa
     return annual_moisture_index, seasonality
 
 
+def _get_frac_snow(precipitation, temperature):
+    # Fraction of mean monthly precipipitation falling as snow (see Knoben)
+    mean_monthly_precip = precipitation.groupby(precipitation.index.month).mean()
+    mean_monthly_temp = temperature.groupby(temperature.index.month).mean()
+    frac_snow = (
+        mean_monthly_precip.loc[mean_monthly_temp < 0].sum() / mean_monthly_precip.sum()
+    )
+    return frac_snow
+
+
 # %% ############################################################
 data_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data"
 gridmet_dir = os.path.join(data_dir, "GAGES2_gridMET")
 
 precip_file = os.path.join(gridmet_dir, "pr_mm_gridmet_conus_gaged_1980_2020_mean.csv")
 pet_file = os.path.join(gridmet_dir, "pet_mm_gridmet_conus_gaged_1980_2020_mean.csv")
+temp_max_file = os.path.join(
+    gridmet_dir, "tmmx_degc_gridmet_conus_gaged_1980_2020_mean.csv"
+)
+temp_min_file = os.path.join(
+    gridmet_dir, "tmmn_degc_gridmet_conus_gaged_1980_2020_mean.csv"
+)
 ##################################################################
 
 # %%####################
 # LOAD DATA
 ########################
+print("Loading precipitation data")
 precip = pd.read_csv(precip_file)
+print("Loading PET data")
 pet = pd.read_csv(pet_file)
+print("Loading temperature data : max")
+temp_max = pd.read_csv(temp_max_file)
+print("Loading temperature data : min")
+temp_min = pd.read_csv(temp_min_file)
 
 # %%####################
 # PREPARE DATA
@@ -118,6 +140,11 @@ precip.set_index("Date", inplace=True)
 pet["Date"] = pd.to_datetime(pet["Date"], format="%Y-%m-%d")
 pet.set_index("Date", inplace=True)
 
+temp_max["Date"] = pd.to_datetime(temp_max["Date"], format="%Y-%m-%d")
+temp_max.set_index("Date", inplace=True)
+
+temp_min["Date"] = pd.to_datetime(temp_min["Date"], format="%Y-%m-%d")
+temp_min.set_index("Date", inplace=True)
 
 # %%####################
 # CALCULATE CLIMATE ATTRIBUTES: SIMPLE
@@ -133,6 +160,7 @@ aridity_gridmet = pet_mean_gridmet / p_mean_gridmet
 # Initialize empty DataFrames to store results
 annual_moisture_index_gridmet = pd.Series(index=precip.columns)
 seasonality_gridmet = pd.Series(index=precip.columns)
+frac_snow_gridmet = pd.Series(index=precip.columns)
 precip_stats = pd.DataFrame(
     index=precip.columns,
     columns=[
@@ -143,6 +171,7 @@ precip_stats = pd.DataFrame(
     ],
 )
 
+
 # Get common gauge IDs
 common_gauges = precip.columns.intersection(pet.columns)
 
@@ -151,6 +180,9 @@ for gauge_id in tqdm(common_gauges):
     # Get the precipitation and PET series for this gauge
     precip_series = precip[gauge_id]
     pet_series = pet[gauge_id]
+    temp_max_series = temp_max[gauge_id]
+    temp_min_series = temp_min[gauge_id]
+    temp_series = (temp_max_series + temp_min_series) / 2
 
     # Calculate moisture index and seasonality for this gauge
     annual_moisture_index_gridmet[gauge_id], seasonality_gridmet[gauge_id] = (
@@ -158,6 +190,10 @@ for gauge_id in tqdm(common_gauges):
             precipitation=precip_series,
             pet=pet_series,
         )
+    )
+    frac_snow_gridmet[gauge_id] = _get_frac_snow(
+        precipitation=precip_series,
+        temperature=temp_series,
     )
 
     # Calculate precipitation statistics
@@ -176,6 +212,7 @@ clim_attrs = pd.concat(
         aridity_gridmet.rename("aridity_gridmet"),
         annual_moisture_index_gridmet.rename("annual_moisture_index_gridmet"),
         seasonality_gridmet.rename("seasonality_gridmet"),
+        frac_snow_gridmet.rename("frac_snow_gridmet"),
         precip_stats.rename(
             columns={
                 "high_prec_freq": "high_prec_freq_gridmet",
@@ -194,7 +231,10 @@ clim_attrs.head()
 # SAVE CLIMATE ATTRIBUTES
 ########################
 clim_attrs.to_csv(os.path.join(gridmet_dir, "clim_attrs_gridmet.csv"))
-
+cloud_dir = (
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\GAGES2_cloud"
+)
+clim_attrs.to_csv(os.path.join(cloud_dir, "clim_attrs_gridmet.csv"))
 
 # %%
 clim_attrs.head()
@@ -223,6 +263,7 @@ attr_pairs = [
     ("aridity_FAO_PM", "aridity_gridmet", "Aridity"),
     ("moisture_index_FAO_PM", "annual_moisture_index_gridmet", "Moisture index"),
     ("seasonality_FAO_PM", "seasonality_gridmet", "Seasonality (*)"),
+    ("frac_snow", "frac_snow_gridmet", "Fraction of snow (*)"),
     ("high_prec_freq", "high_prec_freq_gridmet", "High precip frequency (*)"),
     ("low_prec_freq", "low_prec_freq_gridmet", "Low precip frequency (*)"),
     ("low_prec_dur", "low_precip_dur_gridmet", "Low precip duration (*)"),
