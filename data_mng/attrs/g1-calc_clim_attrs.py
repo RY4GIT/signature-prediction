@@ -107,7 +107,7 @@ def _get_frac_snow(precipitation, temperature):
 
 # %% ############################################################
 data_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data"
-gridmet_dir = os.path.join(data_dir, "GAGES2_gridMET")
+gridmet_dir = r"D:\data\GAGES2_gridMET"
 
 precip_file = os.path.join(gridmet_dir, "pr_mm_gridmet_conus_gaged_1980_2020_mean.csv")
 pet_file = os.path.join(gridmet_dir, "pet_mm_gridmet_conus_gaged_1980_2020_mean.csv")
@@ -232,11 +232,14 @@ clim_attrs.head()
 ########################
 clim_attrs.to_csv(os.path.join(gridmet_dir, "clim_attrs_gridmet.csv"))
 cloud_dir = (
-    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\GAGES2_cloud"
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\GAGES2_gridMET"
 )
 clim_attrs.to_csv(os.path.join(cloud_dir, "clim_attrs_gridmet.csv"))
 
 # %%
+clim_attrs = pd.read_csv(os.path.join(gridmet_dir, "clim_attrs_gridmet.csv"))
+clim_attrs["usgs_gauge_id"] = clim_attrs["usgs_gauge_id"].astype(str).str.zfill(8)
+clim_attrs.set_index("usgs_gauge_id", inplace=True)
 clim_attrs.head()
 # %%####################################################################################################
 # COMPARE CLIMATE ATTRIBUTES
@@ -322,3 +325,5 @@ for i in range(len(attr_pairs), len(axs)):
 
 plt.tight_layout()
 fig.savefig(os.path.join(gridmet_dir, "climate_attrs_comparison.png"))
+fig.savefig(os.path.join(cloud_dir, "climate_attrs_comparison.png"))
+# %%
