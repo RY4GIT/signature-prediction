@@ -196,6 +196,8 @@ for (sig in config$sigs_predict) {
       select(-gauge_id) %>%
       drop_na() %>%
       filter_all(all_vars(!is.infinite(.)))
+
+    message(paste("Data has", nrow(train_data), "rows"))
     
     # More aggressive NA handling to ensure no missing values remain
     # Check for any problematic values before proceeding
