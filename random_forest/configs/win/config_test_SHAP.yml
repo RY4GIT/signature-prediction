@@ -1,11 +1,11 @@
 paths:
-  home_dir: /home/raraki/data/signature-prediction
-  out_dir: /out/rf
+  home_dir: "G:/Shared drives/Signatures -- large scale/baseflow"
+  out_dir: "RAraki/out/rf"
   train:
-    signatures: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster_copy_for_shap.csv
-    attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
+    signatures: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster_copy_for_shap.csv"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
   test:
-    attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
 experiment_name: test_SHAP
 filter_by_cluster:
   run: false
@@ -17,7 +17,7 @@ settings:
   eval_metric: MSE
 save_models: true
 parallel:
-  nCores: 16
+  nCores: 8
 sigs_predict:
 - geol_weighted_ave_age_ma_copy
 attrs_of_interest:

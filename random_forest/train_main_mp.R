@@ -208,39 +208,26 @@ for (sig in config$sigs_predict) {
                     na_count_before, "NAs,", 
                     inf_count_before, "Inf values,", 
                     nan_count_before, "NaN values"))
+      # Replace NaN with NA (only if NaN values exist)
+      train_data <- train_data %>%
+        mutate(across(where(is.numeric), ~ifelse(is.nan(.), NA, .)))
+      
+      # More aggressive filtering of problematic values
+      train_data <- train_data %>%
+        mutate(across(where(is.numeric), ~ifelse(is.infinite(.), NA, .))) %>%
+        drop_na()  # Drop rows with any NA values again
+
+        # Double-check after cleaning
+      na_count_after <- sum(is.na(train_data))
+      inf_count_after <- sum(sapply(train_data, function(x) sum(is.infinite(x), na.rm = TRUE)))
+      nan_count_after <- sum(sapply(train_data, function(x) sum(is.nan(x), na.rm = TRUE)))
+
+      message(paste("After cleaning:", nrow(train_data), "rows remain with",
+                    na_count_after, "NAs,", 
+                    inf_count_after, "Inf values,",
+                    nan_count_after, "NaN values"))
     }
-    
-    # Replace NaN with NA
-    train_data <- train_data %>%
-      mutate_all(function(x) {
-        x[is.nan(x)] <- NA
-        return(x)
-      })
-    
-    # More aggressive filtering of problematic values
-    train_data <- train_data %>%
-      mutate_all(function(x) {
-        if (is.numeric(x)) {
-          # Replace Inf/-Inf with NA
-          x[is.infinite(x)] <- NA
-          # Replace extreme values with NA (optional)
-          # x[abs(x) > 1e10] <- NA
-        }
-        return(x)
-      }) %>%
-      drop_na()  # Drop rows with any NA values again
-    
-    # Double-check after cleaning
-    na_count_after <- sum(is.na(train_data))
-    inf_count_after <- sum(sapply(train_data, function(x) sum(is.infinite(x), na.rm = TRUE)))
-    nan_count_after <- sum(sapply(train_data, function(x) sum(is.nan(x), na.rm = TRUE)))
-    
-    # Log the results of the cleaning
-    message(paste("After cleaning:", nrow(train_data), "rows remain with",
-                  na_count_after, "NAs,", 
-                  inf_count_after, "Inf values,",
-                  nan_count_after, "NaN values"))
-    
+
     # Check if we have enough data to proceed
     if (nrow(train_data) < 10) {
       message(paste("Not enough data for signature", sig, "- only", nrow(train_data), "rows after cleaning"))
