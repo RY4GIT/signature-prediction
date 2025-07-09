@@ -679,6 +679,8 @@ labels_rev = [
 # Label low values as 4, so that it gets assinged to (x,y)=(i,4) or (4,j) in the quadrant
 dir_label_rev = ["high", "", "", "low"]
 
+# End of "do not change"
+# ______________________________________________________
 
 # CHANGE HERE ################
 
@@ -686,8 +688,8 @@ processes = [
     "Baseflow",
     "Water loss to deep GW or ET",
     "Storage capacity and retention",
-    "Infiltration Excess Overlandflow",
-    "Saturation Excess Overlandflow",
+    # "Infiltration Excess Overlandflow",
+    # "Saturation Excess Overlandflow",
     "ET impacts on storage and baseflow",
     # "IE vs SE significance", # Hard to distinguish IE vs SE
     # "IE vs SE (SSF2 & GW) significance",
@@ -728,13 +730,13 @@ for process_name in tqdm(
             process_columns["column_name"] == "TotalRR"
         ].squeeze()  # Y variable, Total RR
         sig1 = process_columns[
-            process_columns["column_name"] == "RR_Seasonality"
-        ].squeeze()  # X variable, RR_Seaonality
+            process_columns["column_name"] == "EventRR"
+        ].squeeze()  # X variable, EventRR
 
-        sig1_label = labels
+        sig1_label = labels_rev
         sig2_label = labels
 
-        sig1_dir = dir_label
+        sig1_dir = dir_label_rev
         sig2_dir = dir_label
     ###############################
     # For Staoge capacity and retention

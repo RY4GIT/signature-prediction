@@ -33,7 +33,7 @@ attr_pairs = [
     ("p_mean_mm_gridmet", "P_mm_day", "Precipitation"),
     ("pet_mean_mm_gridmet", "PET_mm_day", "PET"),
     ("aridity_gridmet", "ARIDITY_GAGES2", "Aridity"),
-    ("frac_snow", "SNOW_FRAC_PRECIP", "Snow fraction"),
+    ("frac_snow_gridmet", "SNOW_FRAC_PRECIP", "Snow fraction"),
     ("seasonality_gridmet", "seasonality_FAO_PM", "Seasonality"),
     ("high_prec_freq_gridmet", "high_prec_freq", "High Precipitation Frequency"),
     ("low_prec_freq_gridmet", "low_prec_freq", "Low Precipitation Frequency"),
