@@ -385,7 +385,7 @@ for (sig in config$sigs_predict) {
       shap_values <- foreach(
         i = 1:num_rows_to_analyze,
         .combine = "c",
-        .packages = c("iml", "dplyr")
+        .packages = c("iml", "dplyr", "randomForest")
       ) %dopar%
         {
           {

@@ -2,19 +2,19 @@ paths:
   home_dir: /home/raraki/data/signature-prediction
   out_dir: /out/rf
   train:
-    signatures: /signatures/caravan_us_20240609_tunedparams/out_calc_All_custom_filt.csv
-    attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
+    signatures: /signatures/caravan_us_20250525/out_calc_All_custom_filt_qc_snow_area.csv
+    attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
   test:
-    attributes: /derived_attrs/assembled_RA/attrs_caravan_us_hammondv2.csv
+    attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
 experiment_name: test
-filter_by_ecoregion: 
+filter_by_cluster: 
   run: true
-  name: 81 North Eastern Forests
+  name: 1
 settings:
   seed: 0
   ntree: 100
   num_folds: 3
-  eval_metric: "MSE"
+  eval_metric: RMSE
   # "MSE", "RMSE" etc.. 
 parallel:
   nCores: 16
