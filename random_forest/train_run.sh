@@ -30,13 +30,13 @@ run_experiment() {
     echo "----------------------------------------"
 }
 
-# # Run experiments for individual clusters
-# for i in 0 1 2 3 4 5; do
-#     run_experiment "config_cluster_$i"
-# done
+# Run experiments for individual clusters
+for i in 0 1 2 3 4 5; do
+    run_experiment "config_cluster_$i"
+done
 
-# # Define configs as space-separated string instead of array for better sh compatibility
-# configs="config_cluster_all"
+# Run all clusters
+run_experiment "config_cluster_all"
 
 # # For non-clustering experiments
 # # "config_20250517_baseline config_20250517_camels config_20250517_gages2_attrs config_20250517_gages2_ref config_20250517_gages2"
@@ -47,8 +47,8 @@ run_experiment() {
 # done
 
 
-# For testing SHAP values
-configs="config_test_SHAP"
-for config in $configs; do
-    run_experiment "$config"
-done
+# # For testing SHAP values
+# configs="config_test_SHAP"
+# for config in $configs; do
+#     run_experiment "$config"
+# done

@@ -1,76 +1,92 @@
 # signature-prediction
-Scripts to calculate hydrologic signatures, running TOSSH Toolbox functions, and to predict hydrologic signatures using random forest modeling. Extending the work by Anne Holt: https://github.com/annieholt/Baseflow_Signature_Prediction
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![CodeStyle](https://img.shields.io/badge/code%20style-Ruff%20and%20Air-black)]()
 
+Scripts to calculate hydrologic signatures, running TOSSH Toolbox functions, and to predict hydrologic signatures using random forest modeling. 
+
+Extending the work by [Holt & McMillan (2025)](https://doi.org/10.1002/hyp.70080). This repository was originally a folk of the one created by Anne Holt: https://github.com/annieholt/Baseflow_Signature_Prediction
 
 ## Directory layout
 ### Github layout
-    ├── refs                    # Reference codes from annieholt and dry-rivers-rcn repo
-    ├── data_mng                # Script for Caravan data visualization and quality control
-    ├── plotting                # Contains some plotting codes for manuscripts \ conference poster etc.
+    ├── data_mng                # Data management
+    ├── figures                 # Visualization codes for manuscripts and conference posters. 
     ├── random_forest           # Script to run random forest
+    ├── refs                    # Reference Random Forest codes from Holt and McMillan (2025) HP, Zipper et al. (2021) ERL, and Husic (2025) preprint
     └── signatures              # Script to calculate hydrologic signature using TOSSH toolbox
 
-### Google Drive layout (for collaborators)
-```
-├── data                    # Contains data
-├── docs                    # Contains manuscript draft, AGU poster files, my thought process to determine attributes and signatures of interest (Excel files) 
-├── gis                     # Contains GIS layers
-├── out                     # Contains analysis outputs
-└── refs                    # Slipbox to put some references (not well organized)
-```
 
-#### Highlights: 
-- Random Forest results are stored in ```Signatures -- large scale\baseflow\RAraki\out\rf```
-- Signature value are stored in ```Signatures -- large scale\baseflow\RAraki\out\signatures```
-- Landscape attributes are stored in ```Signatures -- large scale\baseflow\RAraki\data\derived_attrs```
+## Getting started
+If you have downloaded finalized dataset (signature values, landscape attributes), you can skip to the Step 5: Derive process inference.  
 
-## Getting started (for collaborators, those who already have access to the Google Drive)
 ### 1. Preparation
-- Folk and clone this repo
+- Folk and clone the following repos
     ```
     git clone https:\\github.com\RY4GIT\signature-prediction.git
     ```
-- Make sure you have access to the Google Shared Drive folder ```Signatures -- large scale\baseflow\RAraki``` on your desktop
-- If you don't have a Google Drive Desktop, download all contents from the following directory
-     - ```Signatures -- large scale\baseflow\RAraki\data```
-     - ```Signatures -- large scale\baseflow\RAraki\out\signatures``` (if you want to skip signature calculation part)
-
-### 2. Calculate hydrologic signatures (Matlab)
-Skip this step if you have downloaded pre-caluclated signature values from GDrive ```Signatures -- large scale\baseflow\RAraki\out\signatures```. If not: 
-- Folk and clone the following repo
     ```
     git clone https:\\github.com\RY4GIT\TOSSH
     ```
-- Calculate signatures using ```.\signatures\main_caravan.m``` for Caravan datasets (CAMELS + HYSETS gauges)
-- Calculate signatures using ```.\signatures\main_gages2.m``` for GAGES2 catchments overlapping with CAMELS + HYSETS, with surface water input data from [Hammond, 2024](https://www.sciencebase.gov/catalog/item/6494515fd34ef77fcb014eb0)
-- Make sure to filter out some signatures using scripts in ```.\signatures\postprocess\```
-    - `postprocess_caravan_sigs_for_RF.py` filter out some signatures based on the following conditions. This script output signature files with extension `_filt_qc.csv` (for meeting conditions 1 & 2), `_filt_qc_snow.csv` (for meeting conditions 1 & 2 & 3), and `_filt_qc_snow_area.csv` (for meeting conditions 1 & 2 & 3 & 4)
-        1. Exclude Hysets watersheds with bad data quality (less than 5 years of record & for the period where data is available, >30\% record is NaN)
-        2. Exclude Hysets watersheds overlapping with CAMELS gages
-        3. Event-based overlandflow signatures, exclude Hysets watersheds dominated with snow with `frac_snow` >20\%
-        4. Exclude watersheds that has >25% error in estimated watershed drainage area between Caravan and GAGES-II estimates (consisting of 31 watersheds)
-- After runinng the above script, run `postprocess_gages2_sigs_for_RF.py` get the subset of gages that are overlapping between Caravan and GAGES2.
+    ```
+    git clone https:\\github.com\RY4GIT\Wetland_GeologicAge_Attributes.git
+    ```
+- Download Caravan v1.5 dataset
+    - <https:\\zenodo.org\records\10968468>
+- Download GAGES2 datasets
+    - Landscape attributes and GIS layer: <https://www.sciencebase.gov/catalog/item/631405bbd34e36012efa304a>
+    - Streamflow data: <https://doi-usgs.github.io/dataRetrieval/>
+    - gridMET forcing: <https://www.sciencebase.gov/catalog/item/6414b3f9d34eb496d1ceb5ae>
+        - Use `data_mng\hydroclimatic_timeseries\curate_gages2.py` to combine gridMET and streamflow data
+-Set up Environments
+    - Python environment: `environment_minimal.yml` or `environment.yml` (Set up for Win)
+    - R environment: `random_forest\envs`
+    - Matlab ver: tested on 2020b-2024b
 
-### 3. Run RF experiment (R script)
-#### To start off some small-scale experiment or implement debug
-I recommend using the ```.\random_forest\configs\win\config_test.yml```. This YML file defines configuration for very small-scale experiment (e.g., only for selected signatures and attributes, with small number of trees and grids). After editing the configuration file, try running the RF model using ```.\random_forest\main_serial.R```. 
+### 2. Calculate signatures and attributes 
+#### 2.1. Calculate hydrologic signatures (Matlab)
+- Calculate signatures using:  
+    - ```signatures\main_caravan.m``` for Caravan dataset
+    - ```signatures\main_gages2_gridmet.m``` for GAGES2 dataset
+    - (experimental) ```signatures\main_gages2_swi.m``` for GAGES2 dataset with surface input dataset from [Hammond, 2024](https://www.sciencebase.gov/catalog/item/6494515fd34ef77fcb014eb0)
 
-#### For an automated workflow for ecoregion experiments
-Once you get the hang of it, you might want to automate the workflow because you have to run the code for multiple ecoregions and multiple signatures.
-- Prepare config files in ```.\random_forest\configs\{your OS name}``` 
-    - ```.\random_forest\configs\generate_config_by_ecoregion.py``` helps to generate config files per ecoregion
-- Run the code ```.\random_forest\run.bat``` or ```.\random_forest\run.sh``` depending on the OS. 
+#### 2.1 Calculate additional landscape attributes (Python)
+- Calculate additional attributes, wetland fraction and geologic ages (Holt and McMillan, 2025) following instructions (step 1-3) in  [```Wetland_GeologicAge_Attributes```](https://github.com/RY4GIT/Wetland_GeologicAge_Attributes) repo
+
+
+### 3. Prepare input and evaluation datasets for Random Forest model
+#### 3.1. Curate signature files (Python)
+- Get data qualtiy flags using ```data_mng\hydroclimatic_timeseries\qa_hysets.py``` and ```data_mng\hydroclimatic_timeseries\qa_gages2.py```
+- Filter out some gauges and signatures using scripts in ```signatures\postprocess\```
+    - `signatures\postprocess\postprocess_caravan_sigs_for_RF.py` for Caravan dataset
+    - `signatures\postprocess\postprocess_gages2_gridMET_sigs.py` for GAGES2 dataset
+    - These scripts copy signature files with extension `_filt_qc.csv` (for meeting conditions 1 & 2), `_filt_qc_snow.csv` (for meeting conditions 1 & 2 & 3), and `_filt_qc_snow_area.csv` (for meeting conditions 1 & 2 & 3 & 4)
+        1. Exclude Hysets watersheds with bad data quality (less than 5 years of record OR >30\% record is NaN for the period where data is available)
+        2. Exclude Hysets watersheds overlapping with CAMELS OR Exclude GAGES2 watersheds overlapping with Caravan
+        3. Event-based overlandflow signatures, exclude Caravan and GAGES2 watersheds dominated with snow with `frac_snow` >20\%
+        4. Exclude Caravan watersheds that has >25% error in estimated watershed drainage area between Caravan and GAGES-II estimates (consisting of 31 watersheds)
+#### 3.2. Curate landscape attributes (Python)
+- Use ```data_mng\attrs\c*-*.py``` for Caravan-GAGES2 OR Caravan-only gauges 
+- Use ```data_mng\attrs\g*-*.py``` for GAGES2-only gauges 
+
+### 4. Run RF experiment (R script)
+
+#### To start off some small-scale experiment or debugging
+I recommend using the ```random_forest\configs\{os_name}\config_test.yml```. This YML file defines configuration for very small-scale experiment (e.g., only for selected signatures and attributes, with small number of trees and grids). After editing the configuration file, try running the RF model using ```random_forest\main_serial.R```. 
+
+#### For an automated training for large-scale experiments
+Once you get the hang of it, use automated workflow for training RF model regionally or at continental-scale for multiple signatures.
+- Prepare config files in ```random_forest\configs\{os_name}``` 
+    - ```random_forest\configs\generate_config_by_cluster.py``` helps to generate config files per climate cluster
+- Run the code
     - For Windows, 
     ```
     cd random_forest
-    run.bat
+    train_run.bat
     ```
     - For linux, 
     ```
     cd random_forest
-    .\run.sh
+    train_run.sh
     ```
-- Some visualization code available at ```.\random_forest\visualize```
+- Visualization code available at ```random_forest\visualize```
 
 - Note that these bash or shell files are set up to run the multi-processing code ```main_mp.R```. If you want to run in non-multiprocessing (serial) mode, use ```main_serial.R``` instead. Also de-comment the following lines, so that to allow the code to read the input argument: 
     ```
@@ -88,112 +104,26 @@ Once you get the hang of it, you might want to automate the workflow because you
     config <- yaml::read_yaml(config_file)
     ```
 
-### 4. Derive process inference (Python)
-- Visualization code available at ```.\signatures\visualize``` and ```.\random_forest\visualize```, as well as in ```.\plotting```. 
-- Visualize the signature patterns using ```signatures\visualize\plot_sigs_process.py```
-- Visualize the RF results using ```random_forest\visualize\plot_ecoregion_experiment.py``` to investigate on predictability and drivers of signatures
-
-### 5. Optionally, change definitions of Ecoregion subsetting (ArcGIS + Python) 
-- Folk and clone the following repos
-    ```
-    git clone https:\\github.com\RY4GIT\Wetland_GeologicAge_Attributes.git
-    ```
-- Use [Intersect (Analysis) tool](https://pro.arcgis.com/en/pro-app/latest/tool-reference/analysis/intersect.htm) on ArcGIS to get intersection of ecoregions and watersheds
-    - Ecoregion shapefile (for EPA original): ```"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\EcoRegions\NA_CEC_Eco_Level1.shp"```
-    - Watershed shapefiles ```G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\Caravan1.4\shapefiles```
-    - Note: I tried to do this using Python GeoPandas and somehow didn't work well
-- Run [Wetland_GeologicAge_Attributes/3_get_ecoregion.py](https://github.com/RY4GIT/Wetland_GeologicAge_Attributes/blob/main/3_get_ecoregion.py) to get the ecoregion that has the largest overlapping are with an watershed of interest
-- Run [Wetland_GeologicAge_Attributes/4_assemble_attrs.py](https://github.com/RY4GIT/Wetland_GeologicAge_Attributes/blob/main/4_assemble_attrs.py). This code joins calculated landscape attributes and watershed-ecoregion dataframe
-
-#### Climate region definition
-- Climate region definition is currently generated using `data_mng\attrs_cluster.py`
-- Use `random_forest\configs\generate_config_by_cluster.py` for generating configs
+####  Climate region definition
+- Climate regions is currently generated using `data_mng\attrs\c3-attrs_climate_cluster.py`
 - Use `random_forest\configs\linux\config_cluster_{cluster_number}.yml` for random forest
-- Use `random_forest\visualize\plot_experiments_clusters.py` for visualizing RF results
+- Use `random_forest\visualize\plot_experiments_cluster.py` for visualizing RF results
 
+#### For predicting signature using trained model
+- Use ```random_forest\pred_main_serial.R``` and ```random_forest\pred_run.bat```
 
-#### Ecoregion definition 
-There are multiple ecoregion definition that I've tried out. The followings are the definitions & attribute files that has the corresponding ecoregion column. 
-- Original EPA Level 1 ecoregion definition
-```
-['8  EASTERN TEMPERATE FORESTS' '5  NORTHERN FORESTS' '9  GREAT PLAINS'
- '6  NORTHWESTERN FORESTED MOUNTAINS' '10  NORTH AMERICAN DESERTS'
- '13  TEMPERATE SIERRAS' '12  SOUTHERN SEMIARID HIGHLANDS'
- '11  MEDITERRANEAN CALIFORNIA' '7  MARINE WEST COAST FOREST']
+### 5. Derive process inference (Python)
+- Visualization code available at ```signatures\visualize``` and ```random_forest\visualize```, as well as in ```plotting```. 
+- Visualize the signature patterns using ```signatures\visualize\plot_sigs_process_single_source.py``` and ```signatures\visualize\plot_sigs_process_multiple_sources.py```
+- Visualize the RF results using ```random_forest\visualize\plot_experiments_cluster.py``` to investigate on the drivers of signatures
 
-GDrive attribute path: "G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_caravan_us_epa.csv"
-```
-- Hammond et al., 2021 definition
-    - ```'9  GREAT PLAINS'``` is split into 2 regions, ```'91 North Great Plains'``` & ```'92 South Great Plains'```
-    - ```'12  SOUTHERN SEMIARID HIGHLANDS'``` and ```'10  NORTH AMERICAN DESERTS'``` are combined into ```'1210 Western Deserts'```
-    - ```'6  NORTHWESTERN FORESTED MOUNTAINS'``` and ```'13  TEMPERATE SIERRAS'``` are combined into ```'613 Western Mountains'```
-```
-['8  EASTERN TEMPERATE FORESTS' '5  NORTHERN FORESTS'
- '91 North Great Plains' '92 South Great Plains' '613 Western Mountains'
- '1210 Western Deserts' '11  MEDITERRANEAN CALIFORNIA'
- '7  MARINE WEST COAST FOREST']
-
- GDrive attribute path: "G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_caravan_us_hammond.csv"
-```
-- Hammond et al., 2021 definition + further aggregating/splitting some regions
-    - ```'8  EASTERN TEMPERATE FORESTS'``` is split into 2 regions, ```'81 North Eastern Forests'``` and ```'82 South Eastern Forests'```
-    - ```'7  MARINE WEST COAST FOREST'``` are combined with ```'613 Western Mountains'```, making it to ```'6713 Western Mountains'```
-```
-['81 North Eastern Forests' '82 South Eastern Forests'
- '91 North Great Plains' '92 South Great Plains' '6713 Western Mountains'
- '1210 Western Deserts' '11  MEDITERRANEAN CALIFORNIA']
-
- GDrive attribute path: "G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_caravan_us_hammondv2.csv"
-```
-
-## [Still in edit] Instructions reproduce the entire work flow, including attribute generation
-### 1. Preparation
-- Folk and clone the following repos
-    ```
-    git clone https:\\github.com\RY4GIT\signature-prediction.git
-    ```
-    ```
-    git clone https:\\github.com\RY4GIT\TOSSH
-    ```
-    ```
-    git clone https:\\github.com\RY4GIT\Wetland_GeologicAge_Attributes.git
-    ```
-- Download Caravan and original CAMELS datasets
-    - <https:\\zenodo.org\records\10968468>
-    - <https:\\gdex.ucar.edu\dataset\camels.html>
-
-### 2. Calculate hydrologic signatures and attributes
-- Calculate signatures using ```signatures\main.m```
-- Calculate wetland and geologic attributes (Holt et al., 2024), get ecoregion attributes, and assemble all the attributes by following instructions in  ```Wetland_GeologicAge_Attributes``` repo
-
-### 3. Prepare training dataset and input attributes for RF
-- Calculate statistics about Hysets data and get qualtiy flags using ```data_mng\check_hysets_qa.py```
-- Mask out the signature output calculated in Step #2 using the data quality flags using ```data_mng\filt_sig_for_RF.py```. This removes following gauges from the signature output file:
-    - Data with inadequate duration (<5yrs) and too many nan data (>30%)
-    - Gauge location with snow-dominated region based on lat\lon (still in development)
-    - Overlapping gauge with CAMEL's watershed, based on the gauge_id
-
-The following gauges are already removed at the stage of calculating attributes:
-- Non-US gauges
-
-### 4. Run RF experiment 
-- Prepare config files in ```random_forest\configs``` 
-    - ```random_forest\configs\generate_config_by_ecoregion.py``` helps to generate config files
-- Run the code ```random_forest\run.bat``` or ```random_forest\run.sh``` depending on the OS
-- For linux, 
-    ```
-    cd random_forest
-    .\run.sh
-    ```
-
-### 5. Derive process inference
-- Visualize the signature patterns using ```signatures\visualize\plot_sigs_process.py```
-- Visualize the RF results using ```random_forest\visualize\plot_ecoregion_experiment.py``` to investigate on predictability and drivers of signatures
 
 ## Reference
 - We extensively used the ideas and codes of Holt, A. (2024):
-    Holt, A., & McMillan, H. (2025). New predictors for hydrologic signatures: Wetlands and geologic age across continental scales. Hydrological Processes, 39(2). https://doi.org/10.1002/hyp.70080
-    
+    > Holt, A., & McMillan, H. (2025). New predictors for hydrologic signatures: Wetlands and geologic age across continental scales. Hydrological Processes, 39(2). https://doi.org/10.1002/hyp.70080
+    > https://github.com/annieholt/Baseflow_Signature_Prediction
+    > https://github.com/annieholt/Wetland_GeologicAge_Attributes
+
 - Our ecoregion experiment ideas are inspired by Hammond et al., 2021: 
-    Hammond, J. C., Zimmer, M., Shanafield, M., Kaiser, K., Godsey, S. E., Mims, M. C., et al. (2021). Spatial patterns and drivers of nonperennial flow regimes in the contiguous United States. Geophysical Research Letters, 48(2). <https://doi.org/10.1029/2020gl090794>
+    > Hammond, J. C., Zimmer, M., Shanafield, M., Kaiser, K., Godsey, S. E., Mims, M. C., et al. (2021). Spatial patterns and drivers of nonperennial flow regimes in the contiguous United States. Geophysical Research Letters, 48(2). <https://doi.org/10.1029/2020gl090794>
 - We use modified version of [TOSSH toolbox](https:\\github.com\TOSSHtoolbox\TOSSH) (Gnann et al., 2022) for calculating signatures. The custom TOSSH codes are located in <https:\\github.com\RY4GIT\TOSSH>
