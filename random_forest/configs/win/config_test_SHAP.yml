@@ -8,13 +8,13 @@ paths:
     attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
 experiment_name: test_SHAP
 filter_by_cluster:
-  run: false
-  name: NA
+  run: true
+  name: 1
 settings:
   seed: 0
-  ntree: 500
-  num_folds: 10
-  eval_metric: MSE
+  ntree: 100
+  num_folds: 3
+  eval_metric: RMSE
 save_models: true
 parallel:
   nCores: 8
