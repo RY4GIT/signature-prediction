@@ -14,8 +14,8 @@ settings:
   seed: 0
   ntree: 500
   num_folds: 10
-  eval_metric: MSE
-save_models: false
+  eval_metric: RMSE
+save_models: true
 parallel:
   nCores: 16
 sigs_predict:
@@ -60,8 +60,6 @@ attrs_of_interest:
 - kar_pc_sse
 - geol_weighted_ave_age_ma
 - PDEN_2000_BLOCK
-- gdp_ud_sav
-- hdi_ix_sav
 - P_mm_day
 - PET_mm_day
 - ARIDITY_GAGES2

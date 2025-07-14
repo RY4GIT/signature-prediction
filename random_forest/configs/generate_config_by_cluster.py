@@ -71,7 +71,7 @@ template_yaml = {
     },
     "experiment_name": "cluster_template",
     "filter_by_cluster": {"run": True, "name": "cluster_template"},
-    "settings": {"seed": 0, "ntree": 500, "num_folds": 10, "eval_metric": "MSE"},
+    "settings": {"seed": 0, "ntree": 500, "num_folds": 10, "eval_metric": "RMSE"},
     "save_models": True,
     "parallel": {"nCores": 16},
     "sigs_predict": [
@@ -117,8 +117,8 @@ template_yaml = {
         "kar_pc_sse",
         "geol_weighted_ave_age_ma",
         "PDEN_2000_BLOCK",
-        "gdp_ud_sav",
-        "hdi_ix_sav",
+        # "gdp_ud_sav", # Drop uninformative variables
+        # "hdi_ix_sav", # Drop uninformative variables
         "P_mm_day",
         "PET_mm_day",
         "ARIDITY_GAGES2",
@@ -148,7 +148,7 @@ def generate_yaml_files(clusters, template_yaml, out_dir):
 
         yaml_content["experiment_name"] = f"cluster_{cluster_num}"
         yaml_content["filter_by_cluster"]["name"] = cluster_num
-        yaml_content["save_models"] = False
+        # yaml_content["save_models"] = False # Save all models
 
         # Define the output filename
         output_filename = f"config_cluster_{cluster_num}.yml"

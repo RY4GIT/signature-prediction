@@ -25,6 +25,7 @@ settings:
   ntree: 10
   num_folds: 3
   eval_metric: RMSE
+  shap_rows: 10
 save_models: true
 parallel:
   nCores: 16

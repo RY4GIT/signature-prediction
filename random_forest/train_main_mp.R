@@ -365,9 +365,12 @@ for (sig in config$sigs_predict) {
       # "data" should be the training data (attributes) without the signature column
       # "y" should be the signature column
 
-      num_rows_to_analyze <- min(10, nrow(train_data))
+      # Unclear how many samples to use for SHAP values
+      # num_rows_to_analyze <- min(config$settings$shap_rows, nrow(train_data))
 
-      # num_rows_to_analyze <- nrow(train_data)
+      # Use all rows for SHAP values for now
+      num_rows_to_analyze <- nrow(train_data)
+
       x_train_interest <- train_data %>% select(-all_of(sig))
       y_train_interest <- train_data[[sig]]
 
