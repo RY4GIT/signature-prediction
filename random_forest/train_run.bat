@@ -33,8 +33,8 @@ REM )
 @REM Rscript train_main_mp.R %config_dir%\config_20250517_gages2.yml
 @REM echo Experiment with %config_dir%\config_20250517_gages2.yml finished
 
-echo Running experiment with %config_dir%\config_test_SHAP.yml
-Rscript train_main_mp.R %config_dir%\config_test_SHAP.yml
-echo Experiment with %config_dir%\config_test_SHAP.yml finished
+echo Running experiment with %config_dir%\config_test_train.yml
+Rscript train_main_mp.R %config_dir%\config_test_train.yml
+echo Experiment with %config_dir%\config_test_train.yml finished
 
 pause

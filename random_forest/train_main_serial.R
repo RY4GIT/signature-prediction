@@ -42,17 +42,19 @@ Sys.setenv(R_CONFIG_ACTIVE = "default")
 # _______________________________________________________________________________________________________________
 # (1) Load configuration from a file path
 # Set the configuration file path directly
-# config_file <- "./random_forest/configs/win/config_test.yml"
+config_file <- "./random_forest/configs/win/config_test_train.yml"
 
 # # Check if the file exists to avoid runtime errors
-# if (!file.exists(config_file)) {
-#   stop("Configuration file not found: ", config_file)
-# }
+if (!file.exists(config_file)) {
+  stop("Configuration file not found: ", config_file)
+} else {
+  message("Configuration file found: ", config_file)
+}
 
 # _______________________________________________________________________________________________________________
 # (2) Load configuration as an argument
-args <- commandArgs(trailingOnly = TRUE)
-config_file <- args[1]
+# args <- commandArgs(trailingOnly = TRUE)
+# config_file <- args[1]
 
 # If you choose this, run the code using bash/shell
 #
@@ -76,7 +78,18 @@ home_dir <- config$paths$home_dir
 # Create output directory
 username <- Sys.info()[["user"]] # Get current username
 formatted_datetime <- format(Sys.time(), "%Y%m%d")
-out_path <- file.path(home_dir, config$paths$out_dir, paste0("output_", username, "_", formatted_datetime, "_", config$experiment_name))
+out_path <- file.path(
+  home_dir,
+  config$paths$out_dir,
+  paste0(
+    "output_",
+    username,
+    "_",
+    formatted_datetime,
+    "_",
+    config$experiment_name
+  )
+)
 if (!dir.exists(out_path)) {
   dir.create(out_path, recursive = TRUE)
   message("Directory created: ", out_path)
@@ -136,7 +149,12 @@ if (config$filter_by_cluster$run) {
   attrs_test <- attrs_test %>%
     filter(cluster == config$filter_by_cluster$name) %>%
     select(-cluster)
-  message("Selected ", nrow(attrs_train), " gauges in: ", config$filter_by_cluster$name)
+  message(
+    "Selected ",
+    nrow(attrs_train),
+    " gauges in: ",
+    config$filter_by_cluster$name
+  )
 } else {
   attrs_train <- attrs_train %>%
     select(-cluster)
@@ -145,7 +163,6 @@ if (config$filter_by_cluster$run) {
 #############################################
 # EXECUTION
 #############################################
-
 
 # _______________________________________________________________________________________________________________
 # Random forest initialization
@@ -204,7 +221,10 @@ for (sig in config$sigs_predict) {
   # Join attribute tables and the selected signature column
   # Drop the "gauge_id" column for prediction
   train_data <- attrs_train %>%
-    inner_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
+    inner_join(
+      sigs_train %>% select(gauge_id, all_of(sig)),
+      by = "gauge_id"
+    ) %>%
     select(-gauge_id) %>%
     drop_na() %>%
     filter_all(all_vars(!is.infinite(.)))
@@ -254,9 +274,17 @@ for (sig in config$sigs_predict) {
 
   #  append variable importance for the signature
   if (nrow(importance(forest$finalModel, type = 1, scale = TRUE)) == 0) {
-    out_var_importance[[sig]] <- data.frame(predictor = NA, Importance = NA, sig_name = sig)
+    out_var_importance[[sig]] <- data.frame(
+      predictor = NA,
+      Importance = NA,
+      sig_name = sig
+    )
   } else {
-    out_var_importance[[sig]] <- importance(forest$finalModel, type = 1, scale = TRUE) %>%
+    out_var_importance[[sig]] <- importance(
+      forest$finalModel,
+      type = 1,
+      scale = TRUE
+    ) %>%
       as.data.frame() %>%
       tibble::rownames_to_column(var = "predictor") %>%
       dplyr::mutate(sig_name = sig)
@@ -264,9 +292,17 @@ for (sig in config$sigs_predict) {
 
   # append predicted signature values
   if (length(predictions) == 0) {
-    out_sig_predictions[[sig]] <- data.frame(gauge_id = NA, prediction = NA, sig_name = sig)
+    out_sig_predictions[[sig]] <- data.frame(
+      gauge_id = NA,
+      prediction = NA,
+      sig_name = sig
+    )
   } else {
-    out_sig_predictions[[sig]] <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
+    out_sig_predictions[[sig]] <- data.frame(
+      gauge_id = test_data$gauge_id,
+      prediction = predictions,
+      sig_name = sig
+    )
   }
 
   # _______________________________________________________________________________________________________________
@@ -277,21 +313,72 @@ for (sig in config$sigs_predict) {
   # Create a predictor object for the model
   # "data" should be the training data (attributes) without the signature column
   # "y" should be the signature column
-  predictor <- Predictor$new(forest$finalModel, data = train_data %>% select(-all_of(sig)), y = train_data[[sig]])
 
-  # Calculate SHAP values
-  shap <- Shapley$new(predictor, x.interest = train_data %>% select(-all_of(sig)))
-  shap_values <- shap$results
+  num_rows_to_analyze <- min(10, nrow(train_data))
+  # num_rows_to_analyze <- nrow(train_data)
+  x_train_interest <- train_data %>% select(-all_of(sig))
+
+  # Prepare a predictor object for the model
+  predictor <- Predictor$new(
+    forest$finalModel,
+    data = train_data %>% select(-all_of(sig)),
+    y = train_data[[sig]]
+  )
+
+  # Create a list to store the results
+  shap_values <- list()
+
+  for (i in 1:num_rows_to_analyze) {
+    message(
+      "Calculating SHAP values for observation [",
+      i,
+      "/",
+      num_rows_to_analyze,
+      "] for signature ",
+      sig
+    )
+
+    tryCatch(
+      {
+        if (i == 1) {
+          # Create SHAP object for the first observation
+          shapley <- Shapley$new(predictor, x.interest = x_train_interest[i, ])
+        } else {
+          # Reuse existing shapley object for subsequent observations
+          shapley$explain(x.interest = x_train_interest[i, ])
+        }
+
+        # Get results and add observation index
+        results <- shapley$results
+        results$observation_id <- i
+        results$sig_name <- sig
+
+        # Store results
+        shap_values[[i]] <- results
+      },
+      error = function(e) {
+        message("Error processing observation ", i, ": ", e$message)
+        # Create empty result for this observation
+        shap_values[[i]] <- data.frame(
+          observation_id = integer(0),
+          feature = character(0),
+          phi = numeric(0),
+          phi.var = numeric(0),
+          feature.value = character(0),
+          sig_name = character(0)
+        )
+      }
+    )
+  }
 
   # Store SHAP values in the list
-  out_shap_values[[sig]] <- shap_values %>%
-    as.data.frame() %>%
+  out_shap_values[[sig]] <- bind_rows(shap_values) %>%
     dplyr::mutate(
       feature = gsub("=.*", "", feature),
       feature_value = as.numeric(gsub(".*=", "", feature.value)),
       sig_name = sig
     ) %>%
-    select(feature, phi, phi.var, feature_value, sig_name)
+    select(observation_id, feature, phi, phi.var, feature_value, sig_name)
 
   # _______________________________________________________________________________________________________________
   # Save the trained model for this signature
@@ -323,9 +410,21 @@ all_var_importance <- bind_rows(out_var_importance)
 all_shap_values <- bind_rows(out_shap_values)
 
 write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
-write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures_train.csv"), row.names = FALSE)
-write.csv(all_var_importance, file.path(out_path, "var_importance.csv"), row.names = FALSE)
-write.csv(all_shap_values, file.path(out_path, "shap_values.csv"), row.names = FALSE)
+write.csv(
+  all_sig_predictions,
+  file.path(out_path, "predicted_signatures_train.csv"),
+  row.names = FALSE
+)
+write.csv(
+  all_var_importance,
+  file.path(out_path, "var_importance.csv"),
+  row.names = FALSE
+)
+write.csv(
+  all_shap_values,
+  file.path(out_path, "shap_values.csv"),
+  row.names = FALSE
+)
 
 
 # Output the config file

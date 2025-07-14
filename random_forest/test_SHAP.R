@@ -16,9 +16,9 @@ library(RColorBrewer)
 #############################################
 
 # Set paths - modify these according to your setup
-model_dir <- "G:/Shared drives/Signatures -- large scale/baseflow/RAraki/out/rf/output_flipl_20250709_test_SHAP"  # Directory containing .rds model files
-attributes_file <- "G:/Shared drives/Signatures -- large scale/baseflow/RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster_copy_for_shap.csv"    # Attributes file used for training
-output_dir <- "G:/Shared drives/Signatures -- large scale/baseflow/RAraki/out/rf/output_flipl_20250709_test_SHAP"         # Directory to save plots
+model_dir <- "G:/Shared drives/Signatures -- large scale/baseflow/RAraki/out/rf/output_flipl_20250709_test_SHAP" # Directory containing .rds model files
+attributes_file <- "G:/Shared drives/Signatures -- large scale/baseflow/RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster_copy_for_shap.csv" # Attributes file used for training
+output_dir <- "G:/Shared drives/Signatures -- large scale/baseflow/RAraki/out/rf/output_flipl_20250709_test_SHAP" # Directory to save plots
 
 # Create output directory if it doesn't exist
 if (!dir.exists(output_dir)) {
@@ -27,7 +27,7 @@ if (!dir.exists(output_dir)) {
 }
 
 # Signature names to analyze (modify based on your models)
-sig = "geol_weighted_ave_age_ma_copy"  # Add your signature names here
+sig = "geol_weighted_ave_age_ma_copy" # Add your signature names here
 
 
 #############################################
@@ -53,7 +53,13 @@ load_model <- function(model_path) {
 # Load attributes data
 message("Loading attributes data...")
 attributes_data <- read.csv(attributes_file, stringsAsFactors = FALSE)
-message("Loaded attributes data with ", nrow(attributes_data), " rows and ", ncol(attributes_data), " columns")
+message(
+  "Loaded attributes data with ",
+  nrow(attributes_data),
+  " rows and ",
+  ncol(attributes_data),
+  " columns"
+)
 
 # Initialize lists to store results
 models <- list()
@@ -84,8 +90,8 @@ feature_data <- attributes_data %>%
   select(-any_of(c("gauge_id", "cluster"))) %>%
   drop_na()
 
-predictor_names <- names(model$trainingData) %>% 
-  setdiff(".outcome")  # Remove .outcome from the list
+predictor_names <- names(model$trainingData) %>%
+  setdiff(".outcome") # Remove .outcome from the list
 
 # Add the signature column to the selection
 columns_to_select <- c(predictor_names, sig)
@@ -100,7 +106,7 @@ print(length(feature_data))
 
 # Remove infinite values
 feature_data <- feature_data %>%
-  mutate(across(where(is.numeric), ~ifelse(is.infinite(.), NA, .))) %>%
+  mutate(across(where(is.numeric), ~ ifelse(is.infinite(.), NA, .))) %>%
   drop_na()
 
 
@@ -112,12 +118,12 @@ print(length(x))
 
 # Create predictor object
 predictor <- Predictor$new(
-  model$finalModel, 
+  model$finalModel,
   data = x,
   y = feature_data[sig]
 )
 
-options(future.globals.maxSize = 1000 * 1024^2) 
+options(future.globals.maxSize = 1000 * 1024^2)
 imp <- FeatureImp$new(predictor, loss = "mae")
 library("ggplot2")
 plot(imp)
@@ -143,9 +149,8 @@ shapley$explain(x.interest = x[2, ])
 shapley$plot()
 
 
-
 # Loop through multiple rows to calculate SHAP values
-num_rows_to_analyze <- min(10, nrow(x))  # Analyze first 10 rows or all rows if less than 10
+num_rows_to_analyze <- min(10, nrow(x)) # Analyze first 10 rows or all rows if less than 10
 message("Calculating SHAP values for ", num_rows_to_analyze, " observations...")
 
 
@@ -173,9 +178,9 @@ message("Calculating SHAP values for ", num_rows_to_analyze, " observations...")
 #   # Use mclapply for parallel processing (Unix/Mac) or parLapply for Windows
 #   if (.Platform$OS.type == "unix") {
 #     # For Unix/Mac systems
-#     shap_values <- mclapply(1:num_samples, 
-#                            calculate_shap_single, 
-#                            predictor = predictor, 
+#     shap_values <- mclapply(1:num_samples,
+#                            calculate_shap_single,
+#                            predictor = predictor,
 #                            x = x,
 #                            mc.cores = num_cores)
 #   } else {
@@ -183,14 +188,14 @@ message("Calculating SHAP values for ", num_rows_to_analyze, " observations...")
 #     cl <- makeCluster(num_cores)
 #     clusterEvalQ(cl, library(iml))
 #     clusterExport(cl, c("predictor", "x"), envir = environment())
-    
-#     shap_values <- parLapply(cl, 1:num_samples, 
-#                             calculate_shap_single, 
-#                             predictor = predictor, 
+
+#     shap_values <- parLapply(cl, 1:num_samples,
+#                             calculate_shap_single,
+#                             predictor = predictor,
 #                             x = x)
 #     stopCluster(cl)
 #   }
-  
+
 #   # Combine results
 #   data_shap_values <- dplyr::bind_rows(shap_values)
 # })
@@ -206,7 +211,7 @@ message("Calculating SHAP values for ", num_rows_to_analyze, " observations...")
 # csv_filename <- file.path(output_dir, paste0("shapley_multiple_obs_", sig, "_par.csv"))
 # write.csv(data_shap_values, csv_filename, row.names = FALSE)
 # message("Saved SHAP values for multiple observations to: ", csv_filename)
-# 
+#
 # message("Parallel SHAP calculation completed with ", nrow(data_shap_values), " total results")
 # data_shap_values
 
@@ -220,63 +225,67 @@ shapley <- NULL
 # Loop through rows
 for (i in 1:num_rows_to_analyze) {
   message("Processing observation ", i, " of ", num_rows_to_analyze)
-  
-  tryCatch({
-    if (i == 1) {
-      # Create SHAP object for the first observation
-      shapley <- Shapley$new(predictor, x.interest = x[i, ])
-    } else {
-      # Reuse existing shapley object for subsequent observations
-      shapley$explain(x.interest = x[i, ])
+
+  tryCatch(
+    {
+      if (i == 1) {
+        # Create SHAP object for the first observation
+        shapley <- Shapley$new(predictor, x.interest = x[i, ])
+      } else {
+        # Reuse existing shapley object for subsequent observations
+        shapley$explain(x.interest = x[i, ])
+      }
+
+      # Get results and add observation index
+      results <- shapley$results
+      results$observation_id <- i
+      results$sig_name <- sig
+
+      # Store results
+      all_shapley_results[[i]] <- results
+    },
+    error = function(e) {
+      message("Error processing observation ", i, ": ", e$message)
+      # Create empty result for this observation
+      all_shapley_results[[i]] <- data.frame(
+        feature = character(0),
+        phi = numeric(0),
+        phi.var = numeric(0),
+        feature.value = character(0),
+        observation_id = integer(0),
+        sig_name = character(0)
+      )
     }
-      
-    # Get results and add observation index
-    results <- shapley$results
-    results$observation_id <- i
-    results$sig_name <- sig
-    
-    # Store results
-    all_shapley_results[[i]] <- results
-    
-  }, error = function(e) {
-    message("Error processing observation ", i, ": ", e$message)
-    # Create empty result for this observation
-    all_shapley_results[[i]] <- data.frame(
-      feature = character(0),
-      phi = numeric(0),
-      phi.var = numeric(0),
-      feature.value = character(0),
-      observation_id = integer(0),
-      sig_name = character(0)
-    )
-  })
+  )
 }
 
 # Combine all results into one dataframe
 if (length(all_shapley_results) > 0) {
   combined_shapley <- bind_rows(all_shapley_results)
-  
-      combined_shapley <- combined_shapley %>%
-      mutate(
-        # Extract just the numeric value from "FEATURE_NAME=VALUE" format
-        feature_value = as.numeric(gsub(".*=", "", feature.value))
-      )
-  
+
+  combined_shapley <- combined_shapley %>%
+    mutate(
+      # Extract just the numeric value from "FEATURE_NAME=VALUE" format
+      feature_value = as.numeric(gsub(".*=", "", feature.value))
+    )
+
   # Save to CSV
-  csv_filename <- file.path(output_dir, paste0("shapley_multiple_obs_", sig, ".csv"))
+  csv_filename <- file.path(
+    output_dir,
+    paste0("shapley_multiple_obs_", sig, ".csv")
+  )
   write.csv(combined_shapley, csv_filename, row.names = FALSE)
   message("Saved SHAP values for multiple observations to: ", csv_filename)
-  
+
   # Print summary
   message("Summary:")
   message("- Total observations processed: ", length(all_shapley_results))
   message("- Total SHAP values calculated: ", nrow(combined_shapley))
   message("- Features analyzed: ", length(unique(combined_shapley$feature)))
-  
+
   # Show first few results
   print("First few SHAP results:")
   print(head(combined_shapley, 10))
-  
 } else {
   message("No SHAP results to save")
 }

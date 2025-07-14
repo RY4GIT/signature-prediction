@@ -6,16 +6,16 @@ paths:
   # On Google Drive: RAraki/out/rf
   # On UCSB server: /out/rf
   train:
-    signatures: "RAraki/out/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
+    signatures: "RAraki/out/signatures/caravan_us_20250525/out_calc_All_custom_filt_qc_snow_area.csv"
     # On Google Drive: "RAraki/out/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
     # On UCSB server: "/signatures/caravan_camels_20240609_tunedparams/out_calc_ALL_custom.csv"
-    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
     # On Google Drive: "RAraki/data/derived_attrs/assembled_RA/attrs_camels.csv"
     # On UCSB server: "/derived_attrs/assembled_RA/attrs_camels.csv"
   test:
-    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
   predict:
-    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_and_gages2+climate+morph+padcat+cluster.csv"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
 experiment_name: "synthetic_test"
 filter_by_cluster:
   run: true
@@ -24,7 +24,8 @@ settings:
   seed: 0
   ntree: 10
   num_folds: 3
-  eval_metric: "RMSE"
+  eval_metric: RMSE
+save_models: true
 parallel:
   nCores: 16
 sigs_predict:

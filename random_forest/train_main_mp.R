@@ -1,9 +1,9 @@
 # Script to execute Random Forest models, predicting hydrologic signatures based on catchment attribute datasets
 # This code runs Random Forest in a parallel computing mode
 
-# How to run in Windows: 
+# How to run in Windows:
 # > cd signature-prediction\random_forest
-# > run.bat
+# > train_run.bat
 
 # UNCOMMENT THIS IF YOUR COMPUTER DOES NOT HAVE THE REQUIRED PACKAGES
 # # Set CRAN mirror
@@ -17,7 +17,7 @@
 
 # # List of all required packages
 # packages <- c(
-#   "tidyverse", "randomForest", "caret", 
+#   "tidyverse", "randomForest", "caret",
 #   "doParallel", "dplyr", "foreach", "yaml", "iml"
 # )
 
@@ -52,7 +52,18 @@ home_dir <- config$paths$home_dir
 # Create output directory
 username <- Sys.info()[["user"]] # Get current username
 formatted_datetime <- format(Sys.time(), "%Y%m%d")
-out_path <- file.path(home_dir, config$paths$out_dir, paste0("output_", username, "_", formatted_datetime, "_", config$experiment_name))
+out_path <- file.path(
+  home_dir,
+  config$paths$out_dir,
+  paste0(
+    "output_",
+    username,
+    "_",
+    formatted_datetime,
+    "_",
+    config$experiment_name
+  )
+)
 if (!dir.exists(out_path)) {
   dir.create(out_path, recursive = TRUE)
   message("Directory created: ", out_path)
@@ -116,7 +127,12 @@ if (config$filter_by_cluster$run) {
   attrs_test <- attrs_test %>%
     filter(cluster == config$filter_by_cluster$name) %>%
     select(-cluster)
-  message("Selected ", nrow(attrs_train), " gauges in: ", config$filter_by_cluster$name)
+  message(
+    "Selected ",
+    nrow(attrs_train),
+    " gauges in: ",
+    config$filter_by_cluster$name
+  )
 } else {
   attrs_train <- attrs_train %>%
     select(-cluster)
@@ -169,7 +185,7 @@ kfold_cv <- trainControl(
   search = "grid",
   verboseIter = TRUE,
   seeds = seeds,
-  allowParallel = TRUE  # Enable parallel within caret
+  allowParallel = TRUE # Enable parallel within caret
 )
 
 # Prepare output list
@@ -182,232 +198,335 @@ print("Start training multiple Random Forest models")
 # Process each signature
 results <- list()
 for (sig in config$sigs_predict) {
-  tryCatch({
-    message(paste("Processing signature:", sig))
-    
-    # _______________________________________________________________________________________________________________
-    # TRAINING
+  tryCatch(
+    {
+      message(paste("Processing signature:", sig))
 
-    # define repeated cross-validation with 10 folds and three repeats
-    # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
+      # _______________________________________________________________________________________________________________
+      # TRAINING
 
-    train_data <- attrs_train %>%
-      inner_join(sigs_train %>% select(gauge_id, all_of(sig)), by = "gauge_id") %>%
-      select(-gauge_id) %>%
-      drop_na() %>%
-      filter_all(all_vars(!is.infinite(.)))
+      # define repeated cross-validation with 10 folds and three repeats
+      # allow for parameter tuning, for mtry grid; range through the total number of predictor variables
 
-    message(paste("Data has", nrow(train_data), "rows"))
-    
-    # More aggressive NA handling to ensure no missing values remain
-    # Check for any problematic values before proceeding
-    na_count_before <- sum(is.na(train_data))
-    inf_count_before <- sum(sapply(train_data, function(x) sum(is.infinite(x), na.rm = TRUE)))
-    nan_count_before <- sum(sapply(train_data, function(x) sum(is.nan(x), na.rm = TRUE)))
-    
-    if (na_count_before > 0 || inf_count_before > 0 || nan_count_before > 0) {
-      message(paste("Found problematic values before cleaning:", 
-                    na_count_before, "NAs,", 
-                    inf_count_before, "Inf values,", 
-                    nan_count_before, "NaN values"))
-      # Replace NaN with NA (only if NaN values exist)
-      train_data <- train_data %>%
-        mutate(across(where(is.numeric), ~ifelse(is.nan(.), NA, .)))
-      
-      # More aggressive filtering of problematic values
-      train_data <- train_data %>%
-        mutate(across(where(is.numeric), ~ifelse(is.infinite(.), NA, .))) %>%
-        drop_na()  # Drop rows with any NA values again
+      train_data <- attrs_train %>%
+        inner_join(
+          sigs_train %>% select(gauge_id, all_of(sig)),
+          by = "gauge_id"
+        ) %>%
+        select(-gauge_id) %>%
+        drop_na() %>%
+        filter_all(all_vars(!is.infinite(.)))
+
+      message(paste("Data has", nrow(train_data), "rows"))
+
+      # More aggressive NA handling to ensure no missing values remain
+      # Check for any problematic values before proceeding
+      na_count_before <- sum(is.na(train_data))
+      inf_count_before <- sum(sapply(train_data, function(x) {
+        sum(is.infinite(x), na.rm = TRUE)
+      }))
+      nan_count_before <- sum(sapply(train_data, function(x) {
+        sum(is.nan(x), na.rm = TRUE)
+      }))
+
+      if (na_count_before > 0 || inf_count_before > 0 || nan_count_before > 0) {
+        message(paste(
+          "Found problematic values before cleaning:",
+          na_count_before,
+          "NAs,",
+          inf_count_before,
+          "Inf values,",
+          nan_count_before,
+          "NaN values"
+        ))
+        # Replace NaN with NA (only if NaN values exist)
+        train_data <- train_data %>%
+          mutate(across(where(is.numeric), ~ ifelse(is.nan(.), NA, .)))
+
+        # More aggressive filtering of problematic values
+        train_data <- train_data %>%
+          mutate(across(where(is.numeric), ~ ifelse(is.infinite(.), NA, .))) %>%
+          drop_na() # Drop rows with any NA values again
 
         # Double-check after cleaning
-      na_count_after <- sum(is.na(train_data))
-      inf_count_after <- sum(sapply(train_data, function(x) sum(is.infinite(x), na.rm = TRUE)))
-      nan_count_after <- sum(sapply(train_data, function(x) sum(is.nan(x), na.rm = TRUE)))
+        na_count_after <- sum(is.na(train_data))
+        inf_count_after <- sum(sapply(train_data, function(x) {
+          sum(is.infinite(x), na.rm = TRUE)
+        }))
+        nan_count_after <- sum(sapply(train_data, function(x) {
+          sum(is.nan(x), na.rm = TRUE)
+        }))
 
-      message(paste("After cleaning:", nrow(train_data), "rows remain with",
-                    na_count_after, "NAs,", 
-                    inf_count_after, "Inf values,",
-                    nan_count_after, "NaN values"))
-    }
-
-    # Check if we have enough data to proceed
-    if (nrow(train_data) < 10) {
-      message(paste("Not enough data for signature", sig, "- only", nrow(train_data), "rows after cleaning"))
-      results[[sig]] <- list(
-        sig_predictions = data.frame(gauge_id = attrs_test$gauge_id, prediction = NA, sig_name = sig),
-        r2 = data.frame(sig_name = sig, r_squared = NA),
-        var_importance = data.frame(predictor = names(train_data)[names(train_data) != sig], 
-                                  Importance = NA, 
-                                  sig_name = sig),
-        shap_values = data.frame(feature = names(train_data)[names(train_data) != sig],
-                              phi = NA,
-                              phi.var = NA,
-                              feature_value = NA,
-                              sig_name = sig)
-      )
-      next  # Skip to the next signature
-    }
-    
-    # Ensure we're using a numeric target for regression
-    train_data[[sig]] <- as.numeric(train_data[[sig]])
-    
-    # Try to train with error handling
-    forest_result <- tryCatch({
-      # Training the model with caret's parallel capabilities
-      forest <- train(
-        # signature to predict
-        formula(paste(sig, "~ .")),
-        # input attribute dataset, includes signature
-        data = train_data,
-        # Random forest method
-        method = "rf",
-        # metric to evaluate model performance
-        metric = config$settings$eval_metric,
-        # Number of trees
-        ntree = config$settings$ntree,
-        # adding the repeated cross validation
-        trControl = kfold_cv,
-        # hyperparameter testing
-        tuneGrid = hyper_grid,
-        # return importance, want %IncMSE data
-        importance = TRUE
-      )
-      forest  # Return the forest object if successful
-    }, error = function(e) {
-      message(paste("Error training model for signature", sig, ":", e$message))
-      NULL  # Return NULL if there was an error
-    })
-    
-    # Check if model training was successful
-    if (is.null(forest_result)) {
-      # Return placeholder values if training failed
-      results[[sig]] <- list(
-        sig_predictions = data.frame(gauge_id = attrs_test$gauge_id, prediction = NA, sig_name = sig),
-        r2 = data.frame(sig_name = sig, r_squared = NA),
-        var_importance = data.frame(predictor = names(train_data)[names(train_data) != sig], 
-                                  Importance = NA, 
-                                  sig_name = sig),
-        shap_values = data.frame(feature = names(train_data)[names(train_data) != sig],
-                              phi = NA,
-                              phi.var = NA,
-                              feature_value = NA,
-                              sig_name = sig)
-      )
-      next  # Skip to the next signature
-    }
-    
-    # Use the result if successful
-    forest <- forest_result
-    print(forest)
-    print(forest$finalModel)
-
-    # _______________________________________________________________________________________________________________
-    # Predict signature values
-    test_data <- attrs_test %>%
-      drop_na() 
-    
-    predictions <- predict(forest, test_data %>% select(-gauge_id))
-    
-    # _______________________________________________________________________________________________________________
-    # Append results
-    
-    # append r2 value
-    if (is.null(forest$finalModel$rsq) || length(forest$finalModel$rsq) == 0) {
-      out_r2 <- data.frame(sig_name = sig, r_squared = NA)  # Use NA when no r_squared value is calculated
-    } else {
-      out_r2 <- data.frame(sig_name = sig, r_squared = tail(forest$finalModel$rsq, 1))
-    }
-    
-    # append variable importance
-    var_imp_result <- tryCatch({
-      importance_data <- importance(forest$finalModel, type = 1, scale = TRUE)
-      if (is.null(importance_data) || nrow(importance_data) == 0) {
-        data.frame(predictor = names(train_data)[names(train_data) != sig], 
-                  Importance = NA, 
-                  sig_name = sig)
-      } else {
-        importance_data %>%
-          as.data.frame() %>%
-          tibble::rownames_to_column(var = "predictor") %>%
-          dplyr::mutate(sig_name = sig)
+        message(paste(
+          "After cleaning:",
+          nrow(train_data),
+          "rows remain with",
+          na_count_after,
+          "NAs,",
+          inf_count_after,
+          "Inf values,",
+          nan_count_after,
+          "NaN values"
+        ))
       }
-    }, error = function(e) {
-      message(paste("Error getting variable importance for", sig, ":", e$message))
-      data.frame(predictor = names(train_data)[names(train_data) != sig], 
-                Importance = NA, 
-                sig_name = sig)
-    })
-    
-    out_var_importance <- var_imp_result
-    
-    # append predicted signature values 
-    out_sig_predictions <- data.frame(gauge_id = test_data$gauge_id, prediction = predictions, sig_name = sig)
-    
-    # _______________________________________________________________________________________________________________
-    # Calculate SHAP values
-    
-    # Try to calculate SHAP values with error handling
-    shap_result <- tryCatch({
-      # Create a predictor object for the model
-      predictor <- Predictor$new(forest$finalModel, data = train_data %>% select(-all_of(sig)), y = train_data[[sig]])
-      
-      # Calculate SHAP values
-      shap <- Shapley$new(predictor, x.interest = train_data %>% select(-all_of(sig)))
-      shap_values <- shap$results
-      
-      # Format SHAP values
-      shap_values %>%
+
+      # Check if we have enough data to proceed
+      if (nrow(train_data) < 10) {
+        message(paste(
+          "Not enough data for signature",
+          sig,
+          "- only",
+          nrow(train_data),
+          "rows after cleaning"
+        ))
+        results[[sig]] <- list(
+          sig_predictions = data.frame(
+            gauge_id = attrs_test$gauge_id,
+            prediction = NA,
+            sig_name = sig
+          ),
+          r2 = data.frame(sig_name = sig, r_squared = NA),
+          var_importance = data.frame(
+            predictor = names(train_data)[names(train_data) != sig],
+            Importance = NA,
+            sig_name = sig
+          ),
+          shap_values = data.frame(
+            observation_id = integer(0),
+            feature = character(0),
+            phi = numeric(0),
+            phi.var = numeric(0),
+            feature_value = numeric(0),
+            sig_name = character(0)
+          )
+        )
+        next # Skip to the next signature
+      }
+
+      # Ensure we're using a numeric target for regression
+      train_data[[sig]] <- as.numeric(train_data[[sig]])
+
+      # Try to train with error handling
+      forest_result <- tryCatch(
+        {
+          # Training the model with caret's parallel capabilities
+          forest <- train(
+            # signature to predict
+            formula(paste(sig, "~ .")),
+            # input attribute dataset, includes signature
+            data = train_data,
+            # Random forest method
+            method = "rf",
+            # metric to evaluate model performance
+            metric = config$settings$eval_metric,
+            # Number of trees
+            ntree = config$settings$ntree,
+            # adding the repeated cross validation
+            trControl = kfold_cv,
+            # hyperparameter testing
+            tuneGrid = hyper_grid,
+            # return importance, want %IncMSE data
+            importance = TRUE
+          )
+          forest # Return the forest object if successful
+        },
+        error = function(e) {
+          message(paste(
+            "Error training model for signature",
+            sig,
+            ":",
+            e$message
+          ))
+          NULL # Return NULL if there was an error
+        }
+      )
+
+      # Check if model training was successful
+      if (is.null(forest_result)) {
+        # Return placeholder values if training failed
+        results[[sig]] <- list(
+          sig_predictions = data.frame(
+            gauge_id = attrs_test$gauge_id,
+            prediction = NA,
+            sig_name = sig
+          ),
+          r2 = data.frame(sig_name = sig, r_squared = NA),
+          var_importance = data.frame(
+            predictor = names(train_data)[names(train_data) != sig],
+            Importance = NA,
+            sig_name = sig
+          ),
+          shap_values = data.frame(
+            observation_id = integer(0),
+            feature = character(0),
+            phi = numeric(0),
+            phi.var = numeric(0),
+            feature_value = numeric(0),
+            sig_name = character(0)
+          )
+        )
+        next # Skip to the next signature
+      }
+
+      # Use the result if successful
+      forest <- forest_result
+      print(forest)
+      print(forest$finalModel)
+
+      # _______________________________________________________________________________________________________________
+      # Predict signature values
+      test_data <- attrs_test %>%
+        drop_na()
+
+      predictions <- predict(forest, test_data %>% select(-gauge_id))
+
+      # _______________________________________________________________________________________________________________
+      # Append results
+
+      # append r2 value
+      out_r2 <- data.frame(
+        sig_name = sig,
+        r_squared = tail(forest$finalModel$rsq, 1)
+      )
+
+      # append variable importance
+      out_var_importance <- importance(
+        forest$finalModel,
+        type = 1,
+        scale = TRUE
+      ) %>%
         as.data.frame() %>%
+        tibble::rownames_to_column(var = "predictor") %>%
+        dplyr::mutate(sig_name = sig)
+
+      # append predicted signature values
+      out_sig_predictions <- data.frame(
+        gauge_id = test_data$gauge_id,
+        prediction = predictions,
+        sig_name = sig
+      )
+
+      # _______________________________________________________________________________________________________________
+      # Calculate SHAP values for the signature
+      # https://cran.r-project.org/web/packages/iml/vignettes/intro.html
+      # https://christophm.github.io/interpretable-ml-book/agnostic.html
+
+      # Create a predictor object for the model
+      # "data" should be the training data (attributes) without the signature column
+      # "y" should be the signature column
+
+      num_rows_to_analyze <- min(10, nrow(train_data))
+      # num_rows_to_analyze <- nrow(train_data)
+      x_train_interest <- train_data %>% select(-all_of(sig))
+
+      # Prepare a predictor object for the model
+      predictor <- Predictor$new(
+        forest$finalModel,
+        data = train_data %>% select(-all_of(sig)),
+        y = train_data[[sig]]
+      )
+
+      # Create a list to store the results
+      shap_values <- list()
+
+      for (i in 1:num_rows_to_analyze) {
+        message(
+          "Calculating SHAP values for observation [",
+          i,
+          "/",
+          num_rows_to_analyze,
+          "] for signature ",
+          sig
+        )
+
+        tryCatch(
+          {
+            if (i == 1) {
+              # Create SHAP object for the first observation
+              shapley <- Shapley$new(
+                predictor,
+                x.interest = x_train_interest[i, ]
+              )
+            } else {
+              # Reuse existing shapley object for subsequent observations
+              shapley$explain(x.interest = x_train_interest[i, ])
+            }
+
+            # Get results and add observation index
+            shap_results <- shapley$results
+            shap_results$observation_id <- i
+            shap_results$sig_name <- sig
+
+            # Store results
+            shap_values[[i]] <- shap_results
+          },
+          error = function(e) {
+            message("Error processing observation ", i, ": ", e$message)
+            # Create empty result for this observation
+            shap_values[[i]] <- data.frame(
+              observation_id = integer(0),
+              feature = character(0),
+              phi = numeric(0),
+              phi.var = numeric(0),
+              feature.value = character(0),
+              sig_name = character(0)
+            )
+          }
+        )
+      }
+
+      # Store SHAP values in the list
+      out_shap_values <- bind_rows(shap_values) %>%
         dplyr::mutate(
           feature = gsub("=.*", "", feature),
           feature_value = as.numeric(gsub(".*=", "", feature.value)),
           sig_name = sig
         ) %>%
-        select(feature, phi, phi.var, feature_value, sig_name)
-    }, error = function(e) {
-      message(paste("Error calculating SHAP values for", sig, ":", e$message))
-      data.frame(
-        feature = names(train_data)[names(train_data) != sig],
-        phi = NA,
-        phi.var = NA,
-        feature_value = NA,
-        sig_name = sig
+        select(observation_id, feature, phi, phi.var, feature_value, sig_name)
+
+      # _______________________________________________________________________________________________________________
+      # Save the trained model for this signature
+      if (config$save_models) {
+        model_file_name <- file.path(out_path, paste0("model_", sig, ".rds"))
+        saveRDS(forest, model_file_name)
+        message(paste("Saved model for", sig, "to", model_file_name))
+      }
+
+      # _______________________________________________________________________________________________________________
+      # Store results for this signature
+      results[[sig]] <- list(
+        sig_predictions = out_sig_predictions,
+        r2 = out_r2,
+        var_importance = out_var_importance,
+        shap_values = out_shap_values
       )
-    })
-    
-    out_shap_values <- shap_result
-
-    # Save the trained model for this signature
-    if (config$save_models) {
-      model_file_name <- file.path(out_path, paste0("model_", sig, ".rds"))
-      saveRDS(forest, model_file_name)
-      message(paste("Saved model for", sig, "to", model_file_name))
+    },
+    error = function(e) {
+      message(paste("Global error for signature", sig, ":", e$message))
+      # Return placeholders if an error occurs
+      results[[sig]] <- list(
+        sig_predictions = data.frame(
+          gauge_id = attrs_test$gauge_id,
+          prediction = NA,
+          sig_name = sig
+        ),
+        r2 = data.frame(sig_name = sig, r_squared = NA),
+        var_importance = data.frame(
+          predictor = names(attrs_train)[names(attrs_train) != "gauge_id"],
+          Importance = NA,
+          sig_name = sig
+        ),
+        shap_values = data.frame(
+          observation_id = integer(0),
+          feature = character(0),
+          phi = numeric(0),
+          phi.var = numeric(0),
+          feature_value = numeric(0),
+          sig_name = character(0)
+        )
+      )
     }
-
-    # Store results for this signature
-    results[[sig]] <- list(
-      sig_predictions = out_sig_predictions, 
-      r2 = out_r2,
-      var_importance = out_var_importance,
-      shap_values = out_shap_values
-    )
-
-  }, error = function(e) {
-    message(paste("Global error for signature", sig, ":", e$message))
-    # Return placeholders if an error occurs
-    results[[sig]] <- list(
-      sig_predictions = data.frame(gauge_id = attrs_test$gauge_id, prediction = NA, sig_name = sig),
-      r2 = data.frame(sig_name = sig, r_squared = NA),
-      var_importance = data.frame(predictor = names(attrs_train)[names(attrs_train) != "gauge_id"], 
-                                Importance = NA, 
-                                sig_name = sig),
-      shap_values = data.frame(feature = names(attrs_train)[names(attrs_train) != "gauge_id"],
-                             phi = NA,
-                             phi.var = NA,
-                             feature_value = NA,
-                             sig_name = sig)
-    )
-  })
+  )
 }
 
 #############################################
@@ -418,6 +537,7 @@ for (sig in config$sigs_predict) {
 stopCluster(cl)
 
 print("Finished the training and unlisting results")
+
 # Extract results from the list
 out_sig_predictions <- lapply(results, `[[`, "sig_predictions")
 out_r2 <- lapply(results, `[[`, "r2")
@@ -433,10 +553,22 @@ all_shap_values <- bind_rows(out_shap_values)
 
 # Save output to CSV
 print("Saving output to CSV")
-write.csv(all_sig_predictions, file.path(out_path, "predicted_signatures_train.csv"), row.names = FALSE)
-write.csv(all_var_importance, file.path(out_path, "var_importance.csv"), row.names = FALSE)
+write.csv(
+  all_sig_predictions,
+  file.path(out_path, "predicted_signatures_train.csv"),
+  row.names = FALSE
+)
+write.csv(
+  all_var_importance,
+  file.path(out_path, "var_importance.csv"),
+  row.names = FALSE
+)
 write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
-write.csv(all_shap_values, file.path(out_path, "shap_values.csv"), row.names = FALSE)
+write.csv(
+  all_shap_values,
+  file.path(out_path, "shap_values.csv"),
+  row.names = FALSE
+)
 
 print("Saving config file")
 # Save config file

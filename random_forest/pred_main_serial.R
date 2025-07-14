@@ -106,10 +106,16 @@ total_rows <- nrow(attrs_pred_)
 print(paste("Total rows before filtering:", total_rows))
 
 attrs_pred <- attrs_pred_ %>%
-  filter(if_all(-gauge_id, ~!is.na(.) & !is.infinite(.)))
+  filter(if_all(-gauge_id, ~ !is.na(.) & !is.infinite(.)))
 
 rows_removed <- total_rows - nrow(attrs_pred)
-print(paste("Rows removed:", rows_removed, "(", round(rows_removed/total_rows*100, 2), "%)"))
+print(paste(
+  "Rows removed:",
+  rows_removed,
+  "(",
+  round(rows_removed / total_rows * 100, 2),
+  "%)"
+))
 print(paste("Rows remaining:", nrow(attrs_pred)))
 
 #############################################
@@ -118,38 +124,41 @@ print(paste("Rows remaining:", nrow(attrs_pred)))
 
 # Define a function to predict signatures using the trained model
 predict_signature <- function(model_path, new_data) {
-
   print(paste("Predicting signature from model:", model_path))
 
   # Load the model
   model <- readRDS(model_path)
-  
+
   # Ensure new_data has the same structure as training data
   required_predictors <- setdiff(names(model$trainingData), ".outcome")
   missing_cols <- setdiff(required_predictors, names(new_data))
-  
+
   if (length(missing_cols) > 0) {
-    stop("Missing required predictor columns: ", paste(missing_cols, collapse=", "))
+    stop(
+      "Missing required predictor columns: ",
+      paste(missing_cols, collapse = ", ")
+    )
   }
-  
+
   # Make predictions
   predictions <- predict(model, newdata = new_data)
   return(predictions)
-
 }
 
 print(paste("Predicting signatures from models in:", out_path))
 # Loop through signatures (1 RF model per signature)
 out_sig_predictions <- list()
 for (sig in config$sigs_predict) {
-
   # Execute the prediction
   model_path <- file.path(out_path, paste0("model_", sig, ".rds"))
   predicted_sig <- predict_signature(model_path, attrs_pred)
 
   # Append predicted signature values
-  out_sig_predictions[[sig]] <- data.frame(gauge_id = attrs_pred$gauge_id, prediction = predicted_sig, sig_name = sig)
-
+  out_sig_predictions[[sig]] <- data.frame(
+    gauge_id = attrs_pred$gauge_id,
+    prediction = predicted_sig,
+    sig_name = sig
+  )
 }
 
 
@@ -161,8 +170,16 @@ print(paste("Finalizing predictions. Outputting results to:", out_path))
 
 # Output the results
 all_sig_predictions <- bind_rows(out_sig_predictions)
-output_filename <- paste0("predicted_signatures_", config$experiment_name, ".csv")
-write.csv(all_sig_predictions, file.path(out_path, output_filename), row.names = FALSE)
+output_filename <- paste0(
+  "predicted_signatures_",
+  config$experiment_name,
+  ".csv"
+)
+write.csv(
+  all_sig_predictions,
+  file.path(out_path, output_filename),
+  row.names = FALSE
+)
 
 # Output the config file
 out_config_filename <- paste0("config_pred_", config$experiment_name, ".yaml")
