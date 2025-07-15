@@ -45,7 +45,7 @@ fig_dir = os.path.join(rf_out_dir, "figs_sig_pred_obs")
 if not os.path.exists(fig_dir):
     os.makedirs(fig_dir)
 
-
+conus_extent = [-125.5, -66.95, 24.396308, 47.5]
 # %%
 # ____________________________________________________________________________________
 # Load overlay layer for plotting
@@ -230,10 +230,14 @@ for sigs_name in plot_sigs_config["column_name"]:
 #######################################################
 # Define source colors
 source_colors = {
-    "Caravan_obs": {"color": "lightgrey", "label": "Caravan (Observed)"},
-    "GAGES2_obs": {"color": "tab:blue", "label": "GAGES-II (Observed)"},
-    "RF_overlap_baddata": {"color": "tab:red", "label": "RF (Caravan+GAGES-II attrs)"},
-    "RF_hys_only": {"color": "tab:orange", "label": "RF (Caravan attrs)"},
+    "Caravan_obs": {"color": "lightgrey", "label": "Caravan (Observed)", "alpha": 0.4},
+    "GAGES2_obs": {"color": "tab:blue", "label": "GAGES-II (Observed)", "alpha": 0.7},
+    "RF_overlap_baddata": {
+        "color": "tab:red",
+        "label": "RF (Caravan+GAGES-II overlap)",
+        "alpha": 0.7,
+    },
+    "RF_hys_only": {"color": "tab:orange", "label": "RF (Caravan only)", "alpha": 0.7},
 }
 
 
@@ -278,7 +282,7 @@ def plot_source(df, overlay_layer):
         patch = mpl.patches.Patch(
             facecolor=source_colors[source]["color"],
             edgecolor="black",
-            alpha=0.7,
+            alpha=1.0,
             label=source_colors[source]["label"],
         )
         legend_patches.append(patch)
@@ -289,11 +293,11 @@ def plot_source(df, overlay_layer):
         df_source.plot(
             ax=ax,
             color=source_colors[source]["color"],
-            alpha=0.7,
+            alpha=source_colors[source]["alpha"],
             zorder=99,
         )
 
-    ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+    ax.set_extent(conus_extent)
     ax.set_title("Sources")
 
     # Add custom legend

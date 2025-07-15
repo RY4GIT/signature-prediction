@@ -234,70 +234,31 @@ for (sig in config$sigs_predict) {
       # ____________________________________________________________
       # PREPARE TRAINING DATA
 
-      train_data <- attrs_train %>%
+      # Create and clean training data - keep gauge_id through cleaning
+      train_data_with_id <- attrs_train %>%
         inner_join(
           sigs_train %>% select(gauge_id, all_of(sig)),
           by = "gauge_id"
         ) %>%
-        select(-gauge_id) %>%
+        # Handle all problematic values in numeric columns only (gauge_id is not numeric)
+        mutate(across(
+          where(is.numeric),
+          ~ ifelse(is.nan(.) | is.infinite(.), NA, .)
+        )) %>%
         drop_na() %>%
-        filter_all(all_vars(!is.infinite(.)))
+        # Ensure numeric target for regression
+        mutate(!!sig := as.numeric(!!sym(sig)))
 
-      message(paste("Data has", nrow(train_data), "rows"))
+      # Extract gauge_ids and create train_data without gauge_id
+      train_gauge_ids <- train_data_with_id$gauge_id
+      train_data <- train_data_with_id %>% select(-gauge_id)
 
-      # Check for any problematic values before proceeding
-      na_count_before <- sum(is.na(train_data))
-      inf_count_before <- sum(sapply(train_data, function(x) {
-        sum(is.infinite(x), na.rm = TRUE)
-      }))
-      nan_count_before <- sum(sapply(train_data, function(x) {
-        sum(is.nan(x), na.rm = TRUE)
-      }))
-
-      if (na_count_before > 0 || inf_count_before > 0 || nan_count_before > 0) {
-        message(paste(
-          "Found problematic values before cleaning:",
-          na_count_before,
-          "NAs,",
-          inf_count_before,
-          "Inf values,",
-          nan_count_before,
-          "NaN values"
-        ))
-
-        # Replace NaN with NA
-        train_data <- train_data %>%
-          mutate(across(where(is.numeric), ~ ifelse(is.nan(.), NA, .)))
-
-        # Filter out infinite values
-        train_data <- train_data %>%
-          mutate(across(where(is.numeric), ~ ifelse(is.infinite(.), NA, .))) %>%
-          drop_na() # Drop rows with any NA values again
-
-        # Count remaining values after cleaning
-        na_count_after <- sum(is.na(train_data))
-        inf_count_after <- sum(sapply(train_data, function(x) {
-          sum(is.infinite(x), na.rm = TRUE)
-        }))
-        nan_count_after <- sum(sapply(train_data, function(x) {
-          sum(is.nan(x), na.rm = TRUE)
-        }))
-
-        message(paste(
-          "After cleaning:",
-          nrow(train_data),
-          "rows remain with",
-          na_count_after,
-          "NAs,",
-          inf_count_after,
-          "Inf values,",
-          nan_count_after,
-          "NaN values"
-        ))
-      }
-
-      # Ensure a numeric target for regression
-      train_data[[sig]] <- as.numeric(train_data[[sig]])
+      message(paste(
+        "Clean training data has",
+        nrow(train_data),
+        "rows for signature",
+        sig
+      ))
 
       # ____________________________________________________________
       # TRAINING MODEL
@@ -405,6 +366,7 @@ for (sig in config$sigs_predict) {
             # Get results and add observation index
             shap_results <- shapley$results
             shap_results$observation_id <- i
+            shap_results$gauge_id <- train_gauge_ids[i]
             shap_results$sig_name <- sig
 
             # Return results
@@ -419,7 +381,15 @@ for (sig in config$sigs_predict) {
           feature_value = as.numeric(gsub(".*=", "", feature.value)),
           sig_name = sig
         ) %>%
-        select(observation_id, feature, phi, phi.var, feature_value, sig_name)
+        select(
+          observation_id,
+          gauge_id,
+          feature,
+          phi,
+          phi.var,
+          feature_value,
+          sig_name
+        )
 
       # ____________________________________________________________
       # Save the trained model for this signature
@@ -455,6 +425,7 @@ for (sig in config$sigs_predict) {
         ),
         shap_values = data.frame(
           observation_id = integer(0),
+          gauge_id = character(0),
           feature = character(0),
           phi = numeric(0),
           phi.var = numeric(0),
