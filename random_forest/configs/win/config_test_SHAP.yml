@@ -12,7 +12,7 @@ filter_by_cluster:
   name: 1
 settings:
   seed: 0
-  ntree: 100
+  ntree: 50
   num_folds: 3
   eval_metric: RMSE
 save_models: true
@@ -23,25 +23,25 @@ sigs_predict:
 attrs_of_interest:
 - ELEV_MEAN_M_BASIN
 - DRAIN_SQKM
-- SLOPE_DEG_x10
-- FORESTNLCD06
-- CROPSNLCD06
-- PASTURENLCD06
-- PCT_IRRIG_AG
-- SNOWICENLCD06
-- PADCAT1_AND_2
-- isowet_areafrac
+# - SLOPE_DEG_x10
+# - FORESTNLCD06
+# - CROPSNLCD06
+# - PASTURENLCD06
+# - PCT_IRRIG_AG
+# - SNOWICENLCD06
+# - PADCAT1_AND_2
+# - isowet_areafrac
 - CLAYAVE
 - SILTAVE
 - soc_th_sav
 - kar_pc_sse
 - geol_weighted_ave_age_ma
-- PDEN_2000_BLOCK
-- P_mm_day
-- PET_mm_day
-- ARIDITY_GAGES2
-- SNOW_FRAC_PRECIP
-- seasonality_FAO_PM
-- high_prec_freq
-- low_prec_freq
-- low_prec_dur
+# - PDEN_2000_BLOCK
+# - P_mm_day
+# - PET_mm_day
+# - ARIDITY_GAGES2
+# - SNOW_FRAC_PRECIP
+# - seasonality_FAO_PM
+# - high_prec_freq
+# - low_prec_freq
+# - low_prec_dur

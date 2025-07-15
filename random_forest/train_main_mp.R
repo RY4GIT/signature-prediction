@@ -168,7 +168,7 @@ if (config$filter_by_cluster$run) {
 # Parallel pool setup
 print("initiating parallel pool")
 
-# Set up parallel backend for caret
+# Set up parallel backend
 num_cores <- min(config$parallel$num_cores, detectCores())
 cl <- makeCluster(num_cores)
 registerDoParallel(cl)
@@ -177,26 +177,26 @@ print(paste("Using", num_cores, "cores for parallel processing"))
 
 # ____________________________________________________________
 # Random forest initialization
+
+# Set random seed
 set.seed(config$settings$seed)
 
 # Set up basic training control parameters
 num_folds <- config$settings$num_folds
 
-# Calculate number of predictors (same for all signatures)
+# Number of predictors (same for all signatures)
 num_predictors <- ncol(attrs_train) - 1 # minus gauge_id column
 message(paste("Using", num_predictors, "predictors for all signatures"))
 
-# Create hyperparameter grid based on actual number of predictors
+# Create hyperparameter grid
 hyper_grid <- expand.grid(
   mtry = c(1:num_predictors)
 )
 
-# Set up properly structured seeds for reproducibility
-# Create a vector of seeds for each iteration (for parallel reproducibility)
+# Set up structured seeds for reproducibility
+# Create a vector of seeds for each iteration
 # For regular CV: we need folds + 1
 seeds <- vector(mode = "list", length = num_folds + 1)
-
-# For each fold, we need a vector with length = number of tuning parameter combinations
 for (i in 1:num_folds) {
   seeds[[i]] <- sample.int(1000, nrow(hyper_grid))
 }
@@ -204,7 +204,7 @@ for (i in 1:num_folds) {
 # For the final model, we need a single integer
 seeds[[num_folds + 1]] <- sample.int(1000, 1)
 
-# Set up the training control with CV and the proper seeds
+# Set up the training control
 kfold_cv <- trainControl(
   method = "cv",
   number = num_folds,
@@ -225,7 +225,6 @@ results <- list()
 # Process each signature
 print("Start training multiple Random Forest models")
 
-
 for (sig in config$sigs_predict) {
   tryCatch(
     {
@@ -234,20 +233,23 @@ for (sig in config$sigs_predict) {
       # ____________________________________________________________
       # PREPARE TRAINING DATA
 
-      # Create and clean training data - keep gauge_id through cleaning
+      # Create and clean training data
       train_data_with_id <- attrs_train %>%
         inner_join(
           sigs_train %>% select(gauge_id, all_of(sig)),
           by = "gauge_id"
         ) %>%
-        # Handle all problematic values in numeric columns only (gauge_id is not numeric)
+        # Ensure all columns except gauge_id are numeric
         mutate(across(
-          where(is.numeric),
+          !all_of("gauge_id"),
+          ~ as.numeric(.)
+        )) %>%
+        # Handle all problematic values in numeric columns
+        mutate(across(
+          !all_of("gauge_id"),
           ~ ifelse(is.nan(.) | is.infinite(.), NA, .)
         )) %>%
-        drop_na() %>%
-        # Ensure numeric target for regression
-        mutate(!!sig := as.numeric(!!sym(sig)))
+        drop_na()
 
       # Extract gauge_ids and create train_data without gauge_id
       train_gauge_ids <- train_data_with_id$gauge_id
@@ -331,6 +333,7 @@ for (sig in config$sigs_predict) {
 
       # Use all rows for SHAP values for now
       num_rows_to_analyze <- nrow(train_data)
+      # num_rows_to_analyze <- 20 # for debugging
 
       x_train_interest <- train_data %>% select(-all_of(sig))
       y_train_interest <- train_data[[sig]]
@@ -452,7 +455,7 @@ out_r2 <- lapply(results, `[[`, "r2")
 out_var_importance <- lapply(results, `[[`, "var_importance")
 out_shap_values <- lapply(results, `[[`, "shap_values")
 
-# Combine all the elements in the lists (results from multiple signatures) into data frames
+# Combine all the elements in the lists into data frames
 all_sig_predictions <- bind_rows(out_sig_predictions)
 all_r2 <- bind_rows(out_r2)
 all_var_importance <- bind_rows(out_var_importance)
