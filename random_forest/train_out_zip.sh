@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the date
-date="20250517"
+date="20250715"
 
 # Set the base directory path
 base_dir="/home/raraki/data/signature-prediction/out/rf"

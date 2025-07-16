@@ -8,9 +8,5 @@
     "2": {"name": "Mountain West ", "color": "#e78ac3"},
     "3": {"name": "Pacific Northwest", "color": "#8da0cb"},
     "4": {"name": "Western Coast and Deserts", "color": "#ffd92f"},
-    "5": {"name": "Northeast", "color": "#fc8d62"},
-    "test_SHAP": {
-        "name": "test_SHAP",
-        "color": "lightgrey"
-    }
+    "5": {"name": "Northeast", "color": "#fc8d62"}
 }

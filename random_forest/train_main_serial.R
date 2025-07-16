@@ -306,7 +306,7 @@ for (sig in config$sigs_predict) {
   }
 
   # _______________________________________________________________________________________________________________
-  # Calculate SHAP values for the signature
+  # Calculate Shapley values for the signature
   # https://cran.r-project.org/web/packages/iml/vignettes/intro.html
   # https://christophm.github.io/interpretable-ml-book/agnostic.html
 

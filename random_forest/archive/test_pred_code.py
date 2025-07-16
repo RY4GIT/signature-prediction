@@ -53,7 +53,12 @@ def create_direct_comparison_plots(df1, df2, output_dir):
         sig_data2 = df2[df2["sig_name"] == sig]
 
         # Merge on gauge_id
-        merged_data = pd.merge(sig_data1[["gauge_id", "prediction", "model_version"]], sig_data2[["gauge_id", "prediction", "model_version"]], on="gauge_id", suffixes=("_1", "_2"))
+        merged_data = pd.merge(
+            sig_data1[["gauge_id", "prediction", "model_version"]],
+            sig_data2[["gauge_id", "prediction", "model_version"]],
+            on="gauge_id",
+            suffixes=("_1", "_2"),
+        )
 
         print(f"Signature {sig}: Found {len(merged_data)} common gauges")
 
@@ -68,24 +73,40 @@ def create_direct_comparison_plots(df1, df2, output_dir):
         ax.scatter(merged_data["prediction_1"], merged_data["prediction_2"], alpha=0.6)
 
         # Add diagonal line
-        all_values = np.concatenate([merged_data["prediction_1"], merged_data["prediction_2"]])
+        all_values = np.concatenate(
+            [merged_data["prediction_1"], merged_data["prediction_2"]]
+        )
         min_val = np.min(all_values)
         max_val = np.max(all_values)
         ax.plot([min_val, max_val], [min_val, max_val], "r--")
 
         # Calculate correlation
-        corr = np.corrcoef(merged_data["prediction_1"], merged_data["prediction_2"])[0, 1]
+        corr = np.corrcoef(merged_data["prediction_1"], merged_data["prediction_2"])[
+            0, 1
+        ]
 
         # Calculate RMSE
-        rmse = np.sqrt(((merged_data["prediction_1"] - merged_data["prediction_2"]) ** 2).mean())
+        rmse = np.sqrt(
+            ((merged_data["prediction_1"] - merged_data["prediction_2"]) ** 2).mean()
+        )
 
         # Add titles and labels
-        ax.set_title(f"Comparison of {sig} predictions\nCorrelation: {corr:.4f}, RMSE: {rmse:.4f}")
+        ax.set_title(
+            f"Comparison of {sig} predictions\nCorrelation: {corr:.4f}, RMSE: {rmse:.4f}"
+        )
         ax.set_xlabel(f"Model: {version1}")
         ax.set_ylabel(f"Model: {version2}")
 
         # Add text showing number of points
-        ax.text(0.05, 0.95, f"N = {len(merged_data)}", transform=ax.transAxes, ha="left", va="top", bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
+        ax.text(
+            0.05,
+            0.95,
+            f"N = {len(merged_data)}",
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+        )
 
         # Equal aspect ratio
         ax.set_aspect("equal", adjustable="box")
