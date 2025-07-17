@@ -108,7 +108,7 @@ template_yaml = {
         "CROPSNLCD06",
         "PASTURENLCD06",
         "PCT_IRRIG_AG",
-        "SNOWICENLCD06",
+        # "SNOWICENLCD06", # Drop uninformative variables
         "PADCAT1_AND_2",
         "isowet_areafrac",
         "CLAYAVE",

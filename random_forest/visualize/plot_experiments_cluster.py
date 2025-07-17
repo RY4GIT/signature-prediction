@@ -905,9 +905,7 @@ def plot_shap_vs_attr(df, sig_name, cluster_num, cluster_info):
         # Add zero line
         ax.axhline(y=0, color="k", linestyle="--", alpha=0.3)
 
-    cluster_name = (
-        f"{sig_name} {cluster_num} - {cluster_info[str(cluster_num)]['name']}"
-    )
+    cluster_name = f"{sig_name} {cluster_num} - {cluster_info[cluster_num]['name']}"
     fig.suptitle(cluster_name, fontsize=24)
 
     # Save plot
@@ -990,6 +988,9 @@ def plot_shap_in_map(df, sig_name):
         ax = axes[i]
         ax.add_feature(land)
         ax.add_feature(water)
+
+        if df_sig["phi"].empty:
+            continue
 
         # Limit the vmin and vmax based on the quantiles of the data
         vmin, vmax = np.quantile(df_sig["phi"], [0.20, 0.80])

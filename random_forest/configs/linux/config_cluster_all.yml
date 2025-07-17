@@ -51,7 +51,6 @@ attrs_of_interest:
 - CROPSNLCD06
 - PASTURENLCD06
 - PCT_IRRIG_AG
-- SNOWICENLCD06
 - PADCAT1_AND_2
 - isowet_areafrac
 - CLAYAVE
