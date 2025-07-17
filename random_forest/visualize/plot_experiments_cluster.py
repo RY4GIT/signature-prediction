@@ -114,10 +114,17 @@ def plot_r2(df, cluster_info):
     colors.insert(0, "lightgrey")
 
     fig, ax = plt.subplots(figsize=(20, 8))
-    df.plot(kind="bar", color=colors, ax=ax)
-    ax.set_title(r"$R^2$ for Different cluster_nums")
-    ax.set_xlabel("Signature")
-    ax.set_ylabel(r"$R^2$")
+
+    plot_kwargs = {"kind": "bar", "color": colors, "ax": ax}
+    df.plot(**plot_kwargs)
+
+    ax_kwargs = {
+        "title": r"$R^2$ for Different cluster_nums",
+        "xlabel": "Signature",
+        "ylabel": r"$R^2$",
+    }
+    ax.set(**ax_kwargs)
+
     ax.set_xticklabels(df.index, rotation=45, ha="right")
     ax.legend(title="cluster_nums", bbox_to_anchor=(1.05, 1), loc="upper left")
     fig.tight_layout()
@@ -477,6 +484,11 @@ def load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info):
     return shap_df
 
 
+# %% ###################################################
+# SHAP values (bar plots, individual attributes)
+########################################################
+
+
 # Function to plot bar plots
 def plot_shap(df, cluster_num, cluster_info):
     sigs = df["sig_name"].unique()
@@ -606,69 +618,6 @@ for cluster_num in clusters:
     plot_shap_by_category(df_shap, cluster_num=cluster_num, cluster_info=cluster_info)
 
 # %% ###################################################
-# PLOT SHAP VS ATTRIBUTE
-########################################################
-
-
-def plot_shap_vs_attr(df, sig_name, cluster_num, cluster_info):
-    attr_names = df["variable_name"].unique()
-
-    n_cols = 5
-    n_rows = (len(attr_names) + n_cols - 1) // n_cols
-
-    fig, axes = plt.subplots(
-        nrows=n_rows,
-        ncols=n_cols,
-        figsize=(4 * n_cols, 3 * n_rows),
-        constrained_layout=True,
-    )
-    axes = axes.flatten()
-
-    for i, attr_name in enumerate(attr_names):
-        # Get data for this signature
-        df_sig = df[df["sig_name"] == sig_name].copy()
-
-        ax = axes[i]
-
-        # Plot scatter
-        df_sig_feature = df_sig[df_sig["feature"] == attr_name]
-        ax.scatter(
-            df_sig_feature["feature_value"], df_sig_feature["phi"], alpha=0.5, s=9
-        )
-
-        # Add labels and title
-        ax.set_xlabel(attr_name)
-        ax.set_ylabel(r"$\phi$")
-
-        # Add zero line
-        ax.axhline(y=0, color="k", linestyle="--", alpha=0.3)
-
-    cluster_name = f"{sig_name} {cluster_num} - {cluster_info[cluster_num]['name']}"
-    fig.suptitle(cluster_name, fontsize=24)
-
-    # Save plot
-    fig.savefig(
-        os.path.join(
-            fig_dir, f"shap_vs_attr_{sig_name}_cluster_{cluster_num}.{file_type}"
-        ),
-        dpi=300,
-        bbox_inches="tight",
-    )
-    plt.close(fig)
-
-
-# #####################################################
-# PLOT SHAP VS ATTRIBUTE (partial dependence plot like figure)
-########################################################
-
-df_shap = load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info)
-for cluster_num in clusters:
-    for sig_name in sigs_info["column_name"]:
-        print(f"Processing {sig_name} for {cluster_num}...")
-        plot_shap_vs_attr(df_shap, sig_name, cluster_num, cluster_info)
-
-
-# %% ###################################################
 # PLOT SHAP IN A MAP
 ########################################################
 
@@ -740,11 +689,12 @@ def plot_shap_in_map(df, sig_name):
         ax.add_feature(land)
         ax.add_feature(water)
 
-        if df_sig["phi"].empty:
-            continue
-
         # Plot scatter
         df_sig_feature = df_sig[df_sig["feature"] == attr_name]
+
+        # Limit the vmin and vmax based on the quantiles of the data
+        if df_sig_feature["phi"].empty:
+            continue
 
         # Limit the vmin and vmax based on the quantiles of the data
         vmin, vmax = np.quantile(df_sig_feature["phi"], [0.20, 0.80])
@@ -783,6 +733,68 @@ def plot_shap_in_map(df, sig_name):
 for sig_name in sigs_info["column_name"]:
     print(f"Processing {sig_name}...")
     plot_shap_in_map(df_shap_with_attrs, sig_name)
+
+# %% ###################################################
+# PLOT SHAP VS ATTRIBUTE
+########################################################
+
+
+def plot_shap_vs_attr(df, sig_name, cluster_num, cluster_info):
+    attr_names = df["variable_name"].unique()
+
+    n_cols = 5
+    n_rows = (len(attr_names) + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(
+        nrows=n_rows,
+        ncols=n_cols,
+        figsize=(4 * n_cols, 3 * n_rows),
+        constrained_layout=True,
+    )
+    axes = axes.flatten()
+
+    for i, attr_name in enumerate(attr_names):
+        # Get data for this signature
+        df_sig = df[df["sig_name"] == sig_name].copy()
+
+        ax = axes[i]
+
+        # Plot scatter
+        df_sig_feature = df_sig[df_sig["feature"] == attr_name]
+        ax.scatter(
+            df_sig_feature["feature_value"], df_sig_feature["phi"], alpha=0.5, s=9
+        )
+
+        # Add labels and title
+        ax.set_xlabel(attr_name)
+        ax.set_ylabel(r"$\phi$")
+
+        # Add zero line
+        ax.axhline(y=0, color="k", linestyle="--", alpha=0.3)
+
+    cluster_name = f"{sig_name} {cluster_num} - {cluster_info[cluster_num]['name']}"
+    fig.suptitle(cluster_name, fontsize=24)
+
+    # Save plot
+    fig.savefig(
+        os.path.join(
+            fig_dir, f"shap_vs_attr_{sig_name}_cluster_{cluster_num}.{file_type}"
+        ),
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close(fig)
+
+
+# #####################################################
+# PLOT SHAP VS ATTRIBUTE (partial dependence plot like figure)
+########################################################
+
+df_shap = load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info)
+for cluster_num in clusters:
+    for sig_name in sigs_info["column_name"]:
+        print(f"Processing {sig_name} for {cluster_num}...")
+        plot_shap_vs_attr(df_shap, sig_name, cluster_num, cluster_info)
 
 
 # %%
