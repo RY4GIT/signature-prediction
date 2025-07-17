@@ -10,7 +10,7 @@ import cartopy.feature as cfeature
 
 # %%
 ########################## CHANGE HERE #################
-output_date = r"20250715"
+output_date = r"20250716"
 user_name = "raraki"
 # file_type = "png"  # or "pdf" if you prefer PDF output
 file_type = "pdf"
@@ -19,7 +19,7 @@ file_type = "pdf"
 # ____________________________________________________________________________________
 # I/O paths
 
-# Current director
+# Current directory
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\random_forest\visualize")
 
 # Set up Figure output directory
@@ -62,21 +62,6 @@ with open("plot_config_expcolors_clusters.json", "r") as file:
 cluster_info = {int(k) if k.isdigit() else k: v for k, v in cluster_plot_json.items()}
 clusters = cluster_info.keys()
 print(clusters)
-
-
-# ____________________________________________________________________________________
-# Attributes
-caravan_attrs_dir = r"D:\data\Caravan1.4\attributes"
-attrs_camels_file = os.path.join(
-    caravan_attrs_dir,
-    "camels",
-    "attributes_other_camels.csv",
-)
-attrs_hysets_file = os.path.join(
-    caravan_attrs_dir,
-    "hysets",
-    "attributes_other_hysets.csv",
-)
 
 
 # Function to map colors
@@ -177,10 +162,8 @@ plot_r2(dfs_r2, cluster_info)
 plot_avg_r2(dfs_r2, cluster_info)
 
 
-# %%
-
-######################################################
-# Attributes importance by incRMSE
+# %% ################################################
+# Attributes importance by incMSE
 #####################################################
 
 
@@ -230,16 +213,16 @@ def plot_incMSE(df, cluster_num, cluster_info):
 
     cluster_name = f"{cluster_num} - {cluster_info[cluster_num]['name']}"
     fig.suptitle(cluster_name, fontsize=24)
-    fig.subplots_adjust(top=0.9)
+    # fig.subplots_adjust(top=0.9)
     fig.savefig(
-        os.path.join(fig_dir, f"var_importance_bar_{cluster_num}.{file_type}"),
+        os.path.join(fig_dir, f"incMSE_importance_bar_{cluster_num}.{file_type}"),
         dpi=1200,
     )
 
 
-######################################################
-# incRMSE (bar plots, individual attributes)
-#####################################################
+# #####################################################
+# incMSE (bar plots, individual attributes)
+# #####################################################
 
 for cluster_num in clusters:
     print(f"Processing {cluster_num}...")
@@ -250,7 +233,7 @@ for cluster_num in clusters:
 
 # %%
 # Function to plot bar plots by category
-def plot_incMSE_by_category(df, cluster_num, cluster_info, subset_top=False, top_n=10):
+def plot_incMSE_by_category(df, cluster_num, cluster_info):
     sigs = df["sig_name"].unique()
 
     n_cols = 5
@@ -268,22 +251,11 @@ def plot_incMSE_by_category(df, cluster_num, cluster_info, subset_top=False, top
         # Get data for this signature
         df_sig = df[df["sig_name"] == sig].copy()
 
-        # First sort by importance and take only top 10 variables
-        if subset_top:
-            top_10_vars = df_sig.sort_values(by="%IncMSE", ascending=False).head(top_n)
+        # Group by Group (category) and calculate mean incRMSE
+        df_grouped = df_sig.groupby("Group")["%IncMSE"].mean().reset_index()
 
-            # Now group these top 10 variables by category and calculate mean
-            df_grouped = top_10_vars.groupby("Group")["%IncMSE"].mean().reset_index()
-
-            # Sort categories by mean importance
-            df_grouped = df_grouped.sort_values(by="%IncMSE", ascending=False)
-
-        else:
-            # Group by Group (category) and calculate mean incRMSE
-            df_grouped = df_sig.groupby("Group")["%IncMSE"].mean().reset_index()
-
-            # Sort by mean importance
-            df_grouped = df_grouped.sort_values(by="%IncMSE", ascending=False)
+        # Sort by mean importance
+        df_grouped = df_grouped.sort_values(by="%IncMSE", ascending=False)
 
         # Create color dictionary for groups
         colors = [attrs_colors.get(group, "lightgrey") for group in df_grouped["Group"]]
@@ -305,24 +277,17 @@ def plot_incMSE_by_category(df, cluster_num, cluster_info, subset_top=False, top
 
     cluster_name = f"{cluster_num} - {cluster_info[cluster_num]['name']}"
     fig.suptitle(f"Variable Importance by Category: {cluster_name}", fontsize=24)
-    fig.subplots_adjust(top=0.9)
-    if subset_top:
-        fig.savefig(
-            os.path.join(
-                fig_dir, f"var_importance_cat_top{top_n}_{cluster_num}.{file_type}"
-            ),
-            dpi=1200,
-        )
-    else:
-        fig.savefig(
-            os.path.join(fig_dir, f"var_importance_cat_{cluster_num}.{file_type}"),
-            dpi=1200,
-        )
+    # fig.subplots_adjust(top=0.9)
+
+    fig.savefig(
+        os.path.join(fig_dir, f"incMSE_importance_cat_{cluster_num}.{file_type}"),
+        dpi=1200,
+    )
 
 
-######################################################
-# incRMSE (bar plots, by category)
-#####################################################
+# #####################################################
+# incMSE (bar plots, by category)
+# #####################################################
 for cluster_num in clusters:
     print(f"Processing category plots for {cluster_num}...")
 
@@ -333,11 +298,13 @@ for cluster_num in clusters:
     plot_incMSE_by_category(df_imp, cluster_num=cluster_num, cluster_info=cluster_info)
 
 
-# %%
+# %% ###################################################
+# incMSE (relative importance, by category)
+########################################################
+
+
 # Function to calculate and plot relative category importance across clusters
-def plot_incMSE_relative_category(
-    rf_dir, user_name, output_date, cluster_info, subset_top=False, top_n=10
-):
+def plot_incMSE_relative_category(rf_dir, user_name, output_date, cluster_info):
     """
     For each signature, creates a plot showing relative importance of each category
     across all clusters based on top ranked variables.
@@ -347,7 +314,6 @@ def plot_incMSE_relative_category(
     - user_name: User name for file path
     - output_date: Date for file path
     - cluster_info: Dictionary with cluster information
-    - top_n: Number of top variables to consider (default 10)
     """
     # Get all signature names from one of the clusters
     sample_cluster = list(cluster_info.keys())[0]
@@ -372,15 +338,8 @@ def plot_incMSE_relative_category(
             # Filter by signature
             df_sig = df_imp[df_imp["sig_name"] == sig_name].copy()
 
-            if subset_top:
-                # Get top N variables by importance
-                top_vars = df_sig.sort_values(by="%IncMSE", ascending=False).head(top_n)
-
-                # Group by category and sum importance
-                category_imp = top_vars.groupby("Group")["%IncMSE"].sum().reset_index()
-
-            else:
-                category_imp = df_sig.groupby("Group")["%IncMSE"].sum().reset_index()
+            # Group by category and sum importance
+            category_imp = df_sig.groupby("Group")["%IncMSE"].sum().reset_index()
 
             # Calculate relative importance (percentage)
             total_imp = category_imp["%IncMSE"].sum()
@@ -456,49 +415,26 @@ def plot_incMSE_relative_category(
                 x_positions,
                 values,
                 width=bar_width,
-                bottom=bottoms,  # This ensures bars are stacked on top of previous ones
+                bottom=bottoms,
                 label=category,
                 color=color_dict[category],
                 alpha=0.8,
                 edgecolor="white",
             )
 
-            # # Add category labels to the bars
-            # for j, bar in enumerate(bars):
-            #     if values[j] > 5:  # Only label if importance > 5%
-            #         ax.text(
-            #             bar.get_x() + bar.get_width() / 2,
-            #             bottoms[j]
-            #             + values[j] / 2,  # Position text in middle of segment
-            #             f"{category}",
-            #             ha="center",
-            #             va="center",
-            #             color="white",
-            #             fontweight="bold",
-            #             fontsize=8,
-            #         )
-
             # Update bottoms for next category
             bottoms += values
 
         # Customize the plot
-        if subset_top:
-            title_suffix = f" (Top {top_n} Variables)"
-        else:
-            title_suffix = ""
-
         ax.set_title(
-            f"Relative Category Importance for {sig_name} {title_suffix}",
+            f"Relative Category Importance for {sig_name}",
             fontsize=16,
         )
         ax.set_xlabel("Clusters", fontsize=12)
         ax.set_ylabel("Relative Importance (%)", fontsize=12)
         ax.set_xticks(x_positions)
         ax.set_xticklabels(cluster_names, rotation=45, ha="right")
-        ax.set_ylim(0, 105)  # Leave some space at top for labels
-
-        # Add grid lines
-        # ax.grid(axis="y", linestyle="--", alpha=0.7)
+        ax.set_ylim(0, 105)
 
         # Add a legend
         ax.legend(
@@ -506,30 +442,349 @@ def plot_incMSE_relative_category(
         )
 
         plt.tight_layout()
-        if subset_top:
-            plt.savefig(
-                os.path.join(
-                    fig_dir,
-                    f"relative_importance_top{top_n}_{sig_name}.{file_type}",
-                ),
-                dpi=300,
-                bbox_inches="tight",
-            )
-        else:
-            plt.savefig(
-                os.path.join(fig_dir, f"relative_importance_{sig_name}.{file_type}"),
-                dpi=300,
-                bbox_inches="tight",
-            )
-        plt.close()
+        plt.savefig(
+            os.path.join(fig_dir, f"incMSE_relative_importance_{sig_name}.{file_type}"),
+            dpi=300,
+            bbox_inches="tight",
+        )
+        plt.close(fig)
 
 
-######################################################
-# incRMSE (relative importance, by category)
-#####################################################
+# #####################################################
+# incMSE (relative importance, by category)
+# #####################################################
 plot_incMSE_relative_category(rf_dir, user_name, output_date, cluster_info)
 
-# %%
+
+# %% ###################################################
+# SHAP values
+########################################################
+
+
+def load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info):
+    output_dir = output_dir_name(rf_dir, user_name, output_date, cluster_num)
+    _shap_df = pd.read_csv(os.path.join(output_dir, "shap_values.csv"))
+
+    # Convert to float
+    _shap_df["feature_value"] = _shap_df["feature_value"].astype(float)
+    _shap_df["phi"] = _shap_df["phi"].astype(float)
+    _shap_df["phi.var"] = _shap_df["phi.var"].astype(float)
+
+    # Merge with attributes info
+    shap_df = _shap_df.merge(
+        attrs_info, how="left", left_on="feature", right_on="variable_name"
+    )
+    return shap_df
+
+
+# Function to plot bar plots
+def plot_shap(df, cluster_num, cluster_info):
+    sigs = df["sig_name"].unique()
+    color_dict = create_color_dict(df, "variable_name")
+
+    n_cols = 5
+    n_rows = (len(sigs) + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(
+        nrows=n_rows,
+        ncols=n_cols,
+        figsize=(8 * n_cols, 10 * n_rows),
+        constrained_layout=True,
+    )
+    axes = axes.flatten()
+
+    for i, sig in enumerate(sigs):
+        sig_data = df[df["sig_name"] == sig]
+
+        # Get the mean absolute SHAP value for each attribute
+        sig_data["phi_abs"] = sig_data["phi"].abs()
+        sig_data = (
+            sig_data.groupby("feature")["phi_abs"].mean().sort_values(ascending=False)
+        )
+
+        df_subset = sig_data.reset_index()
+
+        sns.barplot(
+            data=df_subset,
+            x="phi_abs",
+            y="feature",
+            palette=color_dict,
+            ax=axes[i],
+        )
+        axes[i].set_title(sig, loc="left", fontsize=30)
+        axes[i].set_xlabel(r"$\overline{|\phi|}$")
+        axes[i].set_ylabel(None)
+
+    for j in range(i + 1, len(axes)):
+        axes[j].set_visible(False)
+
+    cluster_name = f"{cluster_num} - {cluster_info[cluster_num]['name']}"
+    fig.suptitle(cluster_name, fontsize=24)
+    fig.subplots_adjust(top=0.9)
+    fig.savefig(
+        os.path.join(fig_dir, f"shap_bar_{cluster_num}.{file_type}"),
+        dpi=1200,
+    )
+
+
+# #####################################################
+# SHAP values (bar plots, individual attributes)
+# #####################################################
+
+for cluster_num in clusters:
+    print(f"Processing {cluster_num}...")
+
+    df_shap = load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info)
+    plot_shap(df_shap, cluster_num=cluster_num, cluster_info=cluster_info)
+
+
+# Function to plot bar plots by category
+def plot_shap_by_category(df, cluster_num, cluster_info):
+    sigs = df["sig_name"].unique()
+
+    n_cols = 5
+    n_rows = (len(sigs) + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(
+        nrows=n_rows,
+        ncols=n_cols,
+        figsize=(4 * n_cols, 3 * n_rows),
+        constrained_layout=True,
+    )
+    axes = axes.flatten()
+
+    for i, sig in enumerate(sigs):
+        # Get data for this signature
+        df_sig = df[df["sig_name"] == sig].copy()
+
+        # Group by Group (category) and calculate mean phi
+        df_sig["phi_abs"] = df_sig["phi"].abs()
+        df_grouped = df_sig.groupby("Group")["phi_abs"].mean().reset_index()
+
+        # Sort by mean importance
+        df_grouped = df_grouped.sort_values(by="phi_abs", ascending=False)
+
+        # Create color dictionary for groups
+        colors = [attrs_colors.get(group, "lightgrey") for group in df_grouped["Group"]]
+
+        # Plot
+        sns.barplot(
+            data=df_grouped,
+            x="phi_abs",
+            y="Group",
+            palette=dict(zip(df_grouped["Group"], colors)),
+            ax=axes[i],
+        )
+        axes[i].set_title(sig, loc="left")
+        # axes[i].set_ylabel(None)
+        axes[i].set_xlabel(r"$\overline{|\phi|}$")
+
+    for j in range(i + 1, len(axes)):
+        axes[j].set_visible(False)
+
+    cluster_name = f"{cluster_num} - {cluster_info[cluster_num]['name']}"
+    fig.suptitle(f"Variable Importance by Category: {cluster_name}", fontsize=24)
+    # fig.subplots_adjust(top=0.9)
+
+    fig.savefig(
+        os.path.join(fig_dir, f"shap_cat_{cluster_num}.{file_type}"),
+        dpi=1200,
+    )
+
+
+# #####################################################
+# Shapley (bar plots, by category)
+# #####################################################
+
+for cluster_num in clusters:
+    print(f"Processing category plots for {cluster_num}...")
+
+    # Get data
+    df_shap = load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info)
+
+    # Plot
+    plot_shap_by_category(df_shap, cluster_num=cluster_num, cluster_info=cluster_info)
+
+# %% ###################################################
+# PLOT SHAP VS ATTRIBUTE
+########################################################
+
+
+def plot_shap_vs_attr(df, sig_name, cluster_num, cluster_info):
+    attr_names = df["variable_name"].unique()
+
+    n_cols = 5
+    n_rows = (len(attr_names) + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(
+        nrows=n_rows,
+        ncols=n_cols,
+        figsize=(4 * n_cols, 3 * n_rows),
+        constrained_layout=True,
+    )
+    axes = axes.flatten()
+
+    for i, attr_name in enumerate(attr_names):
+        # Get data for this signature
+        df_sig = df[df["sig_name"] == sig_name].copy()
+
+        ax = axes[i]
+
+        # Plot scatter
+        df_sig_feature = df_sig[df_sig["feature"] == attr_name]
+        ax.scatter(
+            df_sig_feature["feature_value"], df_sig_feature["phi"], alpha=0.5, s=9
+        )
+
+        # Add labels and title
+        ax.set_xlabel(attr_name)
+        ax.set_ylabel(r"$\phi$")
+
+        # Add zero line
+        ax.axhline(y=0, color="k", linestyle="--", alpha=0.3)
+
+    cluster_name = f"{sig_name} {cluster_num} - {cluster_info[cluster_num]['name']}"
+    fig.suptitle(cluster_name, fontsize=24)
+
+    # Save plot
+    fig.savefig(
+        os.path.join(
+            fig_dir, f"shap_vs_attr_{sig_name}_cluster_{cluster_num}.{file_type}"
+        ),
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close(fig)
+
+
+# #####################################################
+# PLOT SHAP VS ATTRIBUTE (partial dependence plot like figure)
+########################################################
+
+df_shap = load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info)
+for cluster_num in clusters:
+    for sig_name in sigs_info["column_name"]:
+        print(f"Processing {sig_name} for {cluster_num}...")
+        plot_shap_vs_attr(df_shap, sig_name, cluster_num, cluster_info)
+
+
+# %% ###################################################
+# PLOT SHAP IN A MAP
+########################################################
+
+# load CAMELS and HYSETS attributes
+
+caravan_attrs_dir = r"D:\data\Caravan1.4\attributes"
+attrs_camels_file = os.path.join(
+    caravan_attrs_dir,
+    "camels",
+    "attributes_other_camels.csv",
+)
+attrs_hysets_file = os.path.join(
+    caravan_attrs_dir,
+    "hysets",
+    "attributes_other_hysets.csv",
+)
+
+attrs_camels = pd.read_csv(attrs_camels_file)
+attrs_hysets = pd.read_csv(attrs_hysets_file)
+df_shap = load_shap(rf_dir, user_name, output_date, "all", attrs_info)
+
+# Make sure all the gauge_id columns are string
+df_shap["gauge_id"] = df_shap["gauge_id"].astype(str)
+attrs_camels["gauge_id"] = attrs_camels["gauge_id"].astype(str)
+attrs_hysets["gauge_id"] = attrs_hysets["gauge_id"].astype(str)
+
+# Join df_SHAP with attrs_camels and attrs_hysets on gauge_id
+df_shap_camels = df_shap.merge(attrs_camels, how="right", on="gauge_id")
+df_shap_hysets = df_shap.merge(attrs_hysets, how="right", on="gauge_id")
+df_shap_with_attrs = pd.concat([df_shap_camels, df_shap_hysets])
+
+
+def plot_shap_in_map(df, sig_name):
+    attr_names = df["variable_name"].unique()
+
+    n_cols = 2
+    n_rows = (len(attr_names) + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(
+        nrows=n_rows,
+        ncols=n_cols,
+        figsize=(10 * n_cols, 5 * n_rows),
+        constrained_layout=True,
+        subplot_kw={"projection": ccrs.PlateCarree()},
+    )
+    axes = axes.flatten()
+
+    land = cfeature.NaturalEarthFeature(
+        "physical",
+        "land",
+        "50m",
+        edgecolor="face",
+        facecolor="darkgrey",  # Set land color to light gray
+    )
+
+    water = cfeature.NaturalEarthFeature(
+        "physical",
+        "lakes",
+        "50m",
+        edgecolor="face",
+        facecolor="white",  # Set water color to light blue
+    )
+
+    for i, attr_name in enumerate(attr_names):
+        # Get data for this signature
+        df_sig = df[df["sig_name"] == sig_name].copy()
+
+        ax = axes[i]
+        ax.add_feature(land)
+        ax.add_feature(water)
+
+        if df_sig["phi"].empty:
+            continue
+
+        # Plot scatter
+        df_sig_feature = df_sig[df_sig["feature"] == attr_name]
+
+        # Limit the vmin and vmax based on the quantiles of the data
+        vmin, vmax = np.quantile(df_sig_feature["phi"], [0.20, 0.80])
+
+        scatter_obj = ax.scatter(
+            df_sig_feature["gauge_lon"],
+            df_sig_feature["gauge_lat"],
+            c=df_sig_feature["phi"],
+            alpha=0.5,
+            s=9,
+            zorder=99,
+            vmin=vmin,
+            vmax=vmax,
+        )
+        cbar = plt.colorbar(scatter_obj, ax=ax, shrink=0.3)
+        cbar.set_label(r"$\phi$")
+        ax.set_title(attr_name)
+
+    fig.suptitle(sig_name, fontsize=24)
+
+    # Save plot
+    fig.savefig(
+        os.path.join(fig_dir, f"shap_in_map_{sig_name}.{file_type}"),
+        dpi=300,
+        bbox_inches="tight",
+    )
+
+    # Clear the figure
+    plt.close(fig)
+
+
+# ###################################################
+# SHAP IN A MAP
+#####################################################
+
+for sig_name in sigs_info["column_name"]:
+    print(f"Processing {sig_name}...")
+    plot_shap_in_map(df_shap_with_attrs, sig_name)
+
+
 # %%
 # def plot_category_importance_difference(rf_dir, user_name, output_date, cluster_info):
 #     """
@@ -695,335 +950,3 @@ plot_incMSE_relative_category(rf_dir, user_name, output_date, cluster_info)
 
 # # Run the function
 # plot_category_importance_difference(rf_dir, user_name, output_date, cluster_info)
-
-# %%
-
-######################################################
-# SHAP values
-#####################################################
-
-
-def load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info):
-    output_dir = output_dir_name(rf_dir, user_name, output_date, cluster_num)
-    _shap_df = pd.read_csv(os.path.join(output_dir, "shap_values.csv"))
-
-    # Convert to float
-    _shap_df["feature_value"] = _shap_df["feature_value"].astype(float)
-    _shap_df["phi"] = _shap_df["phi"].astype(float)
-    _shap_df["phi.var"] = _shap_df["phi.var"].astype(float)
-
-    # Merge with attributes info
-    shap_df = _shap_df.merge(
-        attrs_info, how="left", left_on="feature", right_on="variable_name"
-    )
-    return shap_df
-
-
-# Function to plot bar plots
-def plot_shap(df, cluster_num, cluster_info):
-    sigs = df["sig_name"].unique()
-    color_dict = create_color_dict(df, "variable_name")
-
-    n_cols = 5
-    n_rows = (len(sigs) + n_cols - 1) // n_cols
-
-    fig, axes = plt.subplots(
-        nrows=n_rows,
-        ncols=n_cols,
-        figsize=(8 * n_cols, 10 * n_rows),
-        constrained_layout=True,
-    )
-    axes = axes.flatten()
-
-    for i, sig in enumerate(sigs):
-        sig_data = df[df["sig_name"] == sig]
-
-        # Get the mean absolute SHAP value for each attribute
-        sig_data["phi_abs"] = sig_data["phi"].abs()
-        sig_data = (
-            sig_data.groupby("feature")["phi_abs"].mean().sort_values(ascending=False)
-        )
-
-        df_subset = sig_data.reset_index()
-
-        sns.barplot(
-            data=df_subset,
-            x="phi_abs",
-            y="feature",
-            palette=color_dict,
-            ax=axes[i],
-        )
-        axes[i].set_title(sig, loc="left", fontsize=30)
-        axes[i].set_xlabel(r"$\overline{|\phi|}$")
-        axes[i].set_ylabel(None)
-
-    for j in range(i + 1, len(axes)):
-        axes[j].set_visible(False)
-
-    cluster_name = f"{cluster_num} - {cluster_info[cluster_num]['name']}"
-    fig.suptitle(cluster_name, fontsize=24)
-    fig.subplots_adjust(top=0.9)
-    fig.savefig(
-        os.path.join(fig_dir, f"shap_bar_{cluster_num}.{file_type}"),
-        dpi=1200,
-    )
-
-
-######################################################
-# SHAP values (bar plots, individual attributes)
-#####################################################
-
-# # CONUS-wide
-# df_shap = load_shap(
-#     rf_dir=rf_dir,
-#     user_name=user_name,
-#     output_date=output_date,
-#     cluster_num="all",
-#     attrs_info=attrs_info,
-# )
-# plot_shap(df=df_shap, cluster_num="all", cluster_info=cluster_info)
-
-for cluster_num in clusters:
-    print(f"Processing {cluster_num}...")
-
-    df_shap = load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info)
-    plot_shap(df_shap, cluster_num=cluster_num, cluster_info=cluster_info)
-
-
-# %% Function to plot bar plots by category
-def plot_shap_by_category(df, cluster_num, cluster_info):
-    sigs = df["sig_name"].unique()
-
-    n_cols = 5
-    n_rows = (len(sigs) + n_cols - 1) // n_cols
-
-    fig, axes = plt.subplots(
-        nrows=n_rows,
-        ncols=n_cols,
-        figsize=(4 * n_cols, 3 * n_rows),
-        constrained_layout=True,
-    )
-    axes = axes.flatten()
-
-    for i, sig in enumerate(sigs):
-        # Get data for this signature
-        df_sig = df[df["sig_name"] == sig].copy()
-
-        # Group by Group (category) and calculate mean phi
-        df_sig["phi_abs"] = df_sig["phi"].abs()
-        df_grouped = df_sig.groupby("Group")["phi_abs"].mean().reset_index()
-
-        # Sort by mean importance
-        df_grouped = df_grouped.sort_values(by="phi_abs", ascending=False)
-
-        # Create color dictionary for groups
-        colors = [attrs_colors.get(group, "lightgrey") for group in df_grouped["Group"]]
-
-        # Plot
-        sns.barplot(
-            data=df_grouped,
-            x="phi_abs",
-            y="Group",
-            palette=dict(zip(df_grouped["Group"], colors)),
-            ax=axes[i],
-        )
-        axes[i].set_title(sig, loc="left")
-        # axes[i].set_ylabel(None)
-        axes[i].set_xlabel(r"$\overline{|\phi|}$")
-
-    for j in range(i + 1, len(axes)):
-        axes[j].set_visible(False)
-
-    cluster_name = f"{cluster_num} - {cluster_info[cluster_num]['name']}"
-    fig.suptitle(f"Variable Importance by Category: {cluster_name}", fontsize=24)
-    fig.subplots_adjust(top=0.9)
-
-    fig.savefig(
-        os.path.join(fig_dir, f"shap_cat_{cluster_num}.{file_type}"),
-        dpi=1200,
-    )
-
-
-######################################################
-# Shapley (bar plots, by category)
-#####################################################
-# # CONUS-wide
-# df_shap = load_shap(
-#     rf_dir=rf_dir,
-#     user_name=user_name,
-#     output_date=output_date,
-#     cluster_num="all",
-#     attrs_info=attrs_info,
-# )
-# plot_shap(df=df_shap, cluster_num="all", cluster_info=cluster_info)
-
-for cluster_num in clusters:
-    print(f"Processing category plots for {cluster_num}...")
-
-    # Get data
-    df_shap = load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info)
-
-    # Plot
-    plot_shap_by_category(df_shap, cluster_num=cluster_num, cluster_info=cluster_info)
-
-# %%
-# %% ###################################################
-# PLOT SHAP VS ATTRIBUTE
-########################################################
-
-
-def plot_shap_vs_attr(df, sig_name, cluster_num, cluster_info):
-    attr_names = df["variable_name"].unique()
-
-    n_cols = 5
-    n_rows = (len(attr_names) + n_cols - 1) // n_cols
-
-    fig, axes = plt.subplots(
-        nrows=n_rows,
-        ncols=n_cols,
-        figsize=(4 * n_cols, 3 * n_rows),
-        constrained_layout=True,
-    )
-    axes = axes.flatten()
-
-    for i, attr_name in enumerate(attr_names):
-        # Get data for this signature
-        df_sig = df[df["sig_name"] == sig_name].copy()
-
-        ax = axes[i]
-
-        # Plot scatter
-        df_sig_feature = df_sig[df_sig["feature"] == attr_name]
-        ax.scatter(
-            df_sig_feature["feature_value"], df_sig_feature["phi"], alpha=0.5, s=9
-        )
-
-        # Add labels and title
-        ax.set_xlabel(attr_name)
-        ax.set_ylabel(r"$\phi$")
-
-        # Add zero line
-        ax.axhline(y=0, color="k", linestyle="--", alpha=0.3)
-
-    cluster_name = f"{sig_name} {cluster_num} - {cluster_info[cluster_num]['name']}"
-    fig.suptitle(cluster_name, fontsize=24)
-
-    # Save plot
-    fig.savefig(
-        os.path.join(
-            fig_dir, f"shap_vs_attr_{sig_name}_cluster_{cluster_num}.{file_type}"
-        ),
-        dpi=300,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
-df_shap = load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info)
-for cluster_num in clusters:
-    for sig_name in sigs_info["column_name"]:
-        print(f"Processing {sig_name} for {cluster_num}...")
-        plot_shap_vs_attr(df_shap, sig_name, cluster_num, cluster_info)
-
-
-# %% ###################################################
-# PLOT SHAP IN A MAP
-########################################################
-
-attrs_camels = pd.read_csv(attrs_camels_file)
-attrs_hysets = pd.read_csv(attrs_hysets_file)
-df_shap = load_shap(rf_dir, user_name, output_date, "all", attrs_info)
-
-# Make sure all the gauge_id columns are string
-df_shap["gauge_id"] = df_shap["gauge_id"].astype(str)
-attrs_camels["gauge_id"] = attrs_camels["gauge_id"].astype(str)
-attrs_hysets["gauge_id"] = attrs_hysets["gauge_id"].astype(str)
-
-# %%
-# Join df_SHAP with attrs_camels and attrs_hysets on gauge_id
-df_shap_camels = df_shap.merge(attrs_camels, how="right", on="gauge_id")
-df_shap_hysets = df_shap.merge(attrs_hysets, how="right", on="gauge_id")
-df_shap_with_attrs = pd.concat([df_shap_camels, df_shap_hysets])
-
-# %%
-df_shap_with_attrs.head()
-
-
-# %%
-def plot_shap_in_map(df, sig_name):
-    attr_names = df["variable_name"].unique()
-
-    n_cols = 2
-    n_rows = (len(attr_names) + n_cols - 1) // n_cols
-
-    fig, axes = plt.subplots(
-        nrows=n_rows,
-        ncols=n_cols,
-        figsize=(10 * n_cols, 5 * n_rows),
-        constrained_layout=True,
-        subplot_kw={"projection": ccrs.PlateCarree()},
-    )
-    axes = axes.flatten()
-
-    land = cfeature.NaturalEarthFeature(
-        "physical",
-        "land",
-        "50m",
-        edgecolor="face",
-        facecolor="darkgrey",  # Set land color to light gray
-    )
-
-    water = cfeature.NaturalEarthFeature(
-        "physical",
-        "lakes",
-        "50m",
-        edgecolor="face",
-        facecolor="white",  # Set water color to light blue
-    )
-
-    for i, attr_name in enumerate(attr_names):
-        # Get data for this signature
-        df_sig = df[df["sig_name"] == sig_name].copy()
-
-        ax = axes[i]
-        ax.add_feature(land)
-        ax.add_feature(water)
-
-        if df_sig["phi"].empty:
-            continue
-
-        # Limit the vmin and vmax based on the quantiles of the data
-        vmin, vmax = np.quantile(df_sig["phi"], [0.20, 0.80])
-
-        # Plot scatter
-        df_sig_feature = df_sig[df_sig["feature"] == attr_name]
-        scatter_obj = ax.scatter(
-            df_sig_feature["gauge_lon"],
-            df_sig_feature["gauge_lat"],
-            c=df_sig_feature["phi"],
-            alpha=0.5,
-            s=9,
-            zorder=99,
-            vmin=vmin,
-            vmax=vmax,
-        )
-        cbar = plt.colorbar(scatter_obj, ax=ax, shrink=0.3)
-        cbar.set_label(r"$\phi$")
-        ax.set_title(attr_name)
-
-    fig.suptitle(sig_name, fontsize=24)
-
-    # Save plot
-    fig.savefig(
-        os.path.join(fig_dir, f"shap_in_map_{sig_name}.{file_type}"),
-        dpi=300,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
-for sig_name in sigs_info["column_name"]:
-    print(f"Processing {sig_name}...")
-    plot_shap_in_map(df_shap_with_attrs, sig_name)
-
-# %%

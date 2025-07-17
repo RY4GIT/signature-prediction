@@ -5,7 +5,7 @@ SET remoteServer=forge.eri.ucsb.edu
 SET remotePath=/home/raraki/data/signature-prediction/out/rf
 SET localPath=C:/Users/flipl/Downloads
 
-SET date=20250715
+SET date=20250716
 
 REM  1) SCP all the cluster ZIPs at once
 scp %remoteUser%@%remoteServer%:"%remotePath%/output_raraki_%date%_cluster_*.zip" %localPath%
