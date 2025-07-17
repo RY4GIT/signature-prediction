@@ -7,6 +7,7 @@ import json
 import numpy as np
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from matplotlib import patches
 
 # %%
 ########################## CHANGE HERE #################
@@ -30,6 +31,8 @@ if not os.path.exists(fig_dir):
 
 
 # Get Random Forest output directory name
+
+
 def output_dir_name(rf_dir, user_name, output_date, cluster_num):
     if not isinstance(cluster_num, (int, float)):
         output_dir = (
@@ -75,10 +78,29 @@ def create_color_dict(df, var_name):
     return df.set_index(var_name)["color"].to_dict()
 
 
-# %%
-######################################################
-# R-squares comparison by region
-#####################################################
+# ____________________________________________________________________________________
+# load CAMELS and HYSETS attributes
+
+caravan_attrs_dir = r"D:\data\Caravan1.4\attributes"
+attrs_camels_file = os.path.join(
+    caravan_attrs_dir,
+    "camels",
+    "attributes_other_camels.csv",
+)
+attrs_hysets_file = os.path.join(
+    caravan_attrs_dir,
+    "hysets",
+    "attributes_other_hysets.csv",
+)
+
+attrs_camels = pd.read_csv(attrs_camels_file)
+attrs_hysets = pd.read_csv(attrs_hysets_file)
+attrs_camels["gauge_id"] = attrs_camels["gauge_id"].astype(str)
+attrs_hysets["gauge_id"] = attrs_hysets["gauge_id"].astype(str)
+
+
+# %% # ____________________________________________________________________________________
+# Some base data loaders
 
 
 def load_data_r2(rf_dir, user_name, output_date, cluster_info):
@@ -102,6 +124,41 @@ def load_data_r2(rf_dir, user_name, output_date, cluster_info):
 
     dfs_r2 = pd.concat(_dfs_r2, axis=1)
     return dfs_r2
+
+
+# Function to load data
+def load_data_incMSE(rf_dir, user_name, output_date, cluster_num, attrs_info):
+    output_dir = output_dir_name(rf_dir, user_name, output_date, cluster_num)
+
+    _df_imp = pd.read_csv(os.path.join(output_dir, "var_importance.csv"))
+
+    df_imp = _df_imp.merge(
+        attrs_info, how="left", left_on="predictor", right_on="variable_name"
+    )
+
+    return df_imp
+
+
+def load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info):
+    output_dir = output_dir_name(rf_dir, user_name, output_date, cluster_num)
+    _shap_df = pd.read_csv(os.path.join(output_dir, "shap_values.csv"))
+
+    # Convert to float
+    _shap_df["feature_value"] = _shap_df["feature_value"].astype(float)
+    _shap_df["phi"] = _shap_df["phi"].astype(float)
+    _shap_df["phi.var"] = _shap_df["phi.var"].astype(float)
+
+    # Merge with attributes info
+    shap_df = _shap_df.merge(
+        attrs_info, how="left", left_on="feature", right_on="variable_name"
+    )
+    return shap_df
+
+
+# %%
+######################################################
+# R-squares comparison by region
+#####################################################
 
 
 def plot_r2(df, cluster_info):
@@ -172,19 +229,6 @@ plot_avg_r2(dfs_r2, cluster_info)
 # %% ################################################
 # Attributes importance by incMSE
 #####################################################
-
-
-# Function to load data
-def load_data_incMSE(rf_dir, user_name, output_date, cluster_num, attrs_info):
-    output_dir = output_dir_name(rf_dir, user_name, output_date, cluster_num)
-
-    _df_imp = pd.read_csv(os.path.join(output_dir, "var_importance.csv"))
-
-    df_imp = _df_imp.merge(
-        attrs_info, how="left", left_on="predictor", right_on="variable_name"
-    )
-
-    return df_imp
 
 
 # Function to plot bar plots
@@ -465,26 +509,10 @@ plot_incMSE_relative_category(rf_dir, user_name, output_date, cluster_info)
 
 # %% ###################################################
 # SHAP values
-########################################################
+#######################################################
 
 
-def load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info):
-    output_dir = output_dir_name(rf_dir, user_name, output_date, cluster_num)
-    _shap_df = pd.read_csv(os.path.join(output_dir, "shap_values.csv"))
-
-    # Convert to float
-    _shap_df["feature_value"] = _shap_df["feature_value"].astype(float)
-    _shap_df["phi"] = _shap_df["phi"].astype(float)
-    _shap_df["phi.var"] = _shap_df["phi.var"].astype(float)
-
-    # Merge with attributes info
-    shap_df = _shap_df.merge(
-        attrs_info, how="left", left_on="feature", right_on="variable_name"
-    )
-    return shap_df
-
-
-# %% ###################################################
+# ##################################################
 # SHAP values (bar plots, individual attributes)
 ########################################################
 
@@ -621,28 +649,9 @@ for cluster_num in clusters:
 # PLOT SHAP IN A MAP
 ########################################################
 
-# load CAMELS and HYSETS attributes
-
-caravan_attrs_dir = r"D:\data\Caravan1.4\attributes"
-attrs_camels_file = os.path.join(
-    caravan_attrs_dir,
-    "camels",
-    "attributes_other_camels.csv",
-)
-attrs_hysets_file = os.path.join(
-    caravan_attrs_dir,
-    "hysets",
-    "attributes_other_hysets.csv",
-)
-
-attrs_camels = pd.read_csv(attrs_camels_file)
-attrs_hysets = pd.read_csv(attrs_hysets_file)
 df_shap = load_shap(rf_dir, user_name, output_date, "all", attrs_info)
-
-# Make sure all the gauge_id columns are string
 df_shap["gauge_id"] = df_shap["gauge_id"].astype(str)
-attrs_camels["gauge_id"] = attrs_camels["gauge_id"].astype(str)
-attrs_hysets["gauge_id"] = attrs_hysets["gauge_id"].astype(str)
+
 
 # Join df_SHAP with attrs_camels and attrs_hysets on gauge_id
 df_shap_camels = df_shap.merge(attrs_camels, how="right", on="gauge_id")
@@ -650,7 +659,8 @@ df_shap_hysets = df_shap.merge(attrs_hysets, how="right", on="gauge_id")
 df_shap_with_attrs = pd.concat([df_shap_camels, df_shap_hysets])
 
 
-def plot_shap_in_map(df, sig_name):
+# %%
+def plot_shap_in_map(df, sig_name, var_name):
     attr_names = df["variable_name"].unique()
 
     n_cols = 2
@@ -693,16 +703,16 @@ def plot_shap_in_map(df, sig_name):
         df_sig_feature = df_sig[df_sig["feature"] == attr_name]
 
         # Limit the vmin and vmax based on the quantiles of the data
-        if df_sig_feature["phi"].empty:
+        if df_sig_feature[var_name].empty:
             continue
 
         # Limit the vmin and vmax based on the quantiles of the data
-        vmin, vmax = np.quantile(df_sig_feature["phi"], [0.20, 0.80])
+        vmin, vmax = np.quantile(df_sig_feature[var_name], [0.20, 0.80])
 
         scatter_obj = ax.scatter(
             df_sig_feature["gauge_lon"],
             df_sig_feature["gauge_lat"],
-            c=df_sig_feature["phi"],
+            c=df_sig_feature[var_name],
             alpha=0.5,
             s=9,
             zorder=99,
@@ -710,14 +720,26 @@ def plot_shap_in_map(df, sig_name):
             vmax=vmax,
         )
         cbar = plt.colorbar(scatter_obj, ax=ax, shrink=0.3)
-        cbar.set_label(r"$\phi$")
+        if var_name == "phi":
+            cbar.set_label(r"$\phi$")
+        elif var_name == "phi_abs":
+            cbar.set_label(r"$|\phi|$")
+        elif var_name == "phi_abs_perc":
+            cbar.set_label(r"$|\phi|/\sum|\phi|$ (%)")
         ax.set_title(attr_name)
 
     fig.suptitle(sig_name, fontsize=24)
 
     # Save plot
+    if var_name == "phi":
+        file_name = f"shap_in_map_{sig_name}.{file_type}"
+    elif var_name == "phi_abs":
+        file_name = f"shap_abs_in_map_{sig_name}.{file_type}"
+    elif var_name == "phi_abs_perc":
+        file_name = f"shap_abs_perc_in_map_{sig_name}.{file_type}"
+
     fig.savefig(
-        os.path.join(fig_dir, f"shap_in_map_{sig_name}.{file_type}"),
+        os.path.join(fig_dir, file_name),
         dpi=300,
         bbox_inches="tight",
     )
@@ -726,13 +748,14 @@ def plot_shap_in_map(df, sig_name):
     plt.close(fig)
 
 
+# %%
 # ###################################################
 # SHAP IN A MAP
 #####################################################
 
 for sig_name in sigs_info["column_name"]:
     print(f"Processing {sig_name}...")
-    plot_shap_in_map(df_shap_with_attrs, sig_name)
+    plot_shap_in_map(df_shap_with_attrs, sig_name, "phi")
 
 # %% ###################################################
 # PLOT SHAP VS ATTRIBUTE
@@ -797,168 +820,220 @@ for cluster_num in clusters:
         plot_shap_vs_attr(df_shap, sig_name, cluster_num, cluster_info)
 
 
+# %% #####################################################
+# PLOT SHAP in a map
+########################################################
+
+df_shap = load_shap(rf_dir, user_name, output_date, "all", attrs_info)
+df_shap["phi_abs"] = df_shap["phi"].abs()
+
 # %%
-# def plot_category_importance_difference(rf_dir, user_name, output_date, cluster_info):
-#     """
-#     For each signature, creates a plot showing the difference in relative importance
-#     between CONUS-wide and each cluster for each attribute category.
+sig_name = "BFI"
+df_shap_sig = df_shap[df_shap["sig_name"] == sig_name]
 
-#     Parameters:
-#     - rf_dir: Directory containing RF results
-#     - user_name: User name for file path
-#     - output_date: Date for file path
-#     - cluster_info: Dictionary with cluster information
-#     """
-#     # Get all signature names from the CONUS-wide cluster
-#     all_data = load_data_incMSE(rf_dir, user_name, output_date, "all", attrs_info)
-#     all_signatures = all_data["sig_name"].unique()
-
-#     # Get all regional clusters (excluding "all")
-#     regional_clusters = [c for c in cluster_info.keys() if c != "all"]
-
-#     # Process each signature
-#     for sig_name in all_signatures:
-#         print(f"Processing differences for signature: {sig_name}")
-
-#         # Get CONUS-wide data for this signature
-#         df_all = all_data[all_data["sig_name"] == sig_name].copy()
-
-#         # Calculate total importance per category for CONUS-wide
-#         total_imp_all = df_all["%IncMSE"].sum()
-#         category_imp_all = df_all.groupby("Group")["%IncMSE"].sum().reset_index()
-#         category_imp_all["rel_importance"] = (
-#             category_imp_all["%IncMSE"] / total_imp_all * 100
-#         )
-
-#         # Get all unique categories from CONUS-wide data
-#         all_categories = category_imp_all["Group"].unique()
-
-#         # Create a dict to store CONUS-wide relative importance by category
-#         conus_imp = dict(
-#             zip(category_imp_all["Group"], category_imp_all["rel_importance"])
-#         )
-
-#         # Set up the figure with subplots for each cluster
-#         fig, axes = plt.subplots(2, 3, figsize=(15, 10), sharex=True, sharey=True)
-#         axes = axes.flatten()
-
-#         # Create colors for categories (use red for positive differences, blue for negative)
-#         colors = [attrs_colors.get(group, "lightgrey") for group in all_categories]
-#         color_dict = dict(zip(all_categories, colors))
-
-#         # Process each regional cluster
-#         for i, cluster_num in enumerate(regional_clusters):
-#             ax = axes[i]
-
-#             # Load data for this cluster
-#             df_cluster = load_data_incMSE(
-#                 rf_dir, user_name, output_date, cluster_num, attrs_info
-#             )
-#             df_cluster = df_cluster[df_cluster["sig_name"] == sig_name].copy()
-
-#             # Calculate total importance per category for this cluster
-#             total_imp_cluster = df_cluster["%IncMSE"].sum()
-#             category_imp_cluster = (
-#                 df_cluster.groupby("Group")["%IncMSE"].sum().reset_index()
-#             )
-#             category_imp_cluster["rel_importance"] = (
-#                 category_imp_cluster["%IncMSE"] / total_imp_cluster * 100
-#             )
-
-#             # Create a dict to store cluster's relative importance by category
-#             cluster_imp = dict(
-#                 zip(
-#                     category_imp_cluster["Group"],
-#                     category_imp_cluster["rel_importance"],
-#                 )
-#             )
-
-#             # Calculate differences between CONUS-wide and this cluster
-#             diff_data = []
-#             for category in all_categories:
-#                 conus_value = conus_imp.get(category, 0)
-#                 cluster_value = cluster_imp.get(category, 0)
-#                 diff = cluster_value - conus_value  # Cluster minus CONUS-wide
-#                 diff_data.append(
-#                     {
-#                         "Category": category,
-#                         "Difference": diff,
-#                         "Color": color_dict[category],
-#                     }
-#                 )
-
-#             # Create DataFrame from differences and sort by absolute difference
-#             diff_df = pd.DataFrame(diff_data)
-#             diff_df = diff_df.sort_values(by="Difference", key=abs, ascending=False)
-
-#             # Plot the differences as horizontal bars
-#             bars = ax.barh(
-#                 diff_df["Category"],
-#                 diff_df["Difference"],
-#                 color=diff_df["Color"],
-#                 alpha=0.8,
-#                 edgecolor="black",
-#                 linewidth=0.5,
-#             )
-
-#             # Add a vertical line at x=0
-#             ax.axvline(x=0, color="black", linestyle="-", alpha=0.3)
-
-#             # Add value labels to the bars
-#             for bar in bars:
-#                 width = bar.get_width()
-#                 label_x_pos = width if width >= 0 else width - 1.5
-#                 ax.text(
-#                     label_x_pos,
-#                     bar.get_y() + bar.get_height() / 2,
-#                     f"{width:.1f}%",
-#                     va="center",
-#                     fontsize=8,
-#                     fontweight="bold",
-#                 )
-
-#             # Set title and format axes
-#             ax.set_title(
-#                 f"Cluster {cluster_num} - {cluster_info[cluster_num]['name']}",
-#                 fontsize=10,
-#             )
-#             ax.set_xlabel("Difference in Relative Importance (%)")
-
-#             if i == 0 or i == 3:  # Only show y labels for left plots
-#                 ax.set_ylabel("Category")
-#             else:
-#                 ax.set_ylabel("")
-
-#         # Hide any unused subplots
-#         for j in range(len(regional_clusters), len(axes)):
-#             axes[j].set_visible(False)
-
-#         # Add a main title
-#         fig.suptitle(
-#             f"Difference in Category Importance: Regional Clusters vs. CONUS-wide\n{sig_name}",
-#             fontsize=16,
-#             y=1.02,
-#         )
-
-#         # Add explanatory text
-#         fig.text(
-#             0.5,
-#             0.01,
-#             "Positive values: Category is MORE important in regional cluster\n"
-#             "Negative values: Category is LESS important in regional cluster",
-#             ha="center",
-#             fontsize=10,
-#         )
-
-#         # Adjust layout and save
-#         plt.tight_layout()
-#         plt.savefig(
-#             os.path.join(fig_dir, f"category_importance_diff_{sig_name}.{file_type}"),
-#             dpi=300,
-#             bbox_inches="tight",
-#         )
-#         plt.close()
+# Get the sum for phi_abs per lopcatino and add it to the dataframe
+df_shap_sig["phi_abs_sum"] = df_shap_sig.groupby("gauge_id")["phi_abs"].transform("sum")
+df_shap_sig["phi_abs_perc"] = df_shap_sig["phi_abs"] / df_shap_sig["phi_abs_sum"] * 100
+df_shap_sig.head()
 
 
-# # Run the function
-# plot_category_importance_difference(rf_dir, user_name, output_date, cluster_info)
+# %%
+# Join df_SHAP with attrs_camels and attrs_hysets on gauge_id
+df_shap_sig_camels = df_shap_sig.merge(attrs_camels, how="right", on="gauge_id")
+df_shap_sig_hysets = df_shap_sig.merge(attrs_hysets, how="right", on="gauge_id")
+df_shap_sig_with_attrs = pd.concat([df_shap_sig_camels, df_shap_sig_hysets])
+df_shap_sig_with_attrs.head()
+
+# %%
+plot_shap_in_map(df_shap_sig_with_attrs, sig_name, "phi_abs_perc")
+# %%
+# Get mean phi_abs_perc per category and create a grouped dataframe
+df_shap_sig_grouped = (
+    df_shap_sig_with_attrs.groupby(["Group", "gauge_id"])
+    .agg(
+        mean_phi_abs_perc=("phi_abs_perc", "mean"),
+        gauge_lon=("gauge_lon", "first"),
+        gauge_lat=("gauge_lat", "first"),
+    )
+    .reset_index()
+)
+df_shap_sig_grouped.head()
+
+
+# %%
+group_names = df_shap_sig_grouped["Group"].unique()
+n_cols = 2
+n_rows = (len(group_names) + n_cols - 1) // n_cols
+
+fig, axes = plt.subplots(
+    nrows=n_rows,
+    ncols=n_cols,
+    figsize=(8 * n_cols, 4 * n_rows),
+    constrained_layout=True,
+    subplot_kw={"projection": ccrs.PlateCarree()},
+)
+axes = axes.flatten()
+
+land = cfeature.NaturalEarthFeature(
+    "physical",
+    "land",
+    "50m",
+    edgecolor="face",
+    facecolor="darkgrey",  # Set land color to light gray
+)
+
+water = cfeature.NaturalEarthFeature(
+    "physical",
+    "lakes",
+    "50m",
+    edgecolor="face",
+    facecolor="white",  # Set water color to light blue
+)
+
+for i, group_name in enumerate(group_names):
+    # Get data for this signature
+    df_group = df_shap_sig_grouped[df_shap_sig_grouped["Group"] == group_name].copy()
+
+    ax = axes[i]
+    ax.add_feature(land)
+    ax.add_feature(water)
+
+    # Limit the vmin and vmax based on the quantiles of the data
+    if df_group["mean_phi_abs_perc"].empty:
+        continue
+
+    # Limit the vmin and vmax based on the quantiles of the data
+    vmin, vmax = np.quantile(df_group["mean_phi_abs_perc"], [0.20, 0.80])
+
+    scatter_obj = ax.scatter(
+        df_group["gauge_lon"],
+        df_group["gauge_lat"],
+        c=df_group["mean_phi_abs_perc"],
+        alpha=0.5,
+        s=9,
+        zorder=99,
+        vmin=vmin,
+        vmax=vmax,
+    )
+    cbar = plt.colorbar(scatter_obj, ax=ax, shrink=0.3)
+    cbar.set_label(r"$\overline{|\phi|/\sum|\phi|}$ (%)")
+    ax.set_title(group_name)
+
+fig.suptitle(sig_name, fontsize=24)
+
+# Save plot
+file_name = f"shap_perc_cat_in_map_{sig_name}.{file_type}"
+
+fig.savefig(
+    os.path.join(fig_dir, file_name),
+    dpi=300,
+    bbox_inches="tight",
+)
+
+# Clear the figure
+plt.close(fig)
+
+# %%
+# For each gauge_id, get the row with the maximum phi_abs_perc
+df_group_max = (
+    df_group.loc[df_group.groupby("gauge_id")["mean_phi_abs_perc"].idxmax()][
+        ["gauge_id", "mean_phi_abs_perc", "Group", "gauge_lon", "gauge_lat"]
+    ]
+    .rename(
+        columns={
+            "mean_phi_abs_perc": "max_mean_phi_abs_perc",
+            "Group": "Group_max",
+        }
+    )
+    .reset_index(drop=True)
+)
+
+df_group_max.head()
+df_group_max["color"] = df_group_max["Group_max"].map(attrs_colors)
+# Join the attr_colors with df_group_max
+
+# %%
+
+df_group_max["Group_max"].value_counts()
+
+# %%
+max_per_gauge = df_shap_sig_grouped.loc[
+    df_shap_sig_grouped.groupby("gauge_id")["mean_phi_abs_perc"].idxmax()
+]
+
+max_per_gauge["Group"].value_counts()
+max_per_gauge.head()
+max_per_gauge["color"] = max_per_gauge["Group"].map(attrs_colors)
+
+
+# %%
+max_per_gauge["mean_phi_abs_perc"]
+# %% Plot the max category per location
+
+
+n_rows = 1
+n_cols = 1
+
+fig, ax = plt.subplots(
+    nrows=n_rows,
+    ncols=n_cols,
+    figsize=(14 * n_cols, 8 * n_rows),
+    constrained_layout=True,
+    subplot_kw={"projection": ccrs.PlateCarree()},
+)
+
+land = cfeature.NaturalEarthFeature(
+    "physical",
+    "land",
+    "50m",
+    edgecolor="face",
+    facecolor="dimgrey",  # Set land color to light gray
+)
+
+water = cfeature.NaturalEarthFeature(
+    "physical",
+    "lakes",
+    "50m",
+    edgecolor="face",
+    facecolor="white",  # Set water color to light blue
+)
+
+ax.add_feature(land)
+ax.add_feature(water)
+max_opacity = max_per_gauge["mean_phi_abs_perc"].quantile(0.99)
+scatter_obj = ax.scatter(
+    max_per_gauge["gauge_lon"],
+    max_per_gauge["gauge_lat"],
+    c=max_per_gauge["color"],
+    alpha=np.clip(
+        max_per_gauge["mean_phi_abs_perc"] / max_opacity, 0, 1
+    ),  # Scale alpha by mean_phi_abs_perc percentage
+    s=10,
+    zorder=99,
+)
+# cbar = plt.colorbar(scatter_obj, ax=ax, shrink=0.3)
+# cbar.set_label(r"Category")
+ax.set_title(sig_name)
+
+# Add a legend
+legend_elements = [
+    patches.Patch(
+        facecolor=attrs_colors[group],
+        edgecolor="black",
+        label=f"{group} ({max_per_gauge.groupby('Group').count()['gauge_id'][group]:d})",
+    )
+    for group in attrs_colors.keys()
+]
+ax.legend(handles=legend_elements, loc="lower right", fontsize=14)
+
+# Save plot
+file_name = f"shap_most_important_cat_in_map_{sig_name}.{file_type}"
+
+fig.savefig(
+    os.path.join(fig_dir, file_name),
+    dpi=300,
+    bbox_inches="tight",
+)
+
+# %%
+max_per_gauge.groupby("Group").count()["gauge_id"]["Topography"]

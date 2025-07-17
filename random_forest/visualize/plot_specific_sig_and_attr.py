@@ -5,14 +5,65 @@ import matplotlib.pyplot as plt
 import json
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import numpy as np
 
 # Note: For interactive maps, you'll need to install folium: pip install folium
 
 # %%
-sig_name = "BFI"
-attr_name = "geol_weighted_ave_age_ma"
-cluster_num = 0
-exp_date = "20250714"
+sig_name = "AverageStorage"
+attr_name = "PDEN_2000_BLOCK"
+cluster_num = 5
+exp_date = "20250716"
+
+# "TotalRR",
+# "RR_Seasonality",
+# "EventRR",
+# "Recession_a_Seasonality",
+# "AverageStorage",
+# "RecessionParameters_b",
+# "RecessionParameters_T0",
+# "First_Recession_Slope",
+# "Mid_Recession_Slope",
+# "EventRR_TotalRR_ratio",
+# "VariabilityIndex",
+# "BFI",
+# "BaseflowRecessionK",
+# "IE_thresh_signif",
+# "SE_thresh_signif",
+# "Storage_thresh_signif",
+# "IE_thresh",
+# "SE_thresh",
+# "IE_effect",
+# "SE_effect",
+# "Storage_thresh",
+# "SE_slope",
+# "R_Pvol_RC",
+# "R_Pint_RC",
+# attr_names = [
+#     "ELEV_MEAN_M_BASIN",
+#     "DRAIN_SQKM",
+#     "SLOPE_DEG_x10",
+#     "FORESTNLCD06",
+#     "CROPSNLCD06",
+#     "PASTURENLCD06",
+#     "PCT_IRRIG_AG",
+#     "PADCAT1_AND_2",
+#     "isowet_areafrac",
+#     "CLAYAVE",
+#     "SILTAVE",
+#     "soc_th_sav",
+#     "kar_pc_sse",
+#     "geol_weighted_ave_age_ma",
+#     "PDEN_2000_BLOCK",
+#     "P_mm_day",
+#     "PET_mm_day",
+#     "ARIDITY_GAGES2",
+#     "SNOW_FRAC_PRECIP",
+#     "seasonality_FAO_PM",
+#     "high_prec_freq",
+#     "low_prec_freq",
+#     "low_prec_dur",
+# ]
 
 # %% ###################################################
 # Load data
@@ -121,12 +172,17 @@ def plot_map(df, sig_name, attr_name, cluster_num, cluster_info):
         ax.add_feature(land)
         ax.add_feature(water)
 
+        # Get the quantile values of the variable
+        vmin, vmax = np.quantile(data[var], [0.1, 0.9])
+        # vmin, vmax = data[var].min(), data[var].max()
         scatter_kwargs = {
             "cmap": "viridis",
             "marker": "o",
             "s": 10,
             "alpha": 0.5,
             "zorder": 99,
+            "vmin": vmin,
+            "vmax": vmax,
         }
 
         scatter_obj = ax.scatter(
