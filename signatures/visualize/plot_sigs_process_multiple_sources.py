@@ -500,7 +500,9 @@ for source in df_sigs["source"].unique():
 ########################################################################################
 
 
+########################################################################################
 # Functions
+########################################################################################
 # Get quantile & bivariate classes of data
 def get_bivariate_class(df, sig1, sig2, sig1_label, sig2_label):
     df_clean = df.dropna(subset=[sig1.column_name, sig2.column_name]).copy()
@@ -656,7 +658,7 @@ def update_column_name(signal):
     }
     if signal.column_name in label_to_column:
         signal.column_name = label_to_column[signal.column_name]
-        signal.label = sig1.label.replace("(p-value)", "significance")
+        signal.label = signal.label.replace("(p-value)", "significance")
 
 
 # ______________________________________________________
@@ -683,22 +685,23 @@ labels_rev = [
 # Label low values as 4, so that it gets assinged to (x,y)=(i,4) or (4,j) in the quadrant
 dir_label_rev = ["high", "", "", "low"]
 
+
 # End of "do not change"
 # ______________________________________________________
 
-# CHANGE HERE ################
+# %% ########################################################################################
 
 processes = [
-    "Baseflow",
-    "Water loss to deep GW or ET",
-    "Storage capacity and retention",
+    # "Baseflow",
+    # "Water loss to deep GW or ET",
+    # "Storage capacity and retention",
     # "Infiltration Excess Overlandflow",
     # "Saturation Excess Overlandflow",
     "ET impacts on storage and baseflow",
     # "IE vs SE significance", # Hard to distinguish IE vs SE
     # "IE vs SE (SSF2 & GW) significance",
     # "SSF1 vs SSF2 & GW significance",
-    "Overland Flow",
+    # "Overland Flow",
 ]
 
 for process_name in tqdm(
@@ -800,7 +803,7 @@ for process_name in tqdm(
     # For ET impacts on storage and baseflow
     if process_name == "ET impacts on storage and baseflow":
         sig1 = process_columns.loc[
-            process_columns.column_name == "VariabilityIndex"
+            process_columns.column_name == "TotalRR"  # "VariabilityIndex"
         ].squeeze()  # X variable, VariabilityIndex
         # sig2 = process_columns.loc[
         #     process_columns.column_name == "Recession_a_Seasonality"
@@ -809,10 +812,10 @@ for process_name in tqdm(
             process_columns.column_name == "Recession_a_Seasonality"
         ].squeeze()  # Y variable,
 
-        sig1_label = labels_rev
+        sig1_label = labels  # labels_rev
         sig2_label = labels
 
-        sig1_dir = dir_label_rev
+        sig1_dir = dir_label  # dir_label_rev
         sig2_dir = dir_label
     ###############################
 
@@ -953,16 +956,27 @@ def plot_process_dominance_map():
         plot_sigs_config["column_name"] == "avg_IE_SE_thresh"
     ].squeeze()
 
+    # Process Overland Flow data
+    sig1_ET = (
+        plot_sigs_config[plot_sigs_config["column_name"] == "TotalRR"].iloc[0].squeeze()
+    )
+    sig2_ET = plot_sigs_config[
+        plot_sigs_config["column_name"] == "Recession_a_Seasonality"
+    ].squeeze()
+
     # Update column names for threshold values
     update_column_name(sig1_of)
 
     # Get the bivariate class for each process
     df_baseflow = get_bivariate_class(df_sigs, sig1_bf, sig2_bf, labels, labels)
     df_overland = get_bivariate_class(df_sigs, sig1_of, sig2_of, labels_rev, labels)
+    df_ET = get_bivariate_class(df_sigs, sig1_ET, sig2_ET, labels, labels)
     df_baseflow.sort_values("area", ascending=False, inplace=True)
     df_overland.sort_values("area", ascending=False, inplace=True)
+    df_ET.sort_values("area", ascending=False, inplace=True)
     df_baseflow.sort_values("order", ascending=False, inplace=True)
     df_overland.sort_values("order", ascending=False, inplace=True)
+    df_ET.sort_values("order", ascending=False, inplace=True)
 
     # Define the classes to include with their alpha values
     classes_alpha = {
@@ -975,36 +989,64 @@ def plot_process_dominance_map():
     legend_elements = []
 
     # Plot each group
-    for df, process, color in [
-        (df_baseflow, "Baseflow", "tab:blue"),
-        (df_overland, "Overland Flow", "tab:orange"),
+    for i, df, process, color in [
+        (0, df_baseflow, "Baseflow", "royalblue"),
+        (1, df_overland, "Overland Flow", "lightcoral"),
+        (2, df_ET, "Seasonal water balance\n(ET, etc.)", None),
     ]:
         # Plot each class with different transparency
         for class_name, alpha in classes_alpha.items():
             df_class = df[df["bivariate_class"] == class_name].copy()
             df_class.sort_values("area", ascending=False, inplace=True)
 
+            # Make legend elements
             if class_name == "1-4":
                 legend_label = f"{process}"
-                legend_elements.append(
-                    Patch(
-                        facecolor=color,
-                        alpha=1.0,
-                        edgecolor="white",
-                        label=legend_label,
+                if i == 2:
+                    legend_elements.append(
+                        Patch(
+                            facecolor="none",
+                            alpha=1.0,
+                            edgecolor="black",
+                            hatch="////",
+                            label=legend_label,
+                        )
                     )
-                )
+                else:
+                    legend_elements.append(
+                        Patch(
+                            facecolor=color,
+                            alpha=1.0,
+                            edgecolor="white",
+                            label=legend_label,
+                        )
+                    )
 
+            # Plot watershed polygons
             if len(df_class) > 0:
-                df_class.plot(
-                    ax=ax,
-                    color=color,
-                    edgecolor="white",
-                    linewidth=0.2,
-                    alpha=alpha,
-                    zorder=100,
-                )
-                print(f"{process_name} class {class_name}: {len(df_class)} watersheds")
+                if i == 2:
+                    if class_name == "1-4":
+                        df_class.plot(
+                            ax=ax,
+                            facecolor="none",
+                            edgecolor="white",
+                            linewidth=0.01,
+                            alpha=0.3,
+                            hatch="////",
+                            zorder=100,
+                        )
+                    else:
+                        None
+                else:
+                    df_class.plot(
+                        ax=ax,
+                        color=color,
+                        edgecolor="white",
+                        linewidth=0.2,
+                        alpha=alpha,
+                        zorder=100,
+                    )
+                print(f"{process} class {class_name}: {len(df_class)} watersheds")
 
     # Add ecoregion overlay
     ecoregion_overlay.plot(
@@ -1026,7 +1068,7 @@ def plot_process_dominance_map():
     ax.set_title("Dominant Processes")
 
     # Set extent to CONUS
-    ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+    ax.set_extent(conus_extent)
 
     # Display the map
     plt.tight_layout()

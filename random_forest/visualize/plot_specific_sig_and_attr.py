@@ -10,7 +10,7 @@ import numpy as np
 # Note: For interactive maps, you'll need to install folium: pip install folium
 
 # %%
-sig_name = "AverageStorage"
+sig_name = "BFI"
 attr_name = "PDEN_2000_BLOCK"
 cluster_num = 5
 exp_date = "20250716"
@@ -113,6 +113,7 @@ def plot_sig_and_attr(df, sig_name, attr_name, cluster_num, cluster_info):
         color="tab:blue",
     )
 
+    ax.set_xscale("log")
     ax.set_xlabel(attr_name)
     ax.set_ylabel(sig_name)
     ax.legend()
@@ -131,9 +132,15 @@ NotImplemented
 # %% ######################################################
 # Plot the values on maps (spatial plot)
 ###########################################################
+import matplotlib.colors as colors
+
+
 def plot_map(df, sig_name, attr_name, cluster_num, cluster_info):
     df = df.copy()
-    df_subset = df[df["cluster"] == cluster_num]
+    if cluster_num == "all":
+        df_subset = df
+    else:
+        df_subset = df[df["cluster"] == cluster_num]
 
     # Get plot config
 
@@ -173,7 +180,7 @@ def plot_map(df, sig_name, attr_name, cluster_num, cluster_info):
         ax.add_feature(water)
 
         # Get the quantile values of the variable
-        vmin, vmax = np.quantile(data[var], [0.1, 0.9])
+        # vmin, vmax = np.quantile(data[var], [0.01, 0.99])
         # vmin, vmax = data[var].min(), data[var].max()
         scatter_kwargs = {
             "cmap": "viridis",
@@ -181,8 +188,10 @@ def plot_map(df, sig_name, attr_name, cluster_num, cluster_info):
             "s": 10,
             "alpha": 0.5,
             "zorder": 99,
-            "vmin": vmin,
-            "vmax": vmax,
+            # Log scale
+            "norm": colors.LogNorm(),
+            # "vmin": vmin,
+            # "vmax": vmax,
         }
 
         scatter_obj = ax.scatter(
@@ -210,7 +219,10 @@ def plot_interactive_map(df, sig_name, attr_name, cluster_num, cluster_info):
     import matplotlib.colors as mcolors
 
     df = df.copy()
-    df_subset = df[df["cluster"] == cluster_num]
+    if cluster_num == "all":
+        df_subset = df
+    else:
+        df_subset = df[df["cluster"] == cluster_num]
 
     # Create base map centered on US
     center_lat = df["gauge_lat_x"].mean()
@@ -337,3 +349,5 @@ interactive_map = plot_interactive_map(
     df, sig_name, attr_name, cluster_num, cluster_info
 )
 interactive_map
+
+# %%

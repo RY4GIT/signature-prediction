@@ -784,8 +784,12 @@ def plot_shap_vs_attr(df, sig_name, cluster_num, cluster_info):
 
         # Plot scatter
         df_sig_feature = df_sig[df_sig["feature"] == attr_name]
+        df_sig_feature_filt = df_sig_feature[df_sig_feature["cluster"] == cluster_num]
         ax.scatter(
-            df_sig_feature["feature_value"], df_sig_feature["phi"], alpha=0.5, s=9
+            df_sig_feature_filt["feature_value"],
+            df_sig_feature_filt["phi"],
+            alpha=0.5,
+            s=9,
         )
 
         # Add labels and title

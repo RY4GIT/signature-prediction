@@ -22,6 +22,7 @@ R_Pvol_RC,SE_correlation,[-],0,1,overlandflow,Saturation Excess Overlandflow,pos
 R_Pint_RC,IE_correlation,[-],0,1,overlandflow,Infiltration Excess Overlandflow,pos
 diff_RCPint_RCPvol,IE_minus_SE_corr,[-],-0.1,0.1,overlandflow,Infiltration Excess Overlandflow,pos
 RR_Seasonality,RR_Seasonality,[-],0,4,groundwater,ET impacts on storage and baseflow,pos
+TotalRR,TotalRR,[-],0,1,groundwater,ET impacts on storage and baseflow,neg
 Recession_a_Seasonality,Recession_a_Seasonality,[-],0,6,groundwater,ET impacts on storage and baseflow,pos
 VariabilityIndex,VariabilityIndex,[-],0,1,groundwater,ET impacts on storage and baseflow,pos
 diff_IE_SE_thresh,Differences in threshold (IE minus SE),[mm],-20,20,overlandflow,Overland Flow,

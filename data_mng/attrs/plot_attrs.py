@@ -50,34 +50,34 @@ cara_polygons.set_index("gauge_id", inplace=True)
 #
 ##############################################################################
 
-out_dir = os.path.join(data_dir, "derived_attrs", "assembled_RA", "figs", "attr_plots")
+out_dir = os.path.join(cloud_dir, "derived_attrs", "assembled_RA", "figs", "attr_plots")
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
 attr_names = [
-    "ELEV_MEAN_M_BASIN",
-    "DRAIN_SQKM",
+    # "ELEV_MEAN_M_BASIN",
+    # "DRAIN_SQKM",
     "SLOPE_DEG_x10",
-    "FORESTNLCD06",
-    "CROPSNLCD06",
-    "PASTURENLCD06",
-    "PCT_IRRIG_AG",
+    # "FORESTNLCD06",
+    # "CROPSNLCD06",
+    # "PASTURENLCD06",
+    # "PCT_IRRIG_AG",
     "PADCAT1_AND_2",
-    "isowet_areafrac",
-    "CLAYAVE",
-    "SILTAVE",
-    "soc_th_sav",
-    "kar_pc_sse",
-    "geol_weighted_ave_age_ma",
-    "PDEN_2000_BLOCK",
-    "P_mm_day",
-    "PET_mm_day",
+    # "isowet_areafrac",
+    # "CLAYAVE",
+    # "SILTAVE",
+    # "soc_th_sav",
+    # "kar_pc_sse",
+    # "geol_weighted_ave_age_ma",
+    # "PDEN_2000_BLOCK",
+    # "P_mm_day",
+    # "PET_mm_day",
     "ARIDITY_GAGES2",
-    "SNOW_FRAC_PRECIP",
-    "seasonality_FAO_PM",
-    "high_prec_freq",
-    "low_prec_freq",
-    "low_prec_dur",
+    # "SNOW_FRAC_PRECIP",
+    # "seasonality_FAO_PM",
+    # "high_prec_freq",
+    # "low_prec_freq",
+    # "low_prec_dur",
 ]
 # attr_names = [
 #     "ELEV_MEAN_M_BASIN",
