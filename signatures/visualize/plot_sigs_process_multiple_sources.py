@@ -1086,3 +1086,5 @@ def plot_process_dominance_map():
 # Run the function
 plot_process_dominance_map()
 # %%
+len(df_sigs)
+# %%
