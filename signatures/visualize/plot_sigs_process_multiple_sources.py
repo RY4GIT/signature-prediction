@@ -34,7 +34,7 @@ local_dir = r"D:\data"
 # Output directory (For signatures results, change name to match the current run dates)
 out_dir = os.path.join(gdrive_dir, "out", "signatures", "caravan_us_20250525")
 out_dir_gages2 = os.path.join(gdrive_dir, "out", "signatures", "gages2_20250608")
-rf_out_dir = os.path.join(gdrive_dir, "out", "rf", "output_raraki_20250526_cluster_all")
+rf_out_dir = os.path.join(gdrive_dir, "out", "rf", "output_raraki_20250716_cluster_all")
 
 # Plotting config
 plot_sigs_config_path = "plot_sigs_config.csv"
@@ -108,6 +108,7 @@ gages2_wspolygon["gauge_id"] = "gages2_" + gages2_wspolygon["GAGE_ID"].astype(
     str
 ).str.zfill(8)
 # %%
+print("Concatenating Caravan and GAGES2 watershed shapefiles...")
 wspolygon = pd.concat(
     [
         wspolygon_camels,
@@ -166,10 +167,26 @@ _df_sigs_rf_hys_only = _df_sigs_rf_hys_only.pivot(
 _df_sigs_rf_hys_only["source"] = "RF_hys_only"
 _df_sigs_rf_hys_only["order"] = 4
 
+print("Loading signatures results from RF predictions (only GAGES2 basins)...")
+_df_sigs_rf_gg2_only = pd.read_csv(
+    os.path.join(rf_out_dir, "predicted_signatures_pred_gg2_only.csv"),
+    index_col="gauge_id",
+)
+_df_sigs_rf_gg2_only = _df_sigs_rf_gg2_only.pivot(
+    columns="sig_name", values="prediction"
+)
+_df_sigs_rf_gg2_only["source"] = "RF_gg2_only"
+_df_sigs_rf_gg2_only["order"] = 5
 
 # %%
 _df_sigs = pd.concat(
-    [_df_sigs_cara, _df_sigs_gages2, _df_sigs_rf_overlap_baddata, _df_sigs_rf_hys_only]
+    [
+        _df_sigs_cara,
+        _df_sigs_gages2,
+        _df_sigs_rf_overlap_baddata,
+        _df_sigs_rf_hys_only,
+        _df_sigs_rf_gg2_only,
+    ]
 )
 _df_sigs = _df_sigs.drop(
     columns=["gauge_name", "country", "gauge_lat", "gauge_lon", "area"]
@@ -183,6 +200,11 @@ df_sigs = wspolygon.join(df_sigs, how="right")
 
 # %% Check gages2_ basins are joined correctly
 df_sigs[df_sigs["source"] == "GAGES2_obs"].head()
+# %%
+df_sigs.head()
+# %%
+print("Baseflow data length: ", len(df_sigs[df_sigs["BFI"].notna()]))
+print("Overlandflow data length: ", len(df_sigs[df_sigs["IE_thresh"].notna()]))
 # %%
 #######################################################
 # Preprocess the data
@@ -234,10 +256,11 @@ source_colors = {
     "GAGES2_obs": {"color": "tab:blue", "label": "GAGES-II (Observed)", "alpha": 0.7},
     "RF_overlap_baddata": {
         "color": "tab:red",
-        "label": "RF (Caravan+GAGES-II overlap)",
+        "label": "RF (Caravan+GAGES-II\noverlap)",
         "alpha": 0.7,
     },
     "RF_hys_only": {"color": "tab:orange", "label": "RF (Caravan only)", "alpha": 0.7},
+    "RF_gg2_only": {"color": "#F0E442", "label": "RF (GAGES-II only)", "alpha": 0.7},
 }
 
 
@@ -273,6 +296,7 @@ def plot_source(df, overlay_layer):
     # Create legend patches
     legend_patches = []
     for source in [
+        "RF_gg2_only",
         "RF_hys_only",
         "RF_overlap_baddata",
         "GAGES2_obs",
@@ -298,14 +322,19 @@ def plot_source(df, overlay_layer):
         )
 
     ax.set_extent(conus_extent)
-    ax.set_title("Sources")
+    # ax.set_title("Sources")
 
     # Add custom legend
     ax.legend(
+        title="Sources",
         handles=legend_patches[::-1],
-        loc="upper right",
-        bbox_to_anchor=(1.0, 1.0),
+        loc="lower right",
+        bbox_to_anchor=(1.0, 0.0),
+        ncol=1,
+        fontsize=10,
     )
+    for spine in ax.spines.values():
+        spine.set_visible(False)
 
     plt.tight_layout(pad=1.5)
     plt.tight_layout()
@@ -936,7 +965,7 @@ def plot_process_dominance_map():
     )
     ax.add_feature(
         land,
-        facecolor="lightgray",
+        facecolor="#F4F5FA",
         edgecolor="black",
         linewidth=0.5,
     )
@@ -956,12 +985,18 @@ def plot_process_dominance_map():
         plot_sigs_config["column_name"] == "avg_IE_SE_thresh"
     ].squeeze()
 
-    # Process Overland Flow data
+    # Process Water balance loss data
     sig1_ET = (
         plot_sigs_config[plot_sigs_config["column_name"] == "TotalRR"].iloc[0].squeeze()
     )
-    sig2_ET = plot_sigs_config[
-        plot_sigs_config["column_name"] == "Recession_a_Seasonality"
+    sig2_ET = plot_sigs_config[plot_sigs_config["column_name"] == "EventRR"].squeeze()
+
+    # Process high storage region
+    sig1_str = plot_sigs_config[
+        plot_sigs_config["column_name"] == "RecessionParameters_b"
+    ].squeeze()
+    sig2_str = plot_sigs_config[
+        plot_sigs_config["column_name"] == "AverageStorage"
     ].squeeze()
 
     # Update column names for threshold values
@@ -970,13 +1005,18 @@ def plot_process_dominance_map():
     # Get the bivariate class for each process
     df_baseflow = get_bivariate_class(df_sigs, sig1_bf, sig2_bf, labels, labels)
     df_overland = get_bivariate_class(df_sigs, sig1_of, sig2_of, labels_rev, labels)
-    df_ET = get_bivariate_class(df_sigs, sig1_ET, sig2_ET, labels, labels)
+    df_ET = get_bivariate_class(df_sigs, sig1_ET, sig2_ET, labels, labels_rev)
+    df_high_str = get_bivariate_class(df_sigs, sig1_str, sig2_str, labels_rev, labels)
+    #
     df_baseflow.sort_values("area", ascending=False, inplace=True)
     df_overland.sort_values("area", ascending=False, inplace=True)
     df_ET.sort_values("area", ascending=False, inplace=True)
+    df_high_str.sort_values("area", ascending=False, inplace=True)
+    #
     df_baseflow.sort_values("order", ascending=False, inplace=True)
     df_overland.sort_values("order", ascending=False, inplace=True)
     df_ET.sort_values("order", ascending=False, inplace=True)
+    df_high_str.sort_values("order", ascending=False, inplace=True)
 
     # Define the classes to include with their alpha values
     classes_alpha = {
@@ -986,13 +1026,54 @@ def plot_process_dominance_map():
         "2-4": 0.5,  # Lowest class - most transparent
     }
 
+    class_list = ["1-4", "1-3", "2-3", "2-4"]
+
+    # Get indices of watersheds that are not in any of the classified groups
+    baseflow_mask = ~df_baseflow.index.isin(
+        df_baseflow[df_baseflow["bivariate_class"].isin(class_list)].index
+    )
+    overland_mask = ~df_overland.index.isin(
+        df_overland[df_overland["bivariate_class"].isin(class_list)].index
+    )
+
+    # Get watersheds that are unclassified in all three processes
+    # Get common indices between all masks by aligning masks to df_sigs index first
+    baseflow_aligned = pd.Series(baseflow_mask, index=df_baseflow.index).reindex(
+        df_sigs.index
+    )
+    overland_aligned = pd.Series(overland_mask, index=df_overland.index).reindex(
+        df_sigs.index
+    )
+
+    # Fill any NaN values with False
+    baseflow_aligned = baseflow_aligned.fillna(False)
+    overland_aligned = overland_aligned.fillna(False)
+
+    # Get common indices where all masks are True
+    common_indices = df_sigs.index[baseflow_aligned & overland_aligned]
+    df_unclassified = df_sigs[df_sigs.index.isin(common_indices)]
+    df_unclassified.sort_values("area", ascending=False, inplace=True)
+    df_unclassified.sort_values("order", ascending=False, inplace=True)
+    print(f"Unclassified watersheds: {len(df_unclassified)}")
+
     legend_elements = []
 
     # Plot each group
+
+    df_unclassified.plot(
+        ax=ax,
+        color="lightgrey",
+        edgecolor="white",
+        linewidth=0.2,
+        alpha=1.0,
+        zorder=99,
+    )
+
     for i, df, process, color in [
         (0, df_baseflow, "Baseflow", "royalblue"),
         (1, df_overland, "Overland Flow", "lightcoral"),
-        (2, df_ET, "Seasonal water balance\n(ET, etc.)", None),
+        (2, df_ET, "Water balance losses", None),
+        (3, df_high_str, "Storage capacity", None),
     ]:
         # Plot each class with different transparency
         for class_name, alpha in classes_alpha.items():
@@ -1001,15 +1082,34 @@ def plot_process_dominance_map():
 
             # Make legend elements
             if class_name == "1-4":
-                legend_label = f"{process}"
+                # For Water balance losses
                 if i == 2:
+                    # Add unclassified legend element
+                    legend_elements.append(
+                        Patch(
+                            facecolor="lightgrey",
+                            alpha=1.0,
+                            edgecolor="white",
+                            label="Unclassified",
+                        )
+                    )
                     legend_elements.append(
                         Patch(
                             facecolor="none",
                             alpha=1.0,
                             edgecolor="black",
                             hatch="////",
-                            label=legend_label,
+                            label=f"{process}",
+                        )
+                    )
+                # For Storage capacity
+                elif i == 3:
+                    legend_elements.append(
+                        Patch(
+                            facecolor="none",
+                            alpha=1.0,
+                            edgecolor="dimgrey",
+                            label=f"{process}",
                         )
                     )
                 else:
@@ -1018,25 +1118,38 @@ def plot_process_dominance_map():
                             facecolor=color,
                             alpha=1.0,
                             edgecolor="white",
-                            label=legend_label,
+                            label=f"{process}",
                         )
                     )
 
             # Plot watershed polygons
             if len(df_class) > 0:
+                # For Water balance loss
                 if i == 2:
                     if class_name == "1-4":
-                        df_class.plot(
-                            ax=ax,
-                            facecolor="none",
-                            edgecolor="white",
-                            linewidth=0.01,
-                            alpha=0.3,
-                            hatch="////",
-                            zorder=100,
-                        )
+                        with plt.rc_context({"hatch.linewidth": 0.01}):
+                            df_class.plot(
+                                ax=ax,
+                                facecolor="none",
+                                edgecolor="white",
+                                linewidth=0.01,
+                                alpha=0.3,
+                                hatch="////",
+                                zorder=101,
+                            )
                     else:
                         None
+                # For Storage capacity
+                elif i == 3:
+                    df_class.plot(
+                        ax=ax,
+                        facecolor="none",
+                        edgecolor="dimgrey",
+                        linewidth=0.4,
+                        alpha=0.8,
+                        zorder=102,
+                    )
+                # For Baseflow and Overland flow
                 else:
                     df_class.plot(
                         ax=ax,
@@ -1048,15 +1161,21 @@ def plot_process_dominance_map():
                     )
                 print(f"{process} class {class_name}: {len(df_class)} watersheds")
 
-    # Add ecoregion overlay
-    ecoregion_overlay.plot(
-        ax=ax,
-        edgecolor="grey",
-        facecolor="none",
-        linewidth=0.5,
-        aspect=1.1,
-        zorder=5,
-    )
+    # Set spines invisible
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+    # # Add ecoregion overlay
+    # ecoregion_overlay.plot(
+    #     ax=ax,
+    #     edgecolor="grey",
+    #     facecolor="none",
+    #     linewidth=0.5,
+    #     aspect=1.1,
+    #     zorder=5,
+    # )
 
     # Add legend and title
     ax.legend(
@@ -1065,7 +1184,7 @@ def plot_process_dominance_map():
         fontsize=10,
     )
 
-    ax.set_title("Dominant Processes")
+    ax.set_title("(a) Dominant Processes", loc="left", fontweight="bold")
 
     # Set extent to CONUS
     ax.set_extent(conus_extent)

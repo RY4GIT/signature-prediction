@@ -111,6 +111,8 @@ Once you get the hang of it, use automated workflow for training RF model region
 
 #### For predicting signature using trained model
 - Use ```random_forest\pred_main_serial.R``` and ```random_forest\pred_run.bat```
+- The input attribute files must have the same column names used in the training. Refer to ```data_mng\attrs\c4-attrs_for_RF_prediction.py``` and ```data_mng\attrs\g3-attrs_equiv_for_RF_prediction.py``` to create such attribute files. 
+- You have to specify the directory of the trained model and input attribute file path in the configuration (e.g., ```random_forest\configs\win\config_pred_gg2_only.yml```). 
 
 ### 5. Derive process inference (Python)
 - Visualization code available at ```signatures\visualize``` and ```random_forest\visualize```, as well as in ```plotting```. 
