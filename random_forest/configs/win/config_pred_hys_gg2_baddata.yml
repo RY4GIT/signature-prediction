@@ -1,12 +1,8 @@
 paths:
   home_dir: "G:/Shared drives/Signatures -- large scale/baseflow"
-  # On Google Drive: G:/Shared drives/Signatures -- large scale/baseflow
-  # On UCSB server: /home/raraki/data/signature-prediction
   out_dir: "RAraki/out/rf"
-  # On Google Drive: RAraki/out/rf
-  # On UCSB server: /out/rf
   predict:
-    model_dir: "RAraki/out/rf/output_raraki_20250526_cluster_all"
+    model_dir: "RAraki/out/rf/output_raraki_20250716_cluster_all"
     attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster_forRF_hys2_gg2_baddata.csv"
 experiment_name: "pred_hys_gg2_baddata"
 parallel:
@@ -44,7 +40,6 @@ attrs_of_interest:
 - CROPSNLCD06
 - PASTURENLCD06
 - PCT_IRRIG_AG
-- SNOWICENLCD06
 - PADCAT1_AND_2
 - isowet_areafrac
 - CLAYAVE
@@ -53,8 +48,6 @@ attrs_of_interest:
 - kar_pc_sse
 - geol_weighted_ave_age_ma
 - PDEN_2000_BLOCK
-- gdp_ud_sav
-- hdi_ix_sav
 - P_mm_day
 - PET_mm_day
 - ARIDITY_GAGES2

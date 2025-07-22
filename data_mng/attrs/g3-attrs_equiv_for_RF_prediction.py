@@ -10,9 +10,13 @@ data_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data"
 out_dir = os.path.join(data_dir, "Caravan_attrs_gages2")
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
-file_name = "attributes_clim_to_pred"
+file_name = "attributes_to_pred"
 attrs = pd.read_csv(os.path.join(out_dir, file_name + ".csv"))
 
+
+# %%
+attrs.set_index("gauge_id", inplace=True)
+attrs.head()
 # %% ####################################
 # USE EQUIVALENTs
 ########################################
@@ -31,8 +35,8 @@ attr_pairs = [
     ("slt_pc_sav", "SILTAVE", "Silt"),
     ("ppd_pk_sav", "PDEN_2000_BLOCK", "Population density"),
     ("p_mean_mm_gridmet", "P_mm_day", "Precipitation"),
-    ("pet_mean_mm_gridmet", "PET_mm_day", "PET"),
-    ("aridity_gridmet", "ARIDITY_GAGES2", "Aridity"),
+    ("pet_gridmet_biascorr", "PET_mm_day", "PET"),
+    ("aridity_gridmet_biascorr", "ARIDITY_GAGES2", "Aridity"),
     ("frac_snow_gridmet", "SNOW_FRAC_PRECIP", "Snow fraction"),
     ("seasonality_gridmet", "seasonality_FAO_PM", "Seasonality"),
     ("high_prec_freq_gridmet", "high_prec_freq", "High Precipitation Frequency"),
@@ -65,7 +69,6 @@ selected_attrs = [
     "CROPSNLCD06",
     "PASTURENLCD06",
     "PCT_IRRIG_AG",
-    "SNOWICENLCD06",
     "PADCAT1_AND_2",
     "isowet_areafrac",
     "CLAYAVE",
@@ -74,8 +77,6 @@ selected_attrs = [
     "kar_pc_sse",
     "geol_weighted_ave_age_ma",
     "PDEN_2000_BLOCK",
-    "gdp_ud_sav",
-    "hdi_ix_sav",
     "P_mm_day",
     "PET_mm_day",
     "ARIDITY_GAGES2",
