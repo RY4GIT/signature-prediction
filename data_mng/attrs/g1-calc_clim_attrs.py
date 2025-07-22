@@ -108,7 +108,9 @@ def _get_frac_snow(precipitation, temperature):
 # %% ############################################################
 data_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data"
 gridmet_dir = r"D:\data\GAGES2_gridMET"
-
+cloud_dir = (
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\GAGES2_gridMET"
+)
 precip_file = os.path.join(gridmet_dir, "pr_mm_gridmet_conus_gaged_1980_2020_mean.csv")
 pet_file = os.path.join(gridmet_dir, "pet_mm_gridmet_conus_gaged_1980_2020_mean.csv")
 temp_max_file = os.path.join(
@@ -231,19 +233,19 @@ clim_attrs.head()
 # SAVE CLIMATE ATTRIBUTES
 ########################
 clim_attrs.to_csv(os.path.join(gridmet_dir, "clim_attrs_gridmet.csv"))
-cloud_dir = (
-    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\GAGES2_gridMET"
-)
 clim_attrs.to_csv(os.path.join(cloud_dir, "clim_attrs_gridmet.csv"))
+
+
+# %%####################################################################################################
+# COMPARE CLIMATE ATTRIBUTES
+########################################################################################################
 
 # %%
 clim_attrs = pd.read_csv(os.path.join(gridmet_dir, "clim_attrs_gridmet.csv"))
 clim_attrs["usgs_gauge_id"] = clim_attrs["usgs_gauge_id"].astype(str).str.zfill(8)
 clim_attrs.set_index("usgs_gauge_id", inplace=True)
 clim_attrs.head()
-# %%####################################################################################################
-# COMPARE CLIMATE ATTRIBUTES
-########################################################################################################
+
 cara_attrs_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_cara_gages2_etc_20250517+cluster.csv"
 cara_attrs = pd.read_csv(cara_attrs_file)
 cara_attrs["usgs_gauge_id"] = (
@@ -326,4 +328,403 @@ for i in range(len(attr_pairs), len(axs)):
 plt.tight_layout()
 fig.savefig(os.path.join(gridmet_dir, "climate_attrs_comparison.png"))
 fig.savefig(os.path.join(cloud_dir, "climate_attrs_comparison.png"))
+
+# %% ######################################################
+# Get linear regression to relate ERA-5-FAO-PM and gridMET climate attributes (PET and Aridity  )
+# ######################################################
+
+from scipy import stats
+import matplotlib.pyplot as plt
+
+# Define the attribute pairs for regression analysis
+regression_pairs = [
+    ("pet_mean_FAO_PM", "pet_mean_mm_gridmet", "PET (mm/day)"),
+    ("aridity_FAO_PM", "aridity_gridmet", "Aridity (PET/P)"),
+]
+
+# Create figure for regression plots
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+# Store regression results
+regression_results = {}
+
+for i, (x_var, y_var, title) in enumerate(regression_pairs):
+    # Get data and remove NaN values
+    x_data = attrs_merged[x_var].astype(float)
+    y_data = attrs_merged[y_var].astype(float)
+
+    # Create mask for valid data points
+    valid_mask = ~np.isnan(x_data) & ~np.isnan(y_data)
+    x_clean = x_data[valid_mask]
+    y_clean = y_data[valid_mask]
+
+    # Perform linear regression
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x_clean, y_clean)
+    r_squared = r_value**2
+
+    # Store results
+    regression_results[title] = {
+        "slope": slope,
+        "intercept": intercept,
+        "r_value": r_value,
+        "r_squared": r_squared,
+        "p_value": p_value,
+        "std_err": std_err,
+        "n_points": len(x_clean),
+    }
+
+    # Create scatter plot
+    axes[i].scatter(x_clean, y_clean, alpha=0.6, s=10)
+
+    # Plot regression line
+    x_range = np.linspace(x_clean.min(), x_clean.max(), 100)
+    y_pred = slope * x_range + intercept
+    axes[i].plot(
+        x_range, y_pred, "r-", linewidth=2, label=f"y = {slope:.3f}x + {intercept:.3f}"
+    )
+
+    # Add 1:1 line for reference
+    lims = [min(x_clean.min(), y_clean.min()), max(x_clean.max(), y_clean.max())]
+    axes[i].plot(lims, lims, "k--", alpha=0.5, linewidth=1, label="1:1 line")
+
+    # Set labels and title
+    axes[i].set_xlabel(f"ERA5-FAO-PM {title}")
+    axes[i].set_ylabel(f"gridMET {title}")
+    axes[i].set_title(f"{title} Regression Analysis")
+
+    # Add statistics text
+    stats_text = (
+        f"R² = {r_squared:.3f}\n"
+        f"slope = {slope:.3f}\n"
+        f"intercept = {intercept:.3f}\n"
+        f"p-value = {p_value:.2e}\n"
+        f"n = {len(x_clean)}"
+    )
+
+    axes[i].text(
+        0.05,
+        0.95,
+        stats_text,
+        transform=axes[i].transAxes,
+        verticalalignment="top",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+    )
+
+    axes[i].legend()
+    axes[i].grid(True, alpha=0.3)
+
+plt.tight_layout()
+fig.savefig(
+    os.path.join(gridmet_dir, "climate_attrs_regression_analysis.png"),
+    dpi=300,
+    bbox_inches="tight",
+)
+fig.savefig(
+    os.path.join(cloud_dir, "climate_attrs_regression_analysis.png"),
+    dpi=300,
+    bbox_inches="tight",
+)
+plt.show()
+
+# Print detailed regression results
+print("\n" + "=" * 80)
+print("LINEAR REGRESSION RESULTS: ERA5-FAO-PM vs gridMET Climate Attributes")
+print("=" * 80)
+
+for attr_name, results in regression_results.items():
+    print(f"\n{attr_name}:")
+    print(
+        f"  Regression equation: y = {results['slope']:.4f}x + {results['intercept']:.4f}"
+    )
+    print(f"  Correlation coefficient (r): {results['r_value']:.4f}")
+    print(f"  Coefficient of determination (R²): {results['r_squared']:.4f}")
+    print(f"  P-value: {results['p_value']:.2e}")
+    print(f"  Standard error: {results['std_err']:.4f}")
+    print(f"  Sample size: {results['n_points']}")
+
+    # Interpretation
+    if results["r_squared"] > 0.8:
+        strength = "very strong"
+    elif results["r_squared"] > 0.6:
+        strength = "strong"
+    elif results["r_squared"] > 0.4:
+        strength = "moderate"
+    elif results["r_squared"] > 0.2:
+        strength = "weak"
+    else:
+        strength = "very weak"
+
+    significance = "significant" if results["p_value"] < 0.05 else "not significant"
+
+    print(f"  Interpretation: {strength} correlation, {significance} at α=0.05")
+
+print("\n" + "=" * 80)
+
+# %%
+
+# %% ######################################################
+# APPLY BIAS CORRECTION TO GRIDMET CLIMATE ATTRIBUTES
+# ######################################################
+
+print("Applying bias correction to gridMET climate attributes...")
+
+# Apply bias correction using the regression results
+# For PET: pet_gridmet_biascorr = (pet_gridmet - intercept) / slope
+# For Aridity: aridity_gridmet_biascorr = (aridity_gridmet - intercept) / slope
+
+# Get regression parameters
+pet_slope = regression_results["PET (mm/day)"]["slope"]
+pet_intercept = regression_results["PET (mm/day)"]["intercept"]
+aridity_slope = regression_results["Aridity (PET/P)"]["slope"]
+aridity_intercept = regression_results["Aridity (PET/P)"]["intercept"]
+
+print(f"PET regression: y = {pet_slope:.4f}x + {pet_intercept:.4f}")
+print(f"Aridity regression: y = {aridity_slope:.4f}x + {aridity_intercept:.4f}")
+
+# Apply inverse regression to bias-correct gridMET values
+# Inverse: x = (y - intercept) / slope
+clim_attrs["pet_gridmet_biascorr"] = (
+    clim_attrs["pet_mean_mm_gridmet"] - pet_intercept
+) / pet_slope
+clim_attrs["aridity_gridmet_biascorr"] = (
+    clim_attrs["aridity_gridmet"] - aridity_intercept
+) / aridity_slope
+
+print("Bias correction applied successfully!")
+print(
+    f"Original PET range: {clim_attrs['pet_mean_mm_gridmet'].min():.2f} - {clim_attrs['pet_mean_mm_gridmet'].max():.2f}"
+)
+print(
+    f"Bias-corrected PET range: {clim_attrs['pet_gridmet_biascorr'].min():.2f} - {clim_attrs['pet_gridmet_biascorr'].max():.2f}"
+)
+print(
+    f"Original aridity range: {clim_attrs['aridity_gridmet'].min():.2f} - {clim_attrs['aridity_gridmet'].max():.2f}"
+)
+print(
+    f"Bias-corrected aridity range: {clim_attrs['aridity_gridmet_biascorr'].min():.2f} - {clim_attrs['aridity_gridmet_biascorr'].max():.2f}"
+)
+
+# Save updated climate attributes with bias correction
+clim_attrs.to_csv(os.path.join(gridmet_dir, "clim_attrs_gridmet_biascorr.csv"))
+clim_attrs.to_csv(os.path.join(cloud_dir, "clim_attrs_gridmet_biascorr.csv"))
+print("Updated climate attributes saved with bias correction!")
+
+# Display summary of the updated dataframe
+print(f"\nUpdated clim_attrs shape: {clim_attrs.shape}")
+print("New columns added: pet_gridmet_biascorr, aridity_gridmet_biascorr")
+print("\nFirst few rows of bias-corrected attributes:")
+print(
+    clim_attrs[
+        [
+            "pet_mean_mm_gridmet",
+            "pet_gridmet_biascorr",
+            "aridity_gridmet",
+            "aridity_gridmet_biascorr",
+        ]
+    ].head()
+)
+
+
+# %% ######################################################
+# VALIDATE BIAS CORRECTION: PLOT CORRECTED vs ERA5-FAO-PM
+# ######################################################
+
+print("Creating validation plots for bias correction...")
+
+# Merge bias-corrected gridMET with ERA5-FAO-PM for validation
+validation_data = pd.merge(cara_attrs, clim_attrs, on="usgs_gauge_id", how="inner")
+
+# Create figure for validation plots
+fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+
+# Define validation pairs: [original vs reference, corrected vs reference]
+validation_pairs = [
+    # Original comparisons
+    (
+        "pet_mean_FAO_PM",
+        "pet_mean_mm_gridmet",
+        "Original PET: ERA5-FAO-PM vs gridMET",
+        axes[0, 0],
+    ),
+    (
+        "aridity_FAO_PM",
+        "aridity_gridmet",
+        "Original Aridity: ERA5-FAO-PM vs gridMET",
+        axes[0, 1],
+    ),
+    # Bias-corrected comparisons
+    (
+        "pet_mean_FAO_PM",
+        "pet_gridmet_biascorr",
+        "Bias-Corrected PET: ERA5-FAO-PM vs gridMET",
+        axes[1, 0],
+    ),
+    (
+        "aridity_FAO_PM",
+        "aridity_gridmet_biascorr",
+        "Bias-Corrected Aridity: ERA5-FAO-PM vs gridMET",
+        axes[1, 1],
+    ),
+]
+
+validation_stats = {}
+
+for ref_var, comp_var, title, ax in validation_pairs:
+    # Get data and remove NaN values
+    ref_data = validation_data[ref_var].astype(float)
+    comp_data = validation_data[comp_var].astype(float)
+
+    # Create mask for valid data points
+    valid_mask = ~np.isnan(ref_data) & ~np.isnan(comp_data)
+    ref_clean = ref_data[valid_mask]
+    comp_clean = comp_data[valid_mask]
+
+    # Calculate statistics
+    slope, intercept, r_value, p_value, std_err = stats.linregress(
+        ref_clean, comp_clean
+    )
+    r_squared = r_value**2
+
+    # Calculate RMSE and bias
+    rmse = np.sqrt(np.mean((comp_clean - ref_clean) ** 2))
+    bias = np.mean(comp_clean - ref_clean)
+
+    # Store validation statistics
+    validation_stats[title] = {
+        "slope": slope,
+        "intercept": intercept,
+        "r_squared": r_squared,
+        "rmse": rmse,
+        "bias": bias,
+        "n_points": len(ref_clean),
+    }
+
+    # Create scatter plot
+    ax.scatter(ref_clean, comp_clean, alpha=0.6, s=15, color="blue")
+
+    # Plot regression line
+    x_range = np.linspace(ref_clean.min(), ref_clean.max(), 100)
+    y_pred = slope * x_range + intercept
+    ax.plot(
+        x_range,
+        y_pred,
+        "r-",
+        linewidth=2,
+        label=f"Regression: y = {slope:.3f}x + {intercept:.3f}",
+    )
+
+    # Add perfect 1:1 line for reference
+    lims = [
+        min(ref_clean.min(), comp_clean.min()),
+        max(ref_clean.max(), comp_clean.max()),
+    ]
+    ax.plot(lims, lims, "k--", alpha=0.7, linewidth=2, label="Perfect 1:1 line")
+
+    # Set labels and title
+    ax.set_xlabel(f"{ref_var.replace('_', ' ').title()}")
+    ax.set_ylabel(f"{comp_var.replace('_', ' ').title()}")
+    ax.set_title(title)
+
+    # Add statistics text
+    stats_text = (
+        f"R² = {r_squared:.3f}\n"
+        f"RMSE = {rmse:.3f}\n"
+        f"Bias = {bias:.3f}\n"
+        f"Slope = {slope:.3f}\n"
+        f"n = {len(ref_clean)}"
+    )
+
+    ax.text(
+        0.05,
+        0.95,
+        stats_text,
+        transform=ax.transAxes,
+        verticalalignment="top",
+        bbox=dict(boxstyle="round", facecolor="lightblue", alpha=0.8),
+    )
+
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    # Set equal aspect ratio for better visual comparison
+    ax.set_aspect("equal", adjustable="box")
+
+plt.tight_layout()
+fig.savefig(
+    os.path.join(gridmet_dir, "bias_correction_validation.png"),
+    dpi=300,
+    bbox_inches="tight",
+)
+fig.savefig(
+    os.path.join(cloud_dir, "bias_correction_validation.png"),
+    dpi=300,
+    bbox_inches="tight",
+)
+plt.show()
+
+# Print validation results
+print("\n" + "=" * 80)
+print("BIAS CORRECTION VALIDATION RESULTS")
+print("=" * 80)
+
+print("\nComparison of original vs bias-corrected performance:")
+print("-" * 60)
+
+# Compare original vs corrected performance
+original_pet_r2 = validation_stats["Original PET: ERA5-FAO-PM vs gridMET"]["r_squared"]
+corrected_pet_r2 = validation_stats["Bias-Corrected PET: ERA5-FAO-PM vs gridMET"][
+    "r_squared"
+]
+original_pet_rmse = validation_stats["Original PET: ERA5-FAO-PM vs gridMET"]["rmse"]
+corrected_pet_rmse = validation_stats["Bias-Corrected PET: ERA5-FAO-PM vs gridMET"][
+    "rmse"
+]
+original_pet_bias = validation_stats["Original PET: ERA5-FAO-PM vs gridMET"]["bias"]
+corrected_pet_bias = validation_stats["Bias-Corrected PET: ERA5-FAO-PM vs gridMET"][
+    "bias"
+]
+
+print("PET:")
+print(
+    f"  R² improvement: {original_pet_r2:.3f} → {corrected_pet_r2:.3f} ({corrected_pet_r2 - original_pet_r2:+.3f})"
+)
+print(
+    f"  RMSE change: {original_pet_rmse:.3f} → {corrected_pet_rmse:.3f} ({corrected_pet_rmse - original_pet_rmse:+.3f})"
+)
+print(
+    f"  Bias reduction: {original_pet_bias:.3f} → {corrected_pet_bias:.3f} ({abs(corrected_pet_bias) - abs(original_pet_bias):+.3f})"
+)
+
+original_arid_r2 = validation_stats["Original Aridity: ERA5-FAO-PM vs gridMET"][
+    "r_squared"
+]
+corrected_arid_r2 = validation_stats["Bias-Corrected Aridity: ERA5-FAO-PM vs gridMET"][
+    "r_squared"
+]
+original_arid_rmse = validation_stats["Original Aridity: ERA5-FAO-PM vs gridMET"][
+    "rmse"
+]
+corrected_arid_rmse = validation_stats[
+    "Bias-Corrected Aridity: ERA5-FAO-PM vs gridMET"
+]["rmse"]
+original_arid_bias = validation_stats["Original Aridity: ERA5-FAO-PM vs gridMET"][
+    "bias"
+]
+corrected_arid_bias = validation_stats[
+    "Bias-Corrected Aridity: ERA5-FAO-PM vs gridMET"
+]["bias"]
+
+print("\nAridity:")
+print(
+    f"  R² improvement: {original_arid_r2:.3f} → {corrected_arid_r2:.3f} ({corrected_arid_r2 - original_arid_r2:+.3f})"
+)
+print(
+    f"  RMSE change: {original_arid_rmse:.3f} → {corrected_arid_rmse:.3f} ({corrected_arid_rmse - original_arid_rmse:+.3f})"
+)
+print(
+    f"  Bias reduction: {original_arid_bias:.3f} → {corrected_arid_bias:.3f} ({abs(corrected_arid_bias) - abs(original_arid_bias):+.3f})"
+)
+
+print(f"\n{'=' * 80}")
+
 # %%
