@@ -38,7 +38,7 @@ out_dir_gages2 = os.path.join(gdrive_dir, "out", "signatures", "gages2_20250608"
 rf_out_dir = os.path.join(gdrive_dir, "out", "rf", "output_raraki_20250716_cluster_all")
 
 # Plotting config
-plot_sigs_config_path = "plot_sigs_config.csv"
+plot_sigs_config_path = "plot_sigs_config_selected.csv"
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
 # Figure directory
@@ -628,10 +628,12 @@ def plot_bivariate_map(df, sig1, sig2, overlay_layer, fig_dir, plot_mode="polygo
     # )
 
     title_label = f"Bivariate map of {sig1.label} vs. {sig2.label}"
-    ax.set_title(title_label)
+    # ax.set_title(title_label)
     # Set extent to CONUS
     ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
-
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    # ax.outline_patch.set_visible(False)
     # Display the plot
     plt.tight_layout()
     plt.savefig(

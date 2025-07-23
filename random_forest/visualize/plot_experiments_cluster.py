@@ -986,35 +986,32 @@ def plot_shap_in_map_by_group(df, sig_name):
 
 
 def plot_shap_in_map_max(df_group_max, sig_name):
-    n_rows = 1
-    n_cols = 1
+    fig = plt.figure(figsize=(12, 6))
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
-    fig, ax = plt.subplots(
-        nrows=n_rows,
-        ncols=n_cols,
-        figsize=(12 * n_cols, 8 * n_rows),
-        constrained_layout=True,
-        subplot_kw={"projection": ccrs.PlateCarree()},
-    )
+    # Add the BORDERS feature first
+    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
 
+    # Add the land feature with edgecolor set to black
     land = cfeature.NaturalEarthFeature(
         "physical",
         "land",
         "50m",
         edgecolor="face",
-        facecolor="dimgrey",  # Set land color to light gray
     )
-
     water = cfeature.NaturalEarthFeature(
         "physical",
         "lakes",
         "50m",
         edgecolor="face",
-        facecolor="white",  # Set water color to light blue
     )
-
-    ax.add_feature(land)
-    ax.add_feature(water)
+    ax.add_feature(
+        land,
+        facecolor="dimgrey",  # Keep facecolor as desired
+        edgecolor="black",  # Set edgecolor to black
+        linewidth=0.5,  # Optionally adjust linewidth for edges
+    )
+    ax.add_feature(water, facecolor="white", edgecolor="black", linewidth=0.5)
 
     # Plot the max category per location
     max_opacity = df_group_max["max_mean_phi_abs_perc"].quantile(0.99)
@@ -1044,6 +1041,16 @@ def plot_shap_in_map_max(df_group_max, sig_name):
     # Save plot
     file_name = f"shap_most_important_cat_in_map_{sig_name}.{file_type}"
 
+    # Set extent to CONUS
+    conus_extent = [-125.5, -66.95, 24.396308, 47.5]
+    ax.set_extent(conus_extent)
+
+    # Set spines invisible
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    # Display the map
+    plt.tight_layout()
     fig.savefig(
         os.path.join(fig_dir, file_name),
         dpi=300,
@@ -1147,38 +1154,29 @@ for pair in sig_pairs.values():
     # _______________________________________________________________________
     # PREPARE THE DATA
     # Get the data for this signature
-    df_shap_1 = df_shap_with_attrs[
-        df_shap_with_attrs["sig_name"] == pair["sigs"][0]
-    ].copy()
-    df_shap_2 = df_shap_with_attrs[
-        df_shap_with_attrs["sig_name"] == pair["sigs"][1]
-    ].copy()
+    df_groups = []
+    for sig_name in pair["sigs"]:
+        df_shap_sig = df_shap_with_attrs[
+            df_shap_with_attrs["sig_name"] == sig_name
+        ].copy()
 
-    # _______________________________________________________________________
-    # Get mean phi_abs_perc per category and create a grouped dataframe
-    df_group_1 = (
-        df_shap_1.groupby(["Group", "gauge_id"])
-        .agg(
-            mean_phi_abs_perc=("phi_abs_perc", "mean"),
-            gauge_lon=("gauge_lon", "first"),
-            gauge_lat=("gauge_lat", "first"),
+        # _______________________________________________________________________
+        # Get mean phi_abs_perc per category and create a grouped dataframe
+        df_group = (
+            df_shap_sig.groupby(["Group", "gauge_id"])
+            .agg(
+                mean_phi_abs_perc=("phi_abs_perc", "mean"),
+                gauge_lon=("gauge_lon", "first"),
+                gauge_lat=("gauge_lat", "first"),
+            )
+            .reset_index()
         )
-        .reset_index()
-    )
 
-    df_group_2 = (
-        df_shap_2.groupby(["Group", "gauge_id"])
-        .agg(
-            mean_phi_abs_perc=("phi_abs_perc", "mean"),
-            gauge_lon=("gauge_lon", "first"),
-            gauge_lat=("gauge_lat", "first"),
-        )
-        .reset_index()
-    )
+        df_groups.append(df_group)
 
     # _______________________________________________________________________
     # Get the average contributions from 2 signatures
-    df_group_avg = pd.concat([df_group_1, df_group_2])
+    df_group_avg = pd.concat(df_groups)
 
     # Recalculate mean after adding sig_name
     df_group_avg["mean_phi_abs_perc_sigs"] = df_group_avg.groupby(
