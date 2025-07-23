@@ -6,8 +6,8 @@ import geopandas as gpd
 from tqdm import tqdm
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
-from matplotlib.patches import Rectangle
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from matplotlib.patches import Rectangle, Patch
 import matplotlib as mpl
 
 import cartopy.crs as ccrs
@@ -353,7 +353,7 @@ def plot_sig_map(
     # Get plot config
 
     # Set up the map
-    fig = plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 8))
     # fig = plt.figure(figsize=(6, 5))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
@@ -502,23 +502,23 @@ for sigs_name in tqdm(
     except Exception as e:
         print(f"{sigs_name}: {e}")
 
-# %% Plot the map by source
-for source in df_sigs["source"].unique():
-    for sigs_name in tqdm(
-        plot_sigs_config.column_name,
-        desc=f"Plotting maps of signature values for {source}",
-        leave=False,
-    ):
-        # Surpress the warnings.warn(
-        warnings.filterwarnings("ignore")
-        plot_sig_map(
-            df_sigs[df_sigs["source"] == source],
-            sigs_name,
-            ecoregion_overlay,
-            stats="normal",
-            plot_mode="polygon",
-            source=source,
-        )
+# # %% Plot the map by source
+# for source in df_sigs["source"].unique():
+#     for sigs_name in tqdm(
+#         plot_sigs_config.column_name,
+#         desc=f"Plotting maps of signature values for {source}",
+#         leave=False,
+#     ):
+#         # Surpress the warnings.warn(
+#         warnings.filterwarnings("ignore")
+#         plot_sig_map(
+#             df_sigs[df_sigs["source"] == source],
+#             sigs_name,
+#             ecoregion_overlay,
+#             stats="normal",
+#             plot_mode="polygon",
+#             source=source,
+#         )
 # %%
 
 ########################################################################################
@@ -573,28 +573,8 @@ def plot_bivariate_map(df, sig1, sig2, overlay_layer, fig_dir, plot_mode="polygo
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
-    # Add map features
-    if plot_mode == "scatter":
-        ax.scatter(
-            df["gauge_lon"],
-            df["gauge_lat"],
-            color=df["color"],
-            marker="o",
-            s=5,
-            alpha=0.5,
-        )
-    elif plot_mode == "polygon":
-        # Add an area column (if not already present)
-        df["area"] = df.geometry.area
-
-        # Sort by area in descending order so smaller polygons are plotted last
-        df_sorted = df.sort_values("area", ascending=False)
-        df_sorted = df.sort_values("order", ascending=False)
-
-        df_sorted.plot(ax=ax, color=df["color"], linewidth=0.2, alpha=0.5)
-
     # Add the BORDERS feature first
-    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k", alpha=0.5)
+    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
 
     # Add the land feature with edgecolor set to black
     land = cfeature.NaturalEarthFeature(
@@ -604,20 +584,47 @@ def plot_bivariate_map(df, sig1, sig2, overlay_layer, fig_dir, plot_mode="polygo
     )
     ax.add_feature(
         land,
-        facecolor="none",  # Keep facecolor as desired
+        facecolor="#F4F5FA",  # Keep facecolor as desired
         edgecolor="black",  # Set edgecolor to black
-        linewidth=0.5,  # Optionally adjust linewidth for edges
+        linewidth=1.0,  # Optionally adjust linewidth for edges
     )
 
-    # Add a legend
-    overlay_layer.plot(
-        ax=ax,
-        edgecolor="grey",
-        facecolor="none",
-        linewidth=0.5,
-        aspect=1.1,
-        zorder=100,
-    )
+    # Add map features
+    if plot_mode == "scatter":
+        ax.scatter(
+            df["gauge_lon"],
+            df["gauge_lat"],
+            color=df["color"],
+            marker="o",
+            s=5,
+            alpha=0.5,
+            zorder=99,
+        )
+    elif plot_mode == "polygon":
+        # Add an area column (if not already present)
+        df["area"] = df.geometry.area
+
+        # Sort by area in descending order so smaller polygons are plotted last
+        df_sorted = df.sort_values("area", ascending=False)
+        df_sorted = df.sort_values("order", ascending=False)
+
+        df_sorted.plot(
+            ax=ax,
+            color=df["color"],
+            linewidth=0.2,
+            alpha=0.5,
+            zorder=99,
+        )
+
+    # # Add a legend
+    # overlay_layer.plot(
+    #     ax=ax,
+    #     edgecolor="grey",
+    #     facecolor="none",
+    #     linewidth=0.5,
+    #     aspect=1.1,
+    #     zorder=100,
+    # )
 
     title_label = f"Bivariate map of {sig1.label} vs. {sig2.label}"
     ax.set_title(title_label)
@@ -669,7 +676,7 @@ def create_bivariate_legend(colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
     # Display the plot
     plt.tight_layout()
     plt.savefig(
-        os.path.join(fig_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_legend.png")
+        os.path.join(fig_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_legend.pdf")
     )
 
 
@@ -721,16 +728,17 @@ dir_label_rev = ["high", "", "", "low"]
 # %% ########################################################################################
 
 processes = [
-    # "Baseflow",
-    # "Water loss to deep GW or ET",
-    # "Storage capacity and retention",
+    "Baseflow",
+    "Storage capacity and retention",
+    "Water balance losses",
+    "Seasonal variability",
     # "Infiltration Excess Overlandflow",
     # "Saturation Excess Overlandflow",
-    "ET impacts on storage and baseflow",
+    # "ET impacts on storage and baseflow",
     # "IE vs SE significance", # Hard to distinguish IE vs SE
     # "IE vs SE (SSF2 & GW) significance",
     # "SSF1 vs SSF2 & GW significance",
-    # "Overland Flow",
+    "Overland Flow",
 ]
 
 for process_name in tqdm(
@@ -761,7 +769,7 @@ for process_name in tqdm(
     ###############################
     # For Water loss to deep GW or ET
 
-    if process_name == "Water loss to deep GW or ET":
+    if process_name == "Water balance losses":
         sig2 = process_columns[
             process_columns["column_name"] == "TotalRR"
         ].squeeze()  # Y variable, Total RR
@@ -830,7 +838,7 @@ for process_name in tqdm(
     ###############################
 
     # For ET impacts on storage and baseflow
-    if process_name == "ET impacts on storage and baseflow":
+    if process_name == "Seasonal variability":
         sig1 = process_columns.loc[
             process_columns.column_name == "TotalRR"  # "VariabilityIndex"
         ].squeeze()  # X variable, VariabilityIndex
@@ -942,12 +950,9 @@ for process_name in tqdm(
     y_ticks = sig2_dir
     create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
 
+
 # %%
-
 # Create custom legend patches
-from matplotlib.patches import Patch
-
-
 def plot_process_dominance_map():
     """
     Create a map showing only 1-1 class (high in both variables) watersheds for
@@ -1073,7 +1078,7 @@ def plot_process_dominance_map():
         (0, df_baseflow, "Baseflow", "royalblue"),
         (1, df_overland, "Overland Flow", "lightcoral"),
         (2, df_ET, "Water balance losses", None),
-        (3, df_high_str, "Storage capacity", None),
+        (3, df_high_str, "High storage capacity", None),
     ]:
         # Plot each class with different transparency
         for class_name, alpha in classes_alpha.items():
@@ -1093,11 +1098,12 @@ def plot_process_dominance_map():
                             label="Unclassified",
                         )
                     )
+                    # Add water balance loss legend element
                     legend_elements.append(
                         Patch(
                             facecolor="none",
                             alpha=1.0,
-                            edgecolor="black",
+                            edgecolor="dimgrey",
                             hatch="////",
                             label=f"{process}",
                         )
@@ -1108,7 +1114,7 @@ def plot_process_dominance_map():
                         Patch(
                             facecolor="none",
                             alpha=1.0,
-                            edgecolor="dimgrey",
+                            edgecolor="#1B1212",
                             label=f"{process}",
                         )
                     )
@@ -1144,8 +1150,8 @@ def plot_process_dominance_map():
                     df_class.plot(
                         ax=ax,
                         facecolor="none",
-                        edgecolor="dimgrey",
-                        linewidth=0.4,
+                        edgecolor="#1B1212",
+                        linewidth=0.7,
                         alpha=0.8,
                         zorder=102,
                     )
@@ -1160,12 +1166,6 @@ def plot_process_dominance_map():
                         zorder=100,
                     )
                 print(f"{process} class {class_name}: {len(df_class)} watersheds")
-
-    # Set spines invisible
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
-    ax.spines["left"].set_visible(False)
 
     # # Add ecoregion overlay
     # ecoregion_overlay.plot(
@@ -1189,6 +1189,9 @@ def plot_process_dominance_map():
     # Set extent to CONUS
     ax.set_extent(conus_extent)
 
+    # Set spines invisible
+    ax.outline_patch.set_visible(False)
+
     # Display the map
     plt.tight_layout()
     plt.savefig(
@@ -1204,6 +1207,98 @@ def plot_process_dominance_map():
 
 # Run the function
 plot_process_dominance_map()
-# %%
-len(df_sigs)
+
+
+# %% Plot diff_RCPint_RCPvol separately
+
+
+def plot_diff_RCPint_RCPvol(
+    df, sig_name, overlay_layer, stats="normal", plot_mode="polygon", source=None
+):
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+
+    # Add the BORDERS feature first
+    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
+
+    # Add the land feature with edgecolor set to black
+    land = cfeature.NaturalEarthFeature(
+        "physical",
+        "land",
+        "50m",
+    )
+    ax.add_feature(
+        land,
+        facecolor="#F4F5FA",  # Keep facecolor as desired
+        edgecolor="black",  # Set edgecolor to black
+        linewidth=1.0,  # Optionally adjust linewidth for edges
+    )
+
+    # Get plot fongi
+    plot_config = plot_sigs_config.loc[
+        plot_sigs_config["column_name"] == sig_name
+    ].iloc[0]
+    c_data = df[sig_name]
+    llim = plot_config["lower_lim"]
+    ulim = plot_config["upper_lim"]
+    cbar_label = f"{plot_config['unit']}"
+    out_file_name = f"map_{sig_name}_{plot_mode}_{source}.png"
+    title_label = f"{plot_config['label']} ({source})"
+
+    diagonal_colors = [
+        "#159DD0",
+        # "#2CA6D4",
+        "#43B0D9",
+        "#aeb5b1",
+        "#E38753",
+        # "#E0783E",
+        "#DD6A29",
+    ]
+
+    # Create the colormap
+    diag_cmap = LinearSegmentedColormap.from_list(
+        "custom_diag_gradient", diagonal_colors
+    )
+
+    cmap = diag_cmap
+    norm = mpl.colors.Normalize(vmin=llim, vmax=ulim)
+
+    df_sorted = df.sort_values("area", ascending=False)
+    df_sorted = df.sort_values("order", ascending=False)
+    df_sorted.plot(
+        ax=ax,
+        column=sig_name,
+        cmap=cmap,
+        alpha=0.8,
+        vmin=llim,
+        vmax=ulim,
+        zorder=99,
+    )
+
+    # Add a colorbar
+    sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm._A = []  # Empty array for ScalarMappable
+    cbar = plt.colorbar(sm, ax=ax, shrink=0.3)
+    cbar.ax.tick_params(labelsize=18)  # Set font size
+    cbar.set_ticks(np.linspace(llim, ulim, 5))
+    cbar.set_label(cbar_label, rotation=270, labelpad=30)
+
+    ax.set_title(title_label)
+    ax.set_extent(conus_extent)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    plt.tight_layout(pad=1.5)
+    plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
+
+
+plot_diff_RCPint_RCPvol(
+    df_sigs,
+    "diff_RCPint_RCPvol",
+    ecoregion_overlay,
+    stats="normal",
+    plot_mode="polygon",
+    source="all",
+)
+
 # %%
