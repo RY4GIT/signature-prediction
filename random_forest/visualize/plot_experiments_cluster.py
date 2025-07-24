@@ -985,7 +985,7 @@ def plot_shap_in_map_by_group(df, sig_name):
 ########################################################
 
 
-def plot_shap_in_map_max(df_group_max, sig_name):
+def plot_shap_in_map_max(df_group_max, sig_name, varname="max_mean  _phi_abs_perc"):
     fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
@@ -1014,13 +1014,13 @@ def plot_shap_in_map_max(df_group_max, sig_name):
     ax.add_feature(water, facecolor="white", edgecolor="black", linewidth=0.5)
 
     # Plot the max category per location
-    max_opacity = df_group_max["max_mean_phi_abs_perc"].quantile(0.99)
+    max_opacity = df_group_max[varname].quantile(0.90)
     scatter_obj = ax.scatter(
         df_group_max["gauge_lon"],
         df_group_max["gauge_lat"],
         c=df_group_max["color"],
         alpha=np.clip(
-            df_group_max["max_mean_phi_abs_perc"] / max_opacity, 0, 1
+            df_group_max[varname] / max_opacity, 0, 1
         ),  # Scale alpha by mean_phi_abs_perc percentage
         s=10,
         zorder=99,
@@ -1110,7 +1110,7 @@ for sig_name in sigs_RF_names_ordered:
 
     # _______________________________________________________________________
     # Plot the max category per location
-    plot_shap_in_map_max(df_group_max, sig_name)
+    plot_shap_in_map_max(df_group_max, sig_name, varname="max_mean_phi_abs_perc")
 
 
 # %% Get the average contributions from 2 signatures and plot the max category per location
@@ -1156,12 +1156,13 @@ for pair in sig_pairs.values():
     # Get the data for this signature
     df_groups = []
     for sig_name in pair["sigs"]:
+        # Get the data for this signature
         df_shap_sig = df_shap_with_attrs[
             df_shap_with_attrs["sig_name"] == sig_name
         ].copy()
 
         # _______________________________________________________________________
-        # Get mean phi_abs_perc per category and create a grouped dataframe
+        # Get mean phi_abs_perc per category for the signature and create a grouped dataframe
         df_group = (
             df_shap_sig.groupby(["Group", "gauge_id"])
             .agg(
@@ -1176,30 +1177,36 @@ for pair in sig_pairs.values():
 
     # _______________________________________________________________________
     # Get the average contributions from 2 signatures
-    df_group_avg = pd.concat(df_groups)
+    df_group_all = pd.concat(df_groups)
 
+    if pair["Process"] == "All processes":
+        stat = "median"
+    else:
+        stat = "mean"
     # Recalculate mean after adding sig_name
-    df_group_avg["mean_phi_abs_perc_sigs"] = df_group_avg.groupby(
-        ["gauge_id", "Group"]
-    )["mean_phi_abs_perc"].transform("mean")
+    df_group_avg = (
+        df_group_all.groupby(["gauge_id", "Group"])
+        .agg(
+            mean_phi_abs_perc=("mean_phi_abs_perc", stat),
+            gauge_lon=("gauge_lon", "first"),
+            gauge_lat=("gauge_lat", "first"),
+        )
+        .reset_index()
+    ).rename(columns={"mean_phi_abs_perc": f"{stat}_phi_abs_perc_sigs"})
 
     # For each gauge_id, get the row with the maximum phi_abs_perc
     df_group_avg_max = (
         df_group_avg.loc[
-            df_group_avg.groupby("gauge_id")["mean_phi_abs_perc_sigs"].idxmax()
-        ][["gauge_id", "mean_phi_abs_perc_sigs", "Group", "gauge_lon", "gauge_lat"]]
+            df_group_avg.groupby("gauge_id")[f"{stat}_phi_abs_perc_sigs"].idxmax()
+        ][["gauge_id", f"{stat}_phi_abs_perc_sigs", "Group", "gauge_lon", "gauge_lat"]]
         .rename(
             columns={
-                "mean_phi_abs_perc_sigs": "max_mean_phi_abs_perc",
+                f"{stat}_phi_abs_perc_sigs": f"max_{stat}_phi_abs_perc",
                 "Group": "Group_max",
             }
         )
         .reset_index(drop=True)
     )
-
-    # Define attrs_colors if not already defined
-    if "attrs_colors" not in locals():
-        attrs_colors = {}  # You'll need to define this mapping based on your Group values
 
     df_group_avg_max["color"] = df_group_avg_max["Group_max"].map(attrs_colors)
     print(df_group_avg_max["Group_max"].value_counts())
@@ -1210,6 +1217,6 @@ for pair in sig_pairs.values():
     # Plot the max category per location
     # Use the process name as sig_name for plotting
     process_name = pair["Process"]
-    plot_shap_in_map_max(df_group_avg_max, process_name)
-
-    # %%
+    plot_shap_in_map_max(
+        df_group_avg_max, process_name, varname=f"max_{stat}_phi_abs_perc"
+    )
