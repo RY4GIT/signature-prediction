@@ -215,7 +215,9 @@ kfold_cv <- trainControl(
 )
 
 # Prepare output list
-out_r2 <- list()
+out_r2_train <- list()
+out_r2_val <- list()
+out_r2_val_std <- list()
 out_var_importance <- list()
 out_sig_predictions <- list()
 out_shap_values <- list()
@@ -297,9 +299,21 @@ for (sig in config$sigs_predict) {
       # Append results
 
       # append r2 value
-      out_r2 <- data.frame(
+      out_r2_train <- data.frame(
         sig_name = sig,
-        r_squared = tail(forest$finalModel$rsq, 1)
+        r_squared_train = tail(forest$finalModel$rsq, 1)
+      )
+
+      # append cross-validation r2 value for the signature
+      out_r2_val <- data.frame(
+        sig_name = sig,
+        r_squared_cv = mean(forest$resample$Rsquared)
+      )
+
+      # append cross-validation r2 value for the signature
+      out_r2_val_std <- data.frame(
+        sig_name = sig,
+        r_squared_cv_std = sd(forest$resample$Rsquared)
       )
 
       # append variable importance
@@ -406,7 +420,9 @@ for (sig in config$sigs_predict) {
       # Store results for this signature
       results[[sig]] <- list(
         sig_predictions = out_sig_predictions,
-        r2 = out_r2,
+        r2_train = out_r2_train,
+        r2_val = out_r2_val,
+        r2_val_std = out_r2_val_std,
         var_importance = out_var_importance,
         shap_values = out_shap_values
       )
@@ -451,22 +467,30 @@ print("Finished the training and unlisting results")
 
 # Extract results from the list
 out_sig_predictions <- lapply(results, `[[`, "sig_predictions")
-out_r2 <- lapply(results, `[[`, "r2")
+out_r2_train <- lapply(results, `[[`, "r2_train")
+out_r2_val <- lapply(results, `[[`, "r2_val")
+out_r2_val_std <- lapply(results, `[[`, "r2_val_std")
 out_var_importance <- lapply(results, `[[`, "var_importance")
 out_shap_values <- lapply(results, `[[`, "shap_values")
 
 # Combine all the elements in the lists into data frames
 all_sig_predictions <- bind_rows(out_sig_predictions)
-all_r2 <- bind_rows(out_r2)
+all_r2_train <- bind_rows(out_r2_train)
+all_r2_val <- bind_rows(out_r2_val)
+all_r2_val_std <- bind_rows(out_r2_val_std)
 all_var_importance <- bind_rows(out_var_importance)
 all_shap_values <- bind_rows(out_shap_values)
 
+# Combine all R² metrics into a single table
+all_r2_combined <- all_r2_train %>%
+  left_join(all_r2_val, by = "sig_name") %>%
+  left_join(all_r2_val_std, by = "sig_name")
 
 # Save output to CSV
 print("Saving output to CSV")
 write.csv(
   all_sig_predictions,
-  file.path(out_path, "predicted_signatures_train.csv"),
+  file.path(out_path, "predicted_signatures.csv"),
   row.names = FALSE
 )
 write.csv(
@@ -474,7 +498,11 @@ write.csv(
   file.path(out_path, "var_importance.csv"),
   row.names = FALSE
 )
-write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
+write.csv(
+  all_r2_combined,
+  file.path(out_path, "r_squared_all.csv"),
+  row.names = FALSE
+)
 write.csv(
   all_shap_values,
   file.path(out_path, "shap_values.csv"),

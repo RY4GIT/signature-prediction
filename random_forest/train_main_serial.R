@@ -200,7 +200,9 @@ kfold_cv <- trainControl(
 )
 
 # Prepare output list
-out_r2 <- list()
+out_r2_train <- list()
+out_r2_val <- list()
+out_r2_val_std <- list()
 out_var_importance <- list()
 out_sig_predictions <- list()
 out_shap_values <- list()
@@ -265,11 +267,25 @@ for (sig in config$sigs_predict) {
   # _______________________________________________________________________________________________________________
   # Append results
 
-  # append r2 value for the signature
+  # append r2 value for the signature (OOB/training R²)
   if (length(forest$finalModel$rsq) == 0) {
-    out_r2[[sig]] <- NA # Use NA when no r_squared value is calculated
+    out_r2_train[[sig]] <- NA # Use NA when no r_squared value is calculated
   } else {
-    out_r2[[sig]] <- mean(forest$final$rsq)
+    out_r2_train[[sig]] <- mean(forest$finalModel$rsq)
+  }
+
+  # append cross-validation r2 value for the signature
+  if (!is.null(forest$resample) && "Rsquared" %in% names(forest$resample)) {
+    out_r2_val[[sig]] <- mean(forest$resample$Rsquared)
+  } else {
+    out_r2_val[[sig]] <- NA # Use NA when no CV R² results are available
+  }
+
+  # append cross-validation r2 value for the signature
+  if (!is.null(forest$resample) && "Rsquared" %in% names(forest$resample)) {
+    out_r2_val_std[[sig]] <- sd(forest$resample$Rsquared)
+  } else {
+    out_r2_val_std[[sig]] <- NA # Use NA when no CV R² results are available
   }
 
   #  append variable importance for the signature
@@ -403,16 +419,38 @@ for (sig in config$sigs_predict) {
 #############################################
 
 # Output the results
-all_r2 <- bind_rows(out_r2) %>%
-  pivot_longer(everything(), names_to = "sig_name", values_to = "r_squared")
+all_r2_train <- bind_rows(out_r2_train) %>%
+  pivot_longer(
+    everything(),
+    names_to = "sig_name",
+    values_to = "r_squared_train"
+  )
+all_r2_val <- bind_rows(out_r2_val) %>%
+  pivot_longer(everything(), names_to = "sig_name", values_to = "r_squared_cv")
+all_r2_val_std <- bind_rows(out_r2_val_std) %>%
+  pivot_longer(
+    everything(),
+    names_to = "sig_name",
+    values_to = "r_squared_cv_std"
+  )
+
+# Combine all R² metrics into a single table
+all_r2_combined <- all_r2_train %>%
+  left_join(all_r2_val, by = "sig_name") %>%
+  left_join(all_r2_val_std, by = "sig_name")
+
 all_sig_predictions <- bind_rows(out_sig_predictions)
 all_var_importance <- bind_rows(out_var_importance)
 all_shap_values <- bind_rows(out_shap_values)
 
-write.csv(all_r2, file.path(out_path, "r_squared.csv"), row.names = FALSE)
+write.csv(
+  all_r2_combined,
+  file.path(out_path, "r_squared_all.csv"),
+  row.names = FALSE
+)
 write.csv(
   all_sig_predictions,
-  file.path(out_path, "predicted_signatures_train.csv"),
+  file.path(out_path, "predicted_signatures.csv"),
   row.names = FALSE
 )
 write.csv(
