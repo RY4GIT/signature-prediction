@@ -29,7 +29,7 @@ timeseries_dir = 'timeseries';
 data_type = 'csv';
 
 currentDate = datestr(now, 'yyyymmdd');
-out_dir = fullfile(cloud_dir, 'out', 'signatures', ['test_hourlyCAMELS_', currentDate]);
+out_dir = fullfile(cloud_dir, 'out', 'signatures', ['test_hourlyCAMELS_defaultParam', currentDate]);
 out_filename = 'out_sigEvent.csv';
 if ~exist(out_dir, 'dir')
     mkdir(out_dir);  % This will create the directory and any necessary subdirectories
@@ -52,7 +52,7 @@ us_gauges = attrs_geo(strcmp(attrs_geo.country, 'United States of America'), :);
 numGauges = height(us_gauges);
 
 % Parameter config
-config_OF = readtable('config_overlandflow.csv');
+config_OF = readtable('config_overlandflow_hourly.csv');
 config_recession = readtable('config_recession.csv');
 plot_results = false;
 
@@ -146,11 +146,11 @@ parfor idx = 1:numGauges
         min_Qf_perc = NaN(size(Q,1),1);
         R_Pvol_RC = NaN(size(Q,1),1);
         R_Pint_RC = NaN(size(Q,1),1);
-        OF_error_str = strings(size(Q,1),1);
+        % OF_error_str = strings(size(Q,1),1);
 
         [IE_effect,SE_effect,IE_thresh_signif,IE_thresh, ...
             SE_thresh_signif,SE_thresh,SE_slope,Storage_thresh, ...
-            Storage_thresh_signif,min_Qf_perc,R_Pvol_RC, R_Pint_RC,~,OF_error_str] ...
+            Storage_thresh_signif,min_Qf_perc,R_Pvol_RC, R_Pint_RC,~,~] ...
             = sig_EventGraphThresholds(Q{1},t{1},P{1},...
             'min_termination', OF_param.min_termination, ...
             'min_duration', OF_param.min_duration, ...
@@ -173,7 +173,7 @@ parfor idx = 1:numGauges
         results.min_Qf_perc = min_Qf_perc;
         results.R_Pvol_RC = R_Pvol_RC;
         results.R_Pint_RC = R_Pint_RC;
-        results.OF_error_str = OF_error_str;
+        % results.OF_error_str = OF_error_str;
 
         % Make table
         signatures = struct2table(results);
@@ -190,7 +190,7 @@ parfor idx = 1:numGauges
         fieldNames = {
             'IE_effect', 'SE_effect', ...
             'IE_thresh_signif', 'SE_thresh_signif', 'IE_thresh', 'SE_thresh', 'SE_slope', ...
-            'Storage_thresh_signif', 'Storage_thresh', 'min_Qf_perc', 'R_Pvol_RC', 'R_Pint_RC', 'OF_error_str'
+            'Storage_thresh_signif', 'Storage_thresh', 'min_Qf_perc', 'R_Pvol_RC', 'R_Pint_RC'
             };
 
         % Initialize the struct dynamically

@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 # %%
 ########################## CHANGE HERE #################
-output_date = r"20250716"
+output_date = r"20250728"
 user_name = "raraki"
 # file_type = "png"  # or "pdf" if you prefer PDF output
 file_type = "pdf"
@@ -127,27 +127,27 @@ attrs_hysets["gauge_id"] = attrs_hysets["gauge_id"].astype(str)
 # Some base data loaders
 
 
-def load_data_r2(rf_dir, user_name, output_date, cluster_info):
-    _dfs_r2 = []
+# def load_data_r2(rf_dir, user_name, output_date, cluster_info):
+#     _dfs_r2 = []
 
-    # Read by cluster_num
-    for cluster_num in cluster_info.keys():
-        output_dir = output_dir_name(rf_dir, user_name, output_date, cluster_num)
-        file_path = os.path.join(output_dir, "r_squared.csv")
-        if os.path.exists(file_path):
-            df_temp = pd.read_csv(file_path, index_col="sig_name")
-            if cluster_num == "all":
-                df_temp.columns = ["CONUS-wide"]
-            else:
-                df_temp.columns = [
-                    f"{cluster_num} - {cluster_info[cluster_num]['name']}"
-                ]
-            _dfs_r2.append(df_temp)
-        else:
-            print(f"File not found: {file_path}")
+#     # Read by cluster_num
+#     for cluster_num in cluster_info.keys():
+#         output_dir = output_dir_name(rf_dir, user_name, output_date, cluster_num)
+#         file_path = os.path.join(output_dir, "r_squared_all.csv")
+#         if os.path.exists(file_path):
+#             df_temp = pd.read_csv(file_path, index_col="sig_name")
+#             if cluster_num == "all":
+#                 df_temp.columns = ["CONUS-wide"]
+#             else:
+#                 df_temp.columns = [
+#                     f"{cluster_num} - {cluster_info[cluster_num]['name']}"
+#                 ]
+#             _dfs_r2.append(df_temp)
+#         else:
+#             print(f"File not found: {file_path}")
 
-    dfs_r2 = pd.concat(_dfs_r2, axis=1)
-    return dfs_r2
+#     dfs_r2 = pd.concat(_dfs_r2, axis=1)
+#     return dfs_r2
 
 
 # Function to load data
@@ -185,91 +185,107 @@ def load_shap(rf_dir, user_name, output_date, cluster_num, attrs_info):
 #####################################################
 
 
-def plot_r2(df, cluster_info):
-    # TODO: Instead of using cluster results,
-    # I might wanna use the results from the "all" cluster and subset them by region
+def load_data_r2(rf_dir, user_name, output_date):
+    output_dir = output_dir_name(rf_dir, user_name, output_date, "all")
+    file_path = os.path.join(output_dir, "r_squared_all.csv")
+    if os.path.exists(file_path):
+        dfs_r2 = pd.read_csv(file_path, index_col="sig_name")
+    else:
+        print(f"File not found: {file_path}")
 
-    # Plotting the multiple bar plot from cluster experiments
-    colors = [
-        cluster_info[cluster_num]["color"]
-        for cluster_num in cluster_info.keys()
-        if f"{cluster_num} - {cluster_info[cluster_num]['name']}" in df.columns
-    ]
-    colors.insert(0, "lightgrey")
-
-    fig, ax = plt.subplots(figsize=(20, 8))
-
-    plot_kwargs = {"kind": "bar", "color": colors, "ax": ax}
-    df.plot(**plot_kwargs)
-
-    ax_kwargs = {
-        "title": r"$R^2$ for Different cluster_nums",
-        "xlabel": "Signature",
-        "ylabel": r"$R^2$",
-    }
-    ax.set(**ax_kwargs)
-
-    ax.set_xticklabels(df.index, rotation=45, ha="right")
-    ax.legend(title="cluster_nums", bbox_to_anchor=(1.05, 1), loc="upper left")
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(fig_dir, f"r2_per_sig.{file_type}"), dpi=300
-    )  # Save as PNG or PDF
+    return dfs_r2
 
 
-def plot_avg_r2(dfs_r2, cluster_info):
-    df_avg_r2 = dfs_r2.mean(axis=0).reset_index()
-    df_avg_r2.columns = ["cluster_name", "Average R-squared"]
+# def plot_r2(df, cluster_info):
+#     # TODO: Instead of using cluster results,
+#     # I might wanna use the results from the "all" cluster and subset them by region
 
-    df_avg_r2["cluster_num"] = df_avg_r2["cluster_name"].apply(
-        lambda x: int(x.split(" - ")[0]) if " - " in x else x
-    )
+#     # Plotting the multiple bar plot from cluster experiments
+#     colors = [
+#         cluster_info[cluster_num]["color"]
+#         for cluster_num in cluster_info.keys()
+#         if f"{cluster_num} - {cluster_info[cluster_num]['name']}" in df.columns
+#     ]
+#     colors.insert(0, "lightgrey")
 
-    df_avg_r2["Color"] = df_avg_r2["cluster_num"].apply(
-        lambda x: cluster_info[int(x)]["color"]
-        if x != "CONUS-wide" and int(x) in cluster_info
-        else "lightgrey"
-    )
+#     fig, ax = plt.subplots(figsize=(20, 8))
 
-    fig, ax = plt.subplots(figsize=(4, 5))
-    ax.bar(
-        df_avg_r2["cluster_name"],
-        df_avg_r2["Average R-squared"],
-        color=df_avg_r2["Color"],
-    )
-    ax.set_title(r"Average $R^2$ for Different cluster_nums")
-    ax.set_xlabel("cluster name")
-    ax.set_ylabel(r"Average $R^2$")
-    ax.set_xticklabels(df_avg_r2["cluster_name"], rotation=45, ha="right")
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(fig_dir, f"r2_average.{file_type}"), dpi=300
-    )  # Save as PNG or PDF}"))
-    df_avg_r2.to_csv(os.path.join(fig_dir, "r2_average.csv"), index=True)
+#     plot_kwargs = {"kind": "bar", "color": colors, "ax": ax}
+#     df.plot(**plot_kwargs)
 
+#     ax_kwargs = {
+#         "title": r"$R^2$ for Different cluster_nums",
+#         "xlabel": "Signature",
+#         "ylabel": r"$R^2$",
+#     }
+#     ax.set(**ax_kwargs)
 
-dfs_r2 = load_data_r2(rf_dir, user_name, output_date, cluster_info)
-
-# Subset by rows -- only include row names that exists in the sigs_info dataframe (but sig_info has excess rows "['avg_IE_SE_thresh', 'avg_IE_SE_signif', 'diff_RCPint_RCPvol'] not in index")
-
-dfs_r2 = dfs_r2.loc[sigs_RF_names]
-# plot_r2(dfs_r2, cluster_info)
-plot_avg_r2(dfs_r2, cluster_info)
+#     ax.set_xticklabels(df.index, rotation=45, ha="right")
+#     ax.legend(title="cluster_nums", bbox_to_anchor=(1.05, 1), loc="upper left")
+#     fig.tight_layout()
+#     fig.savefig(
+#         os.path.join(fig_dir, f"r2_per_sig.{file_type}"), dpi=300
+#     )  # Save as PNG or PDF
 
 
-# %%
+# def plot_avg_r2(dfs_r2, cluster_info):
+#     df_avg_r2 = dfs_r2.mean(axis=0).reset_index()
+#     df_avg_r2.columns = ["cluster_name", "Average R-squared"]
+
+#     df_avg_r2["cluster_num"] = df_avg_r2["cluster_name"].apply(
+#         lambda x: int(x.split(" - ")[0]) if " - " in x else x
+#     )
+
+#     df_avg_r2["Color"] = df_avg_r2["cluster_num"].apply(
+#         lambda x: cluster_info[int(x)]["color"]
+#         if x != "CONUS-wide" and int(x) in cluster_info
+#         else "lightgrey"
+#     )
+
+#     fig, ax = plt.subplots(figsize=(4, 5))
+#     ax.bar(
+#         df_avg_r2["cluster_name"],
+#         df_avg_r2["Average R-squared"],
+#         color=df_avg_r2["Color"],
+#     )
+#     ax.set_title(r"Average $R^2$ for Different cluster_nums")
+#     ax.set_xlabel("cluster name")
+#     ax.set_ylabel(r"Average $R^2$")
+#     ax.set_xticklabels(df_avg_r2["cluster_name"], rotation=45, ha="right")
+#     fig.tight_layout()
+#     fig.savefig(
+#         os.path.join(fig_dir, f"r2_average.{file_type}"), dpi=300
+#     )  # Save as PNG or PDF}"))
+#     df_avg_r2.to_csv(os.path.join(fig_dir, "r2_average.csv"), index=True)
+
+
+# dfs_r2 = load_data_r2(rf_dir, user_name, output_date)
+
+# # Subset by rows -- only include row names that exists in the sigs_info dataframe (but sig_info has excess rows "['avg_IE_SE_thresh', 'avg_IE_SE_signif', 'diff_RCPint_RCPvol'] not in index")
+
+# dfs_r2 = dfs_r2.loc[sigs_RF_names]
+# # plot_r2(dfs_r2, cluster_info)
+# plot_avg_r2(dfs_r2, cluster_info)
+
+
+# # %%
 def plot_r2_conus_wide(dfs_r2):
     # Create bar plot of R2 values for CONUS-wide predictions
     fig, ax = plt.subplots(figsize=(6, 4))
-    dfs_r2_conus_wide = dfs_r2["CONUS-wide"]
+    x_values = dfs_r2["r_squared_cv"]
+    x_val_std = dfs_r2["r_squared_cv_std"]
 
-    dfs_r2_conus_wide_orderd = dfs_r2_conus_wide.reindex(sigs_RF_names_ordered)
+    x_values_orderd = x_values.reindex(sigs_RF_names_ordered)
+    x_val_std_orderd = x_val_std.reindex(sigs_RF_names_ordered)
     colors = ["royalblue"] * 4 + ["palegoldenrod"] * 4 + ["lightcoral"] * 6
     ax.bar(
-        dfs_r2_conus_wide_orderd.index,
-        dfs_r2_conus_wide_orderd.values,
+        x_values_orderd.index,
+        x_values_orderd.values,
         color=colors,
         alpha=0.8,
+        yerr=x_val_std_orderd.values,
+        capsize=5,
+        error_kw={"ecolor": "dimgrey", "lw": 0.5, "capthick": 1, "capsize": 3},
     )
     ax.set_xlabel(None)
     ax.set_ylabel(r"$R^2$")
@@ -277,6 +293,8 @@ def plot_r2_conus_wide(dfs_r2):
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, f"r2_conus_wide.{file_type}"), dpi=300)
 
+
+dfs_r2 = load_data_r2(rf_dir, user_name, output_date)
 
 plot_r2_conus_wide(dfs_r2)
 

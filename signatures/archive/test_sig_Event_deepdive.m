@@ -17,6 +17,7 @@ home_dir = 'G:\Shared drives\Signatures -- large scale\baseflow\RAraki';
 d_dir = 'D:\';
 data_dir = fullfile(d_dir, 'data');
 caravan_dir = 'Caravan1.4';
+hourly_dir = 'CAMELShourly';
 attributes_dir = 'attributes';
 timeseries_dir = 'timeseries';
 data_type = 'csv';
@@ -36,9 +37,8 @@ us_gauges = attrs_geo(strcmp(attrs_geo.country, 'United States of America'), :);
 numGauges = height(us_gauges);
 
 %___________________________________________________________________________________
-% Data preparation
 % Specify the gauge id
-gauge_id = 'camels_12025000';
+gauge_id = 'camels_14301000';
 
 % IE_thresh is ridiculously high for 
 % hysets_07156100
@@ -70,6 +70,9 @@ gauge_id = 'camels_12025000';
 % hysets_03401450	
 % hysets_06400497	
 
+%___________________________________________________________________________________
+% Data preparation - Caravan
+
 % Load data and convert it to datetime table
 file_path = fullfile(data_dir, caravan_dir, timeseries_dir,data_type, caravan_data, [gauge_id '.' data_type]);
 data = readtable(file_path);
@@ -87,11 +90,47 @@ T = subset_data.temperature_2m_mean;
 
 
 %___________________________________________________________________________________
+% Data preparation - CAMELS
+
+% Get the gauge number
+gauge_num = extractAfter(gauge_id, '_');
+fprintf("Gauge number: %s\n", gauge_num)
+
+% Load data and convert it to datetime table
+try
+    fprintf("Data found for %s\n", gauge_id)
+    q_file_path = fullfile(data_dir, hourly_dir, "usgs_streamflow", [gauge_num '-usgs-hourly.' data_type]);
+    q_data = readtable(q_file_path);
+catch
+    fprintf("No USGS data found for %s\n", gauge_id)
+end
+
+% Streamflow data
+q_data.date = datetime(q_data.date, 'InputFormat', 'yyyy-MM-dd');
+q_tt = table2timetable(q_data, 'RowTimes', 'date');
+
+% NLDAS forcing
+nldas_file_path = fullfile(data_dir, hourly_dir, "nldas_hourly", [gauge_num '_hourly_nldas.' data_type]);
+nldas_data = readtable(nldas_file_path);
+nldas_data.date = datetime(nldas_data.date, 'InputFormat', 'yyyy-MM-dd');
+nldas_tt = table2timetable(nldas_data, 'RowTimes', 'date');
+
+% Synchronize the timetables using NLDAS as temporal baseline
+data_hourly = synchronize(q_tt, nldas_tt, 'union', 'fillwithmissing');
+
+% Prepare TOSSH imput
+Q_hourly = data_hourly.QObs_mm_h_;
+t_hourly = data_hourly.date;
+P_hourly = data_hourly.total_precipitation;
+PET_hourly = data_hourly.potential_evaporation;
+T_hourly = data_hourly.temperature;
+
+%___________________________________________________________________________________
 %___________________________________________________________________________________
 % Signature calculation
                 
 %___________________________________________________________________________________
-% Getting overland flow parameters 
+% Getting overland flow parameters for daily run
 
 config_OF = readtable('config_overlandflow.csv');
 
@@ -101,7 +140,7 @@ ws_code = str2double(gauge_code(1:2));
 OF_param = config_OF(config_OF.ws_code == ws_code, :);
 
 
-timestep = 24; % time step of precipitation array [hours] (1=hourly, 24=daily)
+% timestep = 24; % time step of precipitation array [hours] (1=hourly, 24=daily)
 
 min_termination = OF_param.min_termination; % 48; % minimum termination time (time between storms) [hours]
 
@@ -120,6 +159,7 @@ plot_results = true;
 %___________________________________________________________________________________
 % Event separation & IE SE signatures
 
+% Daily
 [IE_effect, SE_effect, IE_thresh_signif, IE_thresh, ...
     SE_thresh_signif, SE_thresh, SE_slope, ...
     Storage_thresh, Storage_thresh_signif, min_Qf_perc, ...
@@ -131,8 +171,53 @@ plot_results = true;
     'max_recessiondays', max_recessiondays, ...
     'plot_results', plot_results);
 
-disp(R_Pvol_RC)
-disp(R_Pint_RC)
+disp("Daily")
+disp("R_Pvol_RC: \n", R_Pvol_RC)
+disp("R_Pint_RC: \n" R_Pint_RC)
+
+
+%___________________________________________________________________________________
+% Getting overland flow parameters 
+
+config_OF = readtable('config_overlandflow_hourly.csv');
+
+parts = split(gauge_id, '_');
+gauge_code = parts{2};
+ws_code = str2double(gauge_code(1:2));
+OF_param = config_OF(config_OF.ws_code == ws_code, :);
+
+
+% timestep = 24; % time step of precipitation array [hours] (1=hourly, 24=daily)
+
+min_termination = OF_param.min_termination; % 48; % minimum termination time (time between storms) [hours]
+
+min_intensity_day = OF_param.min_intensity_day; % 4.8; % minimum intensity (per day)
+min_intensity_day_during = OF_param.min_intensity_day_during; % 4.8; % minimum timestep intensity allowed during storm event without contributing to termination time
+
+min_duration = OF_param.min_duration; % 24; % minimum duration of storm [hours]
+
+max_recessiondays = OF_param.max_recessiondays; % 8; % maximum number of days to allow recession after rain ends
+
+min_intensity_hour = 2; % minimum intensity (per hour)
+min_intensity_hour_during = 0.2; % minimum timestep intensity allowed during storm event without contributing to termination time
+
+plot_results = true;
+
+% Hourly
+[IE_effect, SE_effect, IE_thresh_signif, IE_thresh, ...
+    SE_thresh_signif, SE_thresh, SE_slope, ...
+    Storage_thresh, Storage_thresh_signif, min_Qf_perc, ...
+    R_Pvol_RC_hourly, R_Pint_RC_hourly, fig_event] = sig_EventGraphThresholds(Q_hourly,t_hourly,P_hourly,...
+    'min_termination', min_termination, ...
+    'min_duration', min_duration, ...
+    'min_intensity_day', min_intensity_day, ...
+    'min_intensity_day_during', min_intensity_day_during, ...
+    'max_recessiondays', max_recessiondays, ...
+    'plot_results', plot_results);
+
+disp("Hourly")
+fprintf("R_Pvol_RC: %f \n", R_Pvol_RC_hourly)
+fprintf("R_Pint_RC: %f \n", R_Pint_RC_hourly)
 
 %___________________________________________________________________________________
 % Recession signatures
