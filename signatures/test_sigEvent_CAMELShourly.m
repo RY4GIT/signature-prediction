@@ -12,18 +12,6 @@ clc
 totalTimer = tic;
 diary('log.txt');
 
-%___________________________________________________________________________________
-% CHANGE HERE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Declare signature function/category to use
-sig_cat = 'calc_All_custom';
-% 'calc_All', 'calc_All_custom', 'calc_McMillan_OverlandFlow', 'calc_McMillan_Groundwater',
-% 'calc_Addor', 'calc_Sawicz', 'calc_Euser',  'calc_BasicSet'
-
-% Choose which Caravan gaguges to run: 'hysets' or 'camels'
-caravan_data = 'camels';
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %___________________________________________________________________________________
 % Add TOSSH toolbox to the path
@@ -88,7 +76,7 @@ fprintf("Starting processing ... %s dataset", caravan_data);
 
 %___________________________________________________________________________________
 % Loop through each gauge in us_gauges and collect data
-parfor idx = 1:numGauges
+for idx = 1:numGauges
     try
         % Get the gauge id
         gauge_id = cell2mat(us_gauges(idx, :).gauge_id);
@@ -138,33 +126,43 @@ parfor idx = 1:numGauges
         %___________________________________________________________________________________
         % Signature calculation
         switch sig_cat
-            case 'calc_All'
-                signatures = calc_All(Q, t, P, PET, T);
-            case 'calc_All_custom'
-                    signatures = calc_All_custom(Q, t, P, PET, T,...
-                        'min_termination', OF_param.min_termination, ...
-                        'min_duration', OF_param. min_duration, ...
-                        'min_intensity_day', OF_param.min_intensity_day, ...
-                        'min_intensity_day_during', OF_param.min_intensity_day_during, ...
-                        'max_recessiondays', OF_param.max_recessiondays, ...
-                        'recession_length', recession_param.recession_length, ...
-                        'eps', recession_param.eps, ...
-                        'plot_results', plot_results ...
-                        );
-            case 'calc_McMillan_Groundwater'
-                signatures = calc_McMillan_Groundwater(Q, t, P, PET);
-            case 'calc_McMillan_OverlandFlow'
-                signatures = calc_McMillan_OverlandFlow(Q, t, P);
-            case 'calc_Addor'
-                signatures = calc_Addor(Q, t, P);
-            case 'calc_BasicSet'
-                signatures = calc_BasicSet(Q, t);
-            case 'calc_Euser'
-                signatures = calc_Euser(Q, t);
-            case 'calc_Sawicz'
-                signatures = calc_Sawicz(Q, t, P, T);
-            otherwise
-                warning('Unexpected signature category');
+            config_OF = readtable('config_overlandflow.csv');
+
+parts = split(gauge_id, '_');
+gauge_code = parts{2};
+ws_code = str2double(gauge_code(1:2));
+OF_param = config_OF(config_OF.ws_code == ws_code, :);
+
+
+timestep = 24; % time step of precipitation array [hours] (1=hourly, 24=daily)
+
+min_termination = OF_param.min_termination; % 48; % minimum termination time (time between storms) [hours]
+
+min_intensity_day = OF_param.min_intensity_day; % 4.8; % minimum intensity (per day)
+min_intensity_day_during = OF_param.min_intensity_day_during; % 4.8; % minimum timestep intensity allowed during storm event without contributing to termination time
+
+min_duration = OF_param.min_duration; % 24; % minimum duration of storm [hours]
+
+max_recessiondays = OF_param.max_recessiondays; % 8; % maximum number of days to allow recession after rain ends
+
+min_intensity_hour = 2; % minimum intensity (per hour)
+min_intensity_hour_during = 0.2; % minimum timestep intensity allowed during storm event without contributing to termination time
+
+plot_results = true;
+
+%___________________________________________________________________________________
+% Event separation & IE SE signatures
+
+[IE_effect, SE_effect, IE_thresh_signif, IE_thresh, ...
+    SE_thresh_signif, SE_thresh, SE_slope, ...
+    Storage_thresh, Storage_thresh_signif, min_Qf_perc, ...
+     R_Pvol_RC, R_Pint_RC, fig_event] = sig_EventGraphThresholds(Q,t,P,...
+    'min_termination', min_termination, ...
+    'min_duration', min_duration, ...
+    'min_intensity_day', min_intensity_day, ...
+    'min_intensity_day_during', min_intensity_day_during, ...
+    'max_recessiondays', max_recessiondays, ...
+    'plot_results', plot_results);
         end
         
         % Make table
