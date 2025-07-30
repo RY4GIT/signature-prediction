@@ -96,8 +96,9 @@ for i = 1:n_CAMELS
         %___________________________________________________________________________________
         % Data preparation
         % Get gauge_id and extract gauge_num
-        gauge_id = ['camels_' num2str(CAMELS_data.gauge_id(i))];
         gauge_num = sprintf('%08d', CAMELS_data.gauge_id(i));
+        gauge_id = ['camels_' gauge_num];
+
 
         t = datetime(CAMELS_data.Q{i}(:,1),'ConvertFrom','datenum');
         Q = CAMELS_data.Q{i}(:,2);
@@ -238,6 +239,12 @@ for i = 1:n_CAMELS
 end
 
 % Combine all results into one table after the loop
+% First convert gauge_id to cell array to avoid dimension mismatch
+for i = 1:length(resultsCell)
+    if ~isempty(resultsCell{i})
+        resultsCell{i}.gauge_id = {resultsCell{i}.gauge_id};
+    end
+end
 results = vertcat(resultsCell{:});
 
 % Save the table to a CSV file

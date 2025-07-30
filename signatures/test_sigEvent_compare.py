@@ -7,7 +7,8 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
 # %%
-hourly_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\test_hourlyCAMELS_20250728\out_sigEvent.csv"
+hourly_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\test_hourlyCAMELS_v2_20250730\out_sigEvent.csv"
+# hourly_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\test_hourlyCAMELS_20250728\out_sigEvent.csv"
 # hourly_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\test_hourlyCAMELS_defaultParam20250728\out_sigEvent.csv"
 df_hourly = pd.read_csv(hourly_path, index_col="gauge_id")
 
