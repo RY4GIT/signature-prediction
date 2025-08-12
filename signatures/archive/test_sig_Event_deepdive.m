@@ -38,7 +38,7 @@ numGauges = height(us_gauges);
 
 %___________________________________________________________________________________
 % Specify the gauge id
-gauge_id = 'camels_14301000';
+gauge_id = 'camels_10244950';
 
 % IE_thresh is ridiculously high for 
 % hysets_07156100
@@ -179,7 +179,7 @@ disp("R_Pint_RC: \n" R_Pint_RC)
 %___________________________________________________________________________________
 % Getting overland flow parameters 
 
-config_OF = readtable('config_overlandflow_hourly.csv');
+config_OF = readtable('config_overlandflow.csv');
 
 parts = split(gauge_id, '_');
 gauge_code = parts{2};

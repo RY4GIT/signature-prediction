@@ -26,6 +26,9 @@ df_merged = pd.merge(
 df_merged = pd.merge(df_merged, df_attrs, on="gauge_id", how="inner")
 
 df_merged.head()
+
+# %%
+df_clean = df_merged.dropna(subset=["R_Pvol_RC_hourly", "R_Pvol_RC_daily"])
 # %%
 # Compare the two dataframes
 # Plot the scatter plot for "R_Pint_RC" and "R_Pvol_RC"
@@ -81,10 +84,12 @@ df_clean["diff_Pint_Pvol_daily"] = (
 df_clean["diff_Pint_Pvol_hourly"] = (
     df_clean["R_Pint_RC_hourly"] - df_clean["R_Pvol_RC_hourly"]
 )
-
+df_clean["diff_Pint_Pvol_combined"] = (
+    df_clean["R_Pint_RC_hourly"] - df_clean["R_Pvol_RC_daily"]
+)
 # %% Plot in the map
 fig, ax = plt.subplots(
-    3, 2, figsize=(15, 10), subplot_kw={"projection": ccrs.PlateCarree()}
+    2, 2, figsize=(15, 10), subplot_kw={"projection": ccrs.PlateCarree()}
 )
 land = cfeature.NaturalEarthFeature(
     category="physical", name="land", scale="110m", facecolor="lightgrey", zorder=0
@@ -93,28 +98,32 @@ ax = ax.flatten()
 
 
 plot_items = {
-    "R_Pint_RC_daily": {
-        "title": "R_Pint_RC (daily)",
+    # "R_Pint_RC_daily": {
+    #     "title": "R_Pint_RC (daily)",
+    #     "colorbar": "viridis",
+    "R_Pint_RC_hourly": {
+        "title": "R_Pint_RC (max_hourly_frac*daily)",
         "colorbar": "viridis",
     },
+    # },
     "R_Pvol_RC_daily": {
         "title": "R_Pvol_RC (daily)",
         "colorbar": "viridis",
     },
-    "R_Pint_RC_hourly": {
-        "title": "R_Pint_RC (hourly)",
-        "colorbar": "viridis",
-    },
-    "R_Pvol_RC_hourly": {
-        "title": "R_Pvol_RC (hourly)",
-        "colorbar": "viridis",
-    },
-    "diff_Pint_Pvol_daily": {
-        "title": "R_Pint_RC - R_Pvol_RC (daily)",
-        "colorbar": "RdBu_r",
-    },
-    "diff_Pint_Pvol_hourly": {
-        "title": "R_Pint_RC - R_Pvol_RC (hourly)",
+    # "R_Pvol_RC_hourly": {
+    #     "title": "R_Pvol_RC (hourly_frac*daily)",
+    #     "colorbar": "viridis",
+    # },
+    # "diff_Pint_Pvol_daily": {
+    #     "title": "R_Pint_RC - R_Pvol_RC (daily)",
+    #     "colorbar": "RdBu_r",
+    # },
+    # "diff_Pint_Pvol_hourly": {
+    #     "title": "R_Pint_RC - R_Pvol_RC (hourly)",
+    #     "colorbar": "Reds",
+    # },
+    "diff_Pint_Pvol_combined": {
+        "title": "R_Pint_RC (max_hourly_frac*daily) - R_Pvol_RC (daily)",
         "colorbar": "Reds",
     },
 }
@@ -123,6 +132,8 @@ for i, (varname, item) in enumerate(plot_items.items()):
         norm = plt.Normalize(-0.1, 0.1)
     elif "diff_Pint_Pvol_hourly" in varname:
         norm = plt.Normalize(-0.2, 0.0)
+    elif "diff_Pint_Pvol_combined" in varname:
+        norm = plt.Normalize(-0.3, 0.3)
     else:
         norm = plt.Normalize(-0.3, 0.8)
     ax[i].add_feature(land)
@@ -145,4 +156,6 @@ for i, (varname, item) in enumerate(plot_items.items()):
 fig.tight_layout()
 
 
+# %%
+df_clean[df_clean["R_Pint_RC_hourly"] > 0.8]["R_Pvol_RC_hourly"]
 # %%
