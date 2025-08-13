@@ -307,12 +307,10 @@ sigs_out = sigs_out[~sigs_out["R_Pint_RC"].isna()]
 # %% Drop duplicating gauge_num. Prioritize dataset_name camels > hysets > gages2 if overlap
 priority_order = {"camels": 0, "hysets": 1, "gages2": 2}
 sigs_out_dup = sigs_out.copy()
-sigs_out["__priority"] = sigs_out["data_name"].map(priority_order)
-sigs_out = (
-    sigs_out.sort_values(["gauge_num", "__priority"], ascending=[True, True])
-    .drop_duplicates(subset=["gauge_num"], keep="first")
-    .drop(columns=["__priority"])
-)
+sigs_out["order"] = sigs_out["data_name"].map(priority_order)
+sigs_out = sigs_out.sort_values(
+    ["gauge_num", "order"], ascending=[True, True]
+).drop_duplicates(subset=["gauge_num"], keep="first")
 print(
     f"After dropping duplicating gauge_num, {len(sigs_out)} gauges (left) out of {len(sigs_out_dup)} (original) ({len(sigs_out) / len(sigs_out_dup) * 100:.1f}%)"
 )
