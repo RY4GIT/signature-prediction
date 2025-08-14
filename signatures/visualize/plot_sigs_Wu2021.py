@@ -12,28 +12,24 @@ import matplotlib as mpl
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
-# %%
+# %% #######################################
+# Config
+############################################
 cloud_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 sig_dir = os.path.join(cloud_dir, "out", "signatures", "Wu_sigs_20250812")
 local_dir = r"D:\data"
-
-
-# Plotting config
-plot_sigs_config_path = "plot_sigs_config_selected.csv"
-plot_sigs_config = pd.read_csv(plot_sigs_config_path)
-
-# Figure directory
 fig_dir = sig_dir
 
 conus_extent = [-125.5, -66.95, 24.396308, 47.5]
 
-# %%
+# %% #######################################
+# Load datasets
+############################################
 print("Loading signatures results file ...")
 sigs = pd.read_csv(os.path.join(sig_dir, "out_sigEvent_cara_gg2.csv"))
 sigs["gauge_num"] = sigs["gauge_num"].astype(str).str.zfill(8)
 sigs["gauge_id"] = sigs["data_name"] + "_" + sigs["gauge_num"]
 sigs.head()
-
 
 # %%
 print("Loading Caravan watershed shapefiles...")
@@ -68,51 +64,36 @@ wspolygon = pd.concat(
 wspolygon.set_index("gauge_id", inplace=True)
 
 # %%
+print("Concatenating signatures with watershed shapefiles...")
 sigs.set_index("gauge_id", inplace=True)
 sigs = sigs.drop(columns=["gauge_num"]).join(wspolygon, how="left")
-# Ensure GeoDataFrame so plot() supports column/vmin/vmax
 
-
-# %%
-sigs[sigs["data_name"] == "gages2"].head()
-# %%
-sigs[sigs["data_name"] == "camels"].head()
-# %%
-sigs[sigs["data_name"] == "hysets"].head()
-
-
-# %%
-
+# Curate data
 sigs = gpd.GeoDataFrame(sigs, geometry="geometry", crs=4326)
-
-print(len(sigs))
-# %%
-sigs["diff_RCPint_RCPvol"] = sigs["R_Pint_RC"] - sigs["R_Pvol_RC"]
-
-
-# %%
 sigs["area"] = sigs.geometry.values.area
-
-# %% order by sources
-# order by area_km2
 sigs = sigs.sort_values(by="order", ascending=True)
 sigs = sigs.sort_values(by="area", ascending=True)
-sigs.head()
 
-# %%
-sigs.tail()
-
-
-# %%
+# Calculate signature statistics
+sigs["diff_RCPint_RCPvol"] = sigs["R_Pint_RC"] - sigs["R_Pvol_RC"]
+# Mask where both R_Pint_RC and R_Pvol_RC are negative
 sigs["diff_RCPint_RCPvol_masked"] = sigs["diff_RCPint_RCPvol"].mask(
     (sigs["R_Pint_RC"] < 0) & (sigs["R_Pvol_RC"] < 0)
 )
-sigs[["R_Pint_RC", "R_Pvol_RC", "diff_RCPint_RCPvol_masked"]].head()
-# %%
-# Plot R_Pint_RC and R_Pvol_RC and diff
+# %% Check data
+# sigs[sigs["data_name"] == "gages2"].head()
+# sigs[sigs["data_name"] == "camels"].head()
+# sigs[sigs["data_name"] == "hysets"].head()
+
+# %% #######################################
+# Plot signatures
+############################################
+# Plot R_Pint_RC and R_Pvol_RC and diff_RCPint_RCPvol_masked
 for sig_name in [
-    "diff_RCPint_RCPvol_masked"
-]:  # ["R_Pint_RC", "R_Pvol_RC", "diff_RCPint_RCPvol"]:
+    "R_Pint_RC",
+    "R_Pvol_RC",
+    "diff_RCPint_RCPvol_masked",
+]:
     # Set up the map
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
@@ -133,38 +114,31 @@ for sig_name in [
         linewidth=1.0,  # Optionally adjust linewidth for edges
     )
 
-    # Get plot fongi
-    # plot_config = plot_sigs_config.loc[
-    # plot_sigs_config["column_name"] == sig_name
-    # ].iloc[0]
     c_data = sigs[sig_name]
-    # llim = plot_config["lower_lim"]
-    # ulim = plot_config["upper_lim"]
-    cbar_label = "[-]"  # f"{plot_config['unit']}"
+    cbar_label = "[-]"
     out_file_name = f"map_{sig_name}.png"
-    title_label = f"{sig_name}"
 
     if "diff_RCPint_RCPvol" in sig_name:
-        # diagonal_colors = [
-        #     "#159DD0",
-        #     # "#2CA6D4",
-        #     # "#43B0D9",
-        #     "#aeb5b1",
-        #     # "#E38753",
-        #     # "#E0783E",
-        #     "#DD6A29", #    or # DD6A29
-        # ]
-
         diagonal_colors = [
+            "#159DD0",
             # "#2CA6D4",
             # "#43B0D9",
             "#aeb5b1",
-            "#98B2B5",
-            "#159DD0",
             # "#E38753",
             # "#E0783E",
-            # "#DD6A29", #    or # DD6A29
+            "#DD6A29",  #    or # DD6A29
         ]
+
+        # diagonal_colors = [
+        #     # "#2CA6D4",
+        #     # "#43B0D9",
+        #     "#aeb5b1",
+        #     "#98B2B5",
+        #     "#159DD0",
+        #     # "#E38753",
+        #     # "#E0783E",
+        #     # "#DD6A29", #    or # DD6A29
+        # ]
 
         # Create the colormap
         diag_cmap = LinearSegmentedColormap.from_list(
@@ -230,6 +204,3 @@ for sig_name in [
 
     plt.tight_layout(pad=1.5)
     plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
-
-# %%
-# %%
