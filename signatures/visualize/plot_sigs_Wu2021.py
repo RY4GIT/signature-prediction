@@ -101,10 +101,17 @@ sigs.head()
 
 # %%
 sigs.tail()
+
+
+# %%
+sigs["diff_RCPint_RCPvol_masked"] = sigs["diff_RCPint_RCPvol"].mask(
+    (sigs["R_Pint_RC"] < 0) & (sigs["R_Pvol_RC"] < 0)
+)
+sigs[["R_Pint_RC", "R_Pvol_RC", "diff_RCPint_RCPvol_masked"]].head()
 # %%
 # Plot R_Pint_RC and R_Pvol_RC and diff
 for sig_name in [
-    "diff_RCPint_RCPvol"
+    "diff_RCPint_RCPvol_masked"
 ]:  # ["R_Pint_RC", "R_Pvol_RC", "diff_RCPint_RCPvol"]:
     # Set up the map
     fig = plt.figure(figsize=(12, 8))
@@ -127,25 +134,36 @@ for sig_name in [
     )
 
     # Get plot fongi
-    plot_config = plot_sigs_config.loc[
-        plot_sigs_config["column_name"] == sig_name
-    ].iloc[0]
+    # plot_config = plot_sigs_config.loc[
+    # plot_sigs_config["column_name"] == sig_name
+    # ].iloc[0]
     c_data = sigs[sig_name]
     # llim = plot_config["lower_lim"]
     # ulim = plot_config["upper_lim"]
-    cbar_label = f"{plot_config['unit']}"
+    cbar_label = "[-]"  # f"{plot_config['unit']}"
     out_file_name = f"map_{sig_name}.png"
-    title_label = f"{plot_config['label']}"
+    title_label = f"{sig_name}"
 
-    if sig_name == "diff_RCPint_RCPvol":
+    if "diff_RCPint_RCPvol" in sig_name:
+        # diagonal_colors = [
+        #     "#159DD0",
+        #     # "#2CA6D4",
+        #     # "#43B0D9",
+        #     "#aeb5b1",
+        #     # "#E38753",
+        #     # "#E0783E",
+        #     "#DD6A29", #    or # DD6A29
+        # ]
+
         diagonal_colors = [
-            "#159DD0",
             # "#2CA6D4",
             # "#43B0D9",
             "#aeb5b1",
+            "#98B2B5",
+            "#159DD0",
             # "#E38753",
             # "#E0783E",
-            "#DD6A29",
+            # "#DD6A29", #    or # DD6A29
         ]
 
         # Create the colormap
@@ -179,7 +197,7 @@ for sig_name in [
     )
 
     # Add a colorbar
-    if sig_name == "diff_RCPint_RCPvol":
+    if "diff_RCPint_RCPvol" in sig_name:
         # Save colorbar to a separate file (no colorbar on the map)
         sm_cb = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm_cb.set_array([])
@@ -210,6 +228,7 @@ for sig_name in [
     for spine in ax.spines.values():
         spine.set_visible(False)
 
+    plt.tight_layout(pad=1.5)
     plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
 
 # %%
