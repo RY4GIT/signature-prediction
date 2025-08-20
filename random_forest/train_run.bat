@@ -9,8 +9,8 @@ REM     Rscript main_mp.R %config_dir%\config_ecoregion_%%i.yml
 REM     echo Experiment with %config_dir%\config_ecoregion_%%i.yml finished
 REM )
 
-echo Running experiment with %config_dir%\config_test_train.yml
-Rscript train_main_mp.R %config_dir%\config_test_train.yml
-echo Experiment with %config_dir%\config_test_train.yml finished
+echo Running experiment with %config_dir%\config_cluster_all_Wu.yml
+Rscript train_main_mp.R %config_dir%\config_cluster_all_Wu.yml
+echo Experiment with %config_dir%\config_cluster_all_Wu.yml finished
 
 pause

@@ -1,12 +1,12 @@
 paths:
   home_dir: /home/raraki/data/signature-prediction
-  out_dir: /out/rf
+  out_dir: /out/rf_Wu
   train:
-    signatures: /signatures/caravan_us_20250525/out_calc_All_custom_filt_qc_snow_area.csv
+    signatures: /signatures/Wu_sigs_20250812/out_sigEvent_cara_gg2_rf_train.csv
     attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
   test:
     attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
-experiment_name: cluster_all
+experiment_name: cluster_all_Wu
 filter_by_cluster:
   run: false
   name: NA
@@ -19,28 +19,8 @@ save_models: true
 parallel:
   nCores: 16
 sigs_predict:
-- TotalRR
-- RR_Seasonality
-- EventRR
-- Recession_a_Seasonality
-- AverageStorage
-- RecessionParameters_b
-- RecessionParameters_T0
-- First_Recession_Slope
-- Mid_Recession_Slope
-- EventRR_TotalRR_ratio
-- VariabilityIndex
-- BFI
-- BaseflowRecessionK
-- IE_thresh_signif
-- SE_thresh_signif
-- Storage_thresh_signif
-- IE_thresh
-- SE_thresh
-- IE_effect
-- SE_effect
-- Storage_thresh
-- SE_slope
+- R_Pvol_RC
+- R_Pint_RC
 attrs_of_interest:
 - ELEV_MEAN_M_BASIN
 - DRAIN_SQKM

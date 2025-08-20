@@ -289,6 +289,7 @@ print(
 ##########################################################################
 
 select_cols = [
+    "gauge_id",
     "gauge_num",
     "data_name",
     "R_Pvol_RC",
@@ -308,14 +309,36 @@ sigs_out = sigs_out[~sigs_out["R_Pint_RC"].isna()]
 priority_order = {"camels": 0, "hysets": 1, "gages2": 2}
 sigs_out_dup = sigs_out.copy()
 sigs_out["order"] = sigs_out["data_name"].map(priority_order)
-sigs_out = sigs_out.sort_values(
+sigs_out_for_plot = sigs_out.sort_values(
     ["gauge_num", "order"], ascending=[True, True]
 ).drop_duplicates(subset=["gauge_num"], keep="first")
 print(
-    f"After dropping duplicating gauge_num, {len(sigs_out)} gauges (left) out of {len(sigs_out_dup)} (original) ({len(sigs_out) / len(sigs_out_dup) * 100:.1f}%)"
+    f"After dropping duplicating gauge_num, {len(sigs_out_for_plot)} gauges (left) out of {len(sigs_out_dup)} (original) ({len(sigs_out_for_plot) / len(sigs_out_dup) * 100:.1f}%)"
 )
 
 # %%
-sigs_out.to_csv(os.path.join(sig_dir, "out_sigEvent_cara_gg2.csv"), index=False)
+sigs_out_for_plot.to_csv(
+    os.path.join(sig_dir, "out_sigEvent_cara_gg2.csv"), index=False
+)
 
+# %% Get the signatures for RF training
+sig_out_for_rf_train = sigs_out.copy()
+
+# Keep camels. Keep hysets if overlap with gages2. Drop gages2.
+sig_out_for_rf_train = sig_out_for_rf_train[
+    (sig_out_for_rf_train["data_name"] == "camels")
+    | (
+        (sig_out_for_rf_train["data_name"] == "hysets")
+        & (sig_out_for_rf_train["gauge_num"].isin(sigs_gages2_filt["gauge_num"]))
+    )
+]
+
+print(
+    f"Number of gauges in sig_out_for_rf_train: {len(sig_out_for_rf_train)} ({len(sig_out_for_rf_train) / len(sigs_out) * 100:.1f}%)"
+)
+
+# %%
+sig_out_for_rf_train.to_csv(
+    os.path.join(sig_dir, "out_sigEvent_cara_gg2_rf_train.csv"), index=False
+)
 # %%

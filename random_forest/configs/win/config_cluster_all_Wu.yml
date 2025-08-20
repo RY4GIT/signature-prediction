@@ -1,0 +1,47 @@
+paths:
+  home_dir: G:/Shared drives/Signatures -- large scale/baseflow
+  out_dir: RAraki/out/rf
+  train:
+    signatures: RAraki/out/signatures/Wu_sigs_20250812/out_sigEvent_cara_gg2_rf_train.csv
+    attributes: RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
+  test:
+    attributes: RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
+experiment_name: cluster_all
+filter_by_cluster:
+  run: false
+  name: NA
+settings:
+  seed: 0
+  ntree: 500
+  num_folds: 10
+  eval_metric: RMSE
+save_models: true
+parallel:
+  nCores: 16
+sigs_predict:
+- R_Pvol_RC
+- R_Pint_RC
+attrs_of_interest:
+- ELEV_MEAN_M_BASIN
+- DRAIN_SQKM
+- SLOPE_DEG_x10
+- FORESTNLCD06
+- CROPSNLCD06
+- PASTURENLCD06
+- PCT_IRRIG_AG
+- PADCAT1_AND_2
+- isowet_areafrac
+- CLAYAVE
+- SILTAVE
+- soc_th_sav
+- kar_pc_sse
+- geol_weighted_ave_age_ma
+- PDEN_2000_BLOCK
+- P_mm_day
+- PET_mm_day
+- ARIDITY_GAGES2
+- SNOW_FRAC_PRECIP
+- seasonality_FAO_PM
+- high_prec_freq
+- low_prec_freq
+- low_prec_dur
