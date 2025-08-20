@@ -30,8 +30,6 @@ sigs_predict:
 - SE_effect
 - Storage_thresh
 - SE_slope
-- R_Pvol_RC
-- R_Pint_RC
 attrs_of_interest:
 - ELEV_MEAN_M_BASIN
 - DRAIN_SQKM

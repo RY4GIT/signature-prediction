@@ -1,0 +1,36 @@
+paths:
+  home_dir: "G:/Shared drives/Signatures -- large scale/baseflow"
+  out_dir: "RAraki/out/rf"
+  predict:
+    model_dir: "RAraki/out/rf/output_raraki_20250820_cluster_all_Wu"
+    attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster_forWuRF_cara_gg2_baddata.csv"
+experiment_name: "pred_hys_gg2_baddata_Wu"
+parallel:
+  nCores: 16
+sigs_predict:
+- R_Pvol_RC
+- R_Pint_RC
+attrs_of_interest:
+- ELEV_MEAN_M_BASIN
+- DRAIN_SQKM
+- SLOPE_DEG_x10
+- FORESTNLCD06
+- CROPSNLCD06
+- PASTURENLCD06
+- PCT_IRRIG_AG
+- PADCAT1_AND_2
+- isowet_areafrac
+- CLAYAVE
+- SILTAVE
+- soc_th_sav
+- kar_pc_sse
+- geol_weighted_ave_age_ma
+- PDEN_2000_BLOCK
+- P_mm_day
+- PET_mm_day
+- ARIDITY_GAGES2
+- SNOW_FRAC_PRECIP
+- seasonality_FAO_PM
+- high_prec_freq
+- low_prec_freq
+- low_prec_dur

@@ -1,5 +1,4 @@
-# %% Post proces signatures calculated for Caravan gages
-
+# %% Get attribute sets for RF predictions (Most of the signatures, except Wu)
 import pandas as pd
 import os
 import numpy as np
