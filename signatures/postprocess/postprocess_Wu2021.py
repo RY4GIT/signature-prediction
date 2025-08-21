@@ -321,6 +321,29 @@ sigs_out_for_plot.to_csv(
     os.path.join(sig_dir, "out_sigEvent_cara_gg2.csv"), index=False
 )
 
+
+# %% Get the signatures for plotting
+sig_out_for_plot = sigs_out.copy()
+
+# Keep camels. Keep hysets if overlap with gages2. Drop gages2.
+sig_out_for_plot = sig_out_for_plot[
+    (sig_out_for_plot["data_name"] == "camels")
+    | (sig_out_for_plot["data_name"] == "hysets")
+    | (
+        (sig_out_for_plot["data_name"] == "gages2")
+        & (~sig_out_for_plot["gauge_num"].isin(sigs_caravan_filt["gauge_num"]))
+    )
+]
+
+print(
+    f"Number of gauges in sig_out_for_plot: {len(sig_out_for_plot)} ({len(sig_out_for_plot) / len(sigs_out) * 100:.1f}%)"
+)
+
+
+sig_out_for_plot.to_csv(
+    os.path.join(sig_dir, "out_sigEvent_cara_gg2_no_duplicates.csv"), index=False
+)
+
 # %% Get the signatures for RF training
 sig_out_for_rf_train = sigs_out.copy()
 
