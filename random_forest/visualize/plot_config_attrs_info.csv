@@ -21,7 +21,6 @@ Land Cover,,PCT_IRRIG_AG,
 Land Cover,,PASTURENLCD06,
 Land Cover,,DEVNLCD06,
 Land Cover,,CROPSNLCD06,
-Land Cover,,PDEN_2000_BLOCK,
 Land Cover,,PADCAT1_AND_2,
 Soils & Geology,Clay fraction in soil ,cly_pc_sav,%
 Soils & Geology,Silt fraction in soil ,slt_pc_sav,%

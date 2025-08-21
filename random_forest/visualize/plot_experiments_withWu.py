@@ -270,7 +270,7 @@ def plot_shap(df, cluster_num, cluster_info):
 # SHAP values (bar plots, individual attributes)
 # #####################################################
 
-for cluster_num in ["all"]:
+for cluster_num in ["all", 0, 1, 2, 3, 4, 5]:
     print(f"Processing {cluster_num}...")
 
     plot_shap(df_shap, cluster_num=cluster_num, cluster_info=cluster_info)
