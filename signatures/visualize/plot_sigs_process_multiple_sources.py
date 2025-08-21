@@ -221,8 +221,31 @@ df_sigs["avg_IE_SE_signif"] = (
     df_sigs["IE_thresh_signif"] + df_sigs["SE_thresh_signif"]
 ) / 2
 df_sigs["avg_IE_SE_thresh"].iloc[df_sigs["avg_IE_SE_thresh"] > 300] = np.nan
+# %%
+frac_snow_thresh = 0.2
+snow_mask = (
+    (df_sigs["SNOW_PCT_PRECIP"] < frac_snow_thresh * 100)
+    & (~df_sigs["SNOW_PCT_PRECIP"].isna())
+) | ((df_sigs["SNOWICENLCD06"] < frac_snow_thresh) & (~df_sigs["SNOWICENLCD06"].isna()))
+mask_cols = [
+    "IE_thresh",
+    "SE_thresh",
+    "Storage_thresh",
+    "IE_thresh_signif",
+    "SE_thresh_signif",
+    "Storage_thresh_signif",
+]
+# Yes, this line replaces values with NaN for any rows where snow_mask is False
+# snow_mask is True for gauges with snow < threshold, False otherwise
+# So ~snow_mask is True for gauges with high snow, which get masked to NaN
+df_sigs[mask_cols] = df_sigs[mask_cols].mask(~snow_mask)
+
+print(
+    f"{df_sigs['IE_thresh'].isna().sum()} gauges ({df_sigs['IE_thresh'].isna().sum() / len(df_sigs) * 100:.1f}%) have snow data below {frac_snow_thresh * 100}%"
+)
 
 
+# %%
 # Get the percentile
 def below_thresh_percentile(column_data, thresh_value):
     new_percentile = column_data.apply(
@@ -240,13 +263,6 @@ for sigs_name in plot_sigs_config["column_name"]:
     else:
         df_sigs[sigs_name + "_perc"] = column_data.rank(pct=True) * 100
 
-
-# # %%
-# df_sigs.to_file(
-#     os.path.join(out_dir, "out_calc_All_custom_filt_qc_snow_area_postprocess.gpkg"),
-#     driver="GPKG",
-#     crs="EPSG:4326",
-# )
 # %%
 #######################################################
 # Plot the source
@@ -900,7 +916,7 @@ for process_name in tqdm(
 
 
 # %%
-# Create custom legend patches
+# Plot the process dominance map
 def plot_process_dominance_map():
     """
     Create a map showing only 1-1 class (high in both variables) watersheds for
@@ -1129,18 +1145,21 @@ def plot_process_dominance_map():
 
     # Add legend and title
     ax.legend(
+        title="Dominant Process",
         handles=legend_elements,
         loc="lower right",
-        fontsize=10,
+        fontsize=11,
     )
 
-    ax.set_title("(a) Dominant Processes", loc="left", fontweight="bold")
+    # ax.set_title("(a) Dominant Processes", loc="left", fontweight="bold")
 
     # Set extent to CONUS
     ax.set_extent(conus_extent)
 
     # Set spines invisible
-    ax.outline_patch.set_visible(False)
+    # ax.outline_patch.set_visible(False)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
 
     # Display the map
     plt.tight_layout()
@@ -1157,356 +1176,5 @@ def plot_process_dominance_map():
 
 # Run the function
 plot_process_dominance_map()
-
-
-# %% Plot diff_RCPint_RCPvol separately
-
-
-def plot_diff_RCPint_RCPvol(
-    df, sig_name, overlay_layer, stats="normal", plot_mode="polygon", source=None
-):
-    fig = plt.figure(figsize=(12, 8))
-    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
-
-    # Add the BORDERS feature first
-    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
-
-    # Add the land feature with edgecolor set to black
-    land = cfeature.NaturalEarthFeature(
-        "physical",
-        "land",
-        "50m",
-    )
-    ax.add_feature(
-        land,
-        facecolor="#F4F5FA",  # Keep facecolor as desired
-        edgecolor="black",  # Set edgecolor to black
-        linewidth=1.0,  # Optionally adjust linewidth for edges
-    )
-
-    # Get plot fongi
-    plot_config = plot_sigs_config.loc[
-        plot_sigs_config["column_name"] == sig_name
-    ].iloc[0]
-    c_data = df[sig_name]
-    llim = plot_config["lower_lim"]
-    ulim = plot_config["upper_lim"]
-    cbar_label = f"{plot_config['unit']}"
-    out_file_name = f"map_{sig_name}_{plot_mode}_{source}.png"
-    title_label = f"{plot_config['label']} ({source})"
-
-    diagonal_colors = [
-        "#159DD0",
-        # "#2CA6D4",
-        "#43B0D9",
-        "#aeb5b1",
-        "#E38753",
-        # "#E0783E",
-        "#DD6A29",
-    ]
-
-    # Create the colormap
-    diag_cmap = LinearSegmentedColormap.from_list(
-        "custom_diag_gradient", diagonal_colors
-    )
-
-    cmap = diag_cmap
-    norm = mpl.colors.Normalize(vmin=llim, vmax=ulim)
-
-    df_sorted = df.sort_values("area", ascending=False)
-    df_sorted = df.sort_values("order", ascending=False)
-    df_sorted.plot(
-        ax=ax,
-        column=sig_name,
-        cmap=cmap,
-        alpha=0.8,
-        vmin=llim,
-        vmax=ulim,
-        zorder=99,
-    )
-
-    # Add a colorbar
-    sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
-    sm._A = []  # Empty array for ScalarMappable
-    cbar = plt.colorbar(sm, ax=ax, shrink=0.3)
-    cbar.ax.tick_params(labelsize=18)  # Set font size
-    cbar.set_ticks(np.linspace(llim, ulim, 5))
-    cbar.set_label(cbar_label, rotation=270, labelpad=30)
-
-    ax.set_title(title_label)
-    ax.set_extent(conus_extent)
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-
-    plt.tight_layout(pad=1.5)
-    plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
-
-
-plot_diff_RCPint_RCPvol(
-    df_sigs,
-    "diff_RCPint_RCPvol",
-    ecoregion_overlay,
-    stats="normal",
-    plot_mode="polygon",
-    source="all",
-)
-
-
-# %%
-# Add folium for interactive mapping
-import folium
-from folium import plugins
-
-
-def plot_diff_RCPint_RCPvol_interactive(df, sig_name, stats="normal", source=None):
-    """
-    Create an interactive map for diff_RCPint_RCPvol using Folium with scatter points.
-
-    Parameters:
-    - df: DataFrame with the data
-    - sig_name: Name of the signature column to plot
-    - stats: Type of statistics to plot ("normal" or "percentile")
-    - source: Source label for the title
-    """
-
-    # Filter out rows with missing data
-    df_clean = df.dropna(subset=[sig_name, "gauge_lat", "gauge_lon"]).copy()
-
-    # Get plot config
-    plot_config = plot_sigs_config.loc[
-        plot_sigs_config["column_name"] == sig_name
-    ].iloc[0]
-
-    c_data = df_clean[sig_name]
-    llim = plot_config["lower_lim"]
-    ulim = plot_config["upper_lim"]
-    cbar_label = f"{plot_config['unit']}"
-    title_label = f"Interactive Map: {plot_config['label']}"
-    if source:
-        title_label += f" ({source})"
-
-    # Create a diverging colormap centered at 0
-    from matplotlib.colors import TwoSlopeNorm
-    import matplotlib.colors as mcolors
-
-    # Use a diverging colormap (RdBu_r, coolwarm, RdYlBu, etc.)
-    cmap = plt.get_cmap(
-        "RdBu_r"
-    )  # Red-Blue diverging, reversed so red=positive, blue=negative
-
-    # Create a normalizer that centers at 0
-    norm = TwoSlopeNorm(vmin=llim, vcenter=0, vmax=ulim)
-
-    # Create a function to get hex colors from the normalized colormap
-    def get_color_from_cmap(value):
-        """Convert a value to a hex color using the diverging colormap centered at 0"""
-        if pd.isna(value):
-            return "#808080"  # Gray for NaN values
-
-        # Normalize the value and get the color
-        normalized_value = norm(value)
-        rgba_color = cmap(normalized_value)
-
-        # Convert RGBA to hex
-        return mcolors.to_hex(rgba_color)
-
-    # Create the base map centered on CONUS
-    m = folium.Map(
-        location=[39.8, -98.6],  # Center of CONUS
-        zoom_start=4,
-        tiles="OpenStreetMap",
-    )
-
-    # Add title as HTML
-    title_html = f"""
-                 <h3 align="center" style="font-size:16px"><b>{title_label}</b></h3>
-                 """
-    m.get_root().html.add_child(folium.Element(title_html))
-
-    # Add circle markers for each point
-    for idx, row in df_clean.iterrows():
-        # Create popup content
-        popup_content = f"""
-        <b>Gauge ID:</b> {idx}<br>
-        <b>{plot_config["label"]}:</b> {row[sig_name]:.3f} {plot_config["unit"]}<br>
-        <b>RCPint:</b> {row["R_Pint_RC"]:.3f}<br>
-        <b>RCPvol:</b> {row["R_Pvol_RC"]:.3f}<br>
-        """
-
-        # Get color for this value
-        color = get_color_from_cmap(row[sig_name])
-
-        # Add circle marker
-        folium.CircleMarker(
-            location=[row["gauge_lat"], row["gauge_lon"]],
-            radius=6,
-            tooltip=popup_content,
-            color="white",
-            weight=1,
-            fill=True,
-            fillColor=color,
-            fillOpacity=0.8,
-        ).add_to(m)
-
-    # Create a simple diverging legend
-    legend_html = f"""
-    <div style="position: fixed; 
-                bottom: 50px; left: 50px; width: 160px; height: 100px; 
-                background-color: white; border:2px solid grey; z-index:9999; 
-                font-size:12px; padding: 10px">
-    <p><b>{cbar_label}</b></p>
-    <p><span style="color: {get_color_from_cmap(ulim)}">■</span> High ({ulim:.2f})</p>
-    <p><span style="color: {get_color_from_cmap(0)}">■</span> Zero (0.00)</p>
-    <p><span style="color: {get_color_from_cmap(llim)}">■</span> Low ({llim:.2f})</p>
-    <p><i>Centered at 0</i></p>
-    </div>
-    """
-    m.get_root().html.add_child(folium.Element(legend_html))
-
-    # Add fullscreen button
-    plugins.Fullscreen().add_to(m)
-
-    # Save the interactive plot
-    output_file = os.path.join(fig_dir, f"interactive_map_{sig_name}_{source}.html")
-    m.save(output_file)
-    print(f"Interactive map saved to: {output_file}")
-    print("Open the HTML file in your web browser to view the interactive map.")
-
-    return m
-
-
-# Create interactive version
-plot_diff_RCPint_RCPvol_interactive(
-    df_sigs,
-    "diff_RCPint_RCPvol",
-    stats="normal",
-    source="all",
-)
-
-# %% Plot the histogram of RCPint and RCPvol
-
-
-def plot_RCP_histograms(df):
-    """
-    Plot histograms of RCPint, RCPvol, and their difference
-    """
-    # Filter data to remove NaN values
-    df_clean = df.dropna(subset=["R_Pint_RC", "R_Pvol_RC", "diff_RCPint_RCPvol"]).copy()
-
-    # Create figure with 2 subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-
-    # Panel 1: Histograms of RCPint and RCPvol
-    ax1.hist(
-        df_clean["R_Pint_RC"],
-        bins=50,
-        alpha=0.7,
-        label="RCPint",
-        color="steelblue",
-        edgecolor="black",
-        linewidth=0.5,
-    )
-    ax1.hist(
-        df_clean["R_Pvol_RC"],
-        bins=50,
-        alpha=0.7,
-        label="RCPvol",
-        color="orange",
-        edgecolor="black",
-        linewidth=0.5,
-    )
-
-    ax1.set_xlabel("Value", fontsize=12)
-    ax1.set_ylabel("Frequency", fontsize=12)
-    ax1.set_title("Distribution of RCPint and RCPvol", fontsize=14, fontweight="bold")
-    ax1.legend(fontsize=11)
-    ax1.grid(True, alpha=0.3)
-
-    # Add vertical lines for means
-    mean_rcpint = df_clean["R_Pint_RC"].mean()
-    mean_rcpvol = df_clean["R_Pvol_RC"].mean()
-    ax1.axvline(
-        mean_rcpint,
-        color="steelblue",
-        linestyle="--",
-        alpha=0.8,
-        label=f"RCPint mean: {mean_rcpint:.3f}",
-    )
-    ax1.axvline(
-        mean_rcpvol,
-        color="orange",
-        linestyle="--",
-        alpha=0.8,
-        label=f"RCPvol mean: {mean_rcpvol:.3f}",
-    )
-
-    # Panel 2: Histogram of difference
-    ax2.hist(
-        df_clean["diff_RCPint_RCPvol"],
-        bins=50,
-        alpha=0.8,
-        color="forestgreen",
-        edgecolor="black",
-        linewidth=0.5,
-    )
-
-    ax2.set_xlabel("RCPint - RCPvol", fontsize=12)
-    ax2.set_ylabel("Frequency", fontsize=12)
-    ax2.set_title(
-        "Distribution of RCPint - RCPvol Difference", fontsize=14, fontweight="bold"
-    )
-    ax2.grid(True, alpha=0.3)
-
-    # Add vertical line at zero
-    ax2.axvline(
-        0, color="red", linestyle="-", linewidth=2, alpha=0.8, label="Zero difference"
-    )
-
-    # Add vertical line for mean difference
-    mean_diff = df_clean["diff_RCPint_RCPvol"].mean()
-    ax2.axvline(
-        mean_diff,
-        color="darkgreen",
-        linestyle="--",
-        alpha=0.8,
-        label=f"Mean diff: {mean_diff:.3f}",
-    )
-
-    ax2.legend(fontsize=11)
-
-    # Add statistics text box
-    stats_text = f"""Statistics:
-    N = {len(df_clean):,}
-    Mean diff = {mean_diff:.3f}
-    Std diff = {df_clean["diff_RCPint_RCPvol"].std():.3f}
-    % Positive = {(df_clean["diff_RCPint_RCPvol"] > 0).mean() * 100:.1f}%
-    % Negative = {(df_clean["diff_RCPint_RCPvol"] < 0).mean() * 100:.1f}%"""
-
-    ax2.text(
-        0.02,
-        0.98,
-        stats_text,
-        transform=ax2.transAxes,
-        fontsize=10,
-        verticalalignment="top",
-        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
-    )
-
-    # Improve layout
-    plt.tight_layout()
-
-    # Save the figure
-    plt.savefig(
-        os.path.join(fig_dir, "histogram_RCP_components.png"),
-        dpi=300,
-        bbox_inches="tight",
-    )
-    plt.show()
-
-    return fig
-
-
-# Create the histogram plot
-plot_RCP_histograms(df_sigs)
 
 # %%
