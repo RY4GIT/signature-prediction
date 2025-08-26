@@ -168,7 +168,7 @@ sigs.tail()
 print("Curating data...")
 sigs = gpd.GeoDataFrame(sigs, geometry="geometry", crs=4326)
 sigs["area"] = sigs.geometry.values.area
-sigs = sigs.sort_values(by="order", ascending=True)
+# sigs = sigs.sort_values(by="order", ascending=True)
 sigs = sigs.sort_values(by="area", ascending=True)
 
 # Calculate signature statistics
@@ -207,6 +207,25 @@ print(
 sigs_filt
 
 # %% #######################################
+# Define plotting layer order (bottom to top)
+############################################
+# Top-to-bottom desired order: camels > hysets > gages2 > pred_hys_gg2 > pred_gg2
+# We map to numeric ranks where lower is drawn first (bottom), higher last (top)
+source_order_map = {
+    "pred_gg2": 0,
+    "pred_hys_gg2": 1,
+    "gages2": 2,
+    "hysets": 3,
+    "camels": 4,
+}
+
+# Map plotting order to dataframes for reuse
+if "data_name" in sigs.columns:
+    sigs["layer_order"] = sigs["data_name"].map(source_order_map).fillna(-1)
+if "data_name" in sigs_filt.columns:
+    sigs_filt["layer_order"] = sigs_filt["data_name"].map(source_order_map).fillna(-1)
+
+# %% #######################################
 # Plot signatures
 ############################################
 # Plot R_Pint_RC and R_Pvol_RC and diff_RCPint_RCPvol_masked
@@ -214,6 +233,7 @@ for sig_name in [
     "R_Pint_RC",
     "R_Pvol_RC",
     "diff_RCPint_RCPvol_masked",
+    "diff_RCPint_RCPvol",
 ]:
     # Set up the map
     fig = plt.figure(figsize=(12, 8))
@@ -278,6 +298,16 @@ for sig_name in [
 
     # Drop where geometry is nan
     sigs_plot = sigs_filt[sigs_filt.geometry.notna()].copy()
+    # Map plotting order and sort so lower layers are drawn first
+    if "data_name" in sigs_plot.columns:
+        sigs_plot["layer_order"] = (
+            sigs_plot["data_name"].map(source_order_map).fillna(-1)
+        )
+        sigs_plot = sigs_plot.sort_values(by=["layer_order"])  # bottom -> top
+
+    # Sort by source order
+    sigs_plot["source_order"] = sigs_plot["data_name"].map(source_order_map)
+    sigs_plot = sigs_plot.sort_values(by="source_order", ascending=True)
 
     # Plot the signature data
     sigs_plot.plot(
@@ -327,5 +357,128 @@ for sig_name in [
     plt.tight_layout(pad=1.5)
     plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
 
+
+# %% Plot by data_name
+print("Plotting signatures by data source ...")
+
+# Identify available data sources
+data_sources = (
+    sigs_filt["data_name"].dropna().unique().tolist()
+    if "data_name" in sigs_filt.columns
+    else []
+)
+print(f"Available data sources: {data_sources}")
+for source_name in data_sources:
+    # Subset to one source and drop rows without geometry
+    sigs_src = sigs_filt[
+        (sigs_filt["data_name"] == source_name) & (sigs_filt.geometry.notna())
+    ].copy()
+    if sigs_src.empty:
+        continue
+
+    # Ensure per-source layer order is available (mostly redundant but safe)
+    if "data_name" in sigs_src.columns:
+        sigs_src["layer_order"] = sigs_src["data_name"].map(source_order_map).fillna(-1)
+        sigs_src = sigs_src.sort_values(by=["layer_order"])  # bottom -> top
+
+    for sig_name in [
+        "R_Pint_RC",
+        "R_Pvol_RC",
+        "diff_RCPint_RCPvol_masked",
+        "diff_RCPint_RCPvol",
+    ]:
+        # Set up the map
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+
+        # Add the BORDERS feature first
+        ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
+
+        # Add the land feature with edgecolor set to black
+        land = cfeature.NaturalEarthFeature(
+            "physical",
+            "land",
+            "50m",
+        )
+        ax.add_feature(
+            land,
+            facecolor="#F4F5FA",
+            edgecolor="black",
+            linewidth=1.0,
+        )
+
+        cbar_label = "[-]"
+        out_file_name = f"map_{sig_name}_source_{source_name}.png"
+
+        if "diff_RCPint_RCPvol" in sig_name:
+            diagonal_colors = [
+                "#159DD0",
+                "#aeb5b1",
+                "#DD6A29",
+            ]
+
+            # Create the colormap
+            diag_cmap = LinearSegmentedColormap.from_list(
+                "custom_diag_gradient", diagonal_colors
+            )
+
+            cmap = diag_cmap
+            vmin = -0.1
+            vmax = 0.1
+        else:
+            cmap = "viridis"
+            vmin = -0.5
+            vmax = 1
+
+        norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+
+        # Plot the signature data
+        sigs_src.plot(
+            ax=ax,
+            column=sig_name,
+            cmap=cmap,
+            norm=norm,
+            linewidth=0.2,
+            alpha=0.5,
+            vmin=vmin,
+            vmax=vmax,
+            zorder=99,
+        )
+
+        # Add a colorbar
+        if "diff_RCPint_RCPvol" in sig_name:
+            # Save colorbar to a separate file (no colorbar on the map)
+            sm_cb = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+            sm_cb.set_array([])
+            fig_cb = plt.figure(figsize=(2, 3), constrained_layout=True)
+            ax_cb = fig_cb.add_subplot(111)
+            ax_cb.set_axis_off()
+            cb = fig_cb.colorbar(sm_cb, ax=ax_cb, orientation="vertical")
+            cb.set_ticks(np.linspace(vmin, vmax, 5))
+            cb.ax.tick_params(labelsize=18)
+            cb.set_label(cbar_label, rotation=270, labelpad=30, fontsize=18)
+            fig_cb.savefig(
+                os.path.join(fig_dir, f"colorbar_{sig_name}_{source_name}.pdf"),
+                dpi=300,
+                bbox_inches="tight",
+                pad_inches=0.2,
+            )
+            plt.close(fig_cb)
+        else:
+            sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+            sm._A = []
+            cbar = plt.colorbar(sm, ax=ax, shrink=0.3)
+            cbar.ax.tick_params(labelsize=18)
+            cbar.set_ticks(np.linspace(vmin, vmax, 5))
+            cbar.set_label(cbar_label, rotation=270, labelpad=30, fontsize=18)
+
+        # Finalize map
+        ax.set_extent(conus_extent)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        plt.tight_layout(pad=1.5)
+        plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
+        plt.close(fig)
 
 # %%

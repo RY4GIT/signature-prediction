@@ -204,3 +204,5 @@ for sig_name in [
 
     plt.tight_layout(pad=1.5)
     plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
+
+# %%
