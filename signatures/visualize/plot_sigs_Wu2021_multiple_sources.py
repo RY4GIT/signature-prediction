@@ -169,7 +169,7 @@ print("Curating data...")
 sigs = gpd.GeoDataFrame(sigs, geometry="geometry", crs=4326)
 sigs["area"] = sigs.geometry.values.area
 # sigs = sigs.sort_values(by="order", ascending=True)
-sigs = sigs.sort_values(by="area", ascending=True)
+sigs = sigs.sort_values(by="area", ascending=False)
 
 # Calculate signature statistics
 sigs["diff_RCPint_RCPvol"] = sigs["R_Pint_RC"] - sigs["R_Pvol_RC"]

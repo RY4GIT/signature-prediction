@@ -519,23 +519,23 @@ for sigs_name in tqdm(
     except Exception as e:
         print(f"{sigs_name}: {e}")
 
-# # %% Plot the map by source
-# for source in df_sigs["source"].unique():
-#     for sigs_name in tqdm(
-#         plot_sigs_config.column_name,
-#         desc=f"Plotting maps of signature values for {source}",
-#         leave=False,
-#     ):
-#         # Surpress the warnings.warn(
-#         warnings.filterwarnings("ignore")
-#         plot_sig_map(
-#             df_sigs[df_sigs["source"] == source],
-#             sigs_name,
-#             ecoregion_overlay,
-#             stats="normal",
-#             plot_mode="polygon",
-#             source=source,
-#         )
+# %% Plot the map by source
+for source in df_sigs["source"].unique():
+    for sigs_name in tqdm(
+        plot_sigs_config.column_name,
+        desc=f"Plotting maps of signature values for {source}",
+        leave=False,
+    ):
+        # Surpress the warnings.warn(
+        warnings.filterwarnings("ignore")
+        plot_sig_map(
+            df_sigs[df_sigs["source"] == source],
+            sigs_name,
+            ecoregion_overlay,
+            stats="normal",
+            plot_mode="polygon",
+            source=source,
+        )
 # %%
 
 ########################################################################################
@@ -624,6 +624,7 @@ def plot_bivariate_map(df, sig1, sig2, overlay_layer, fig_dir, plot_mode="polygo
         # Sort by area in descending order so smaller polygons are plotted last
         df_sorted = df.sort_values("area", ascending=False)
         df_sorted = df.sort_values("order", ascending=False)
+        df_sorted = df.sort_values("bivariate_class", ascending=False)
 
         df_sorted.plot(
             ax=ax,
