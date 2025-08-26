@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from matplotlib.patches import Rectangle, Patch
 import matplotlib as mpl
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -40,6 +41,13 @@ rf_out_dir = os.path.join(gdrive_dir, "out", "rf", "output_raraki_20250716_clust
 # Plotting config
 plot_sigs_config_path = "plot_sigs_config_selected.csv"
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
+
+# Drop Wu signatures from the plot_sigs_config
+plot_sigs_config = plot_sigs_config[
+    ~plot_sigs_config["column_name"].isin(
+        ["R_Pint_RC", "R_Pvol_RC", "diff_RCPint_RCPvol"]
+    )
+]
 
 # Figure directory
 fig_dir = os.path.join(rf_out_dir, "figs_sig_pred_obs")
@@ -212,7 +220,7 @@ print("Overlandflow data length: ", len(df_sigs[df_sigs["IE_thresh"].notna()]))
 #######################################################
 
 # Calcaulte some signatures
-df_sigs["diff_RCPint_RCPvol"] = df_sigs["R_Pint_RC"] - df_sigs["R_Pvol_RC"]
+# df_sigs["diff_RCPint_RCPvol"] = df_sigs["R_Pint_RC"] - df_sigs["R_Pvol_RC"]
 df_sigs["diff_IE_SE_thresh"] = df_sigs["IE_thresh"] - df_sigs["SE_thresh"]
 df_sigs["diff_IE_Str_thresh"] = df_sigs["IE_thresh"] - df_sigs["Storage_thresh"]
 df_sigs["diff_SE_Str_thresh"] = df_sigs["SE_thresh"] - df_sigs["Storage_thresh"]
@@ -367,36 +375,34 @@ plot_source(df_sigs, ecoregion_overlay)
 def plot_sig_map(
     df, sig_name, overlay_layer, stats="normal", plot_mode="scatter", source=None
 ):
-    # Get plot config
-
-    # Set up the map
     fig = plt.figure(figsize=(12, 8))
-    # fig = plt.figure(figsize=(6, 5))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
-    # Add a legend
-    overlay_layer.plot(
-        ax=ax,
-        edgecolor="grey",
-        facecolor="none",
-        linewidth=0.5,
-        aspect=1.1,
-        zorder=100,
-    )
+    # Add the BORDERS feature first
+    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
 
+    # # Add a legend
+    # overlay_layer.plot(
+    #     ax=ax,
+    #     edgecolor="grey",
+    #     facecolor="none",
+    #     linewidth=0.5,
+    #     aspect=1.1,
+    #     zorder=100,
+    # )
+
+    # Add the land feature with edgecolor set to black
     land = cfeature.NaturalEarthFeature(
         "physical",
         "land",
         "50m",
-        edgecolor="face",
-        facecolor="darkgrey",  # Set land color to light gray
     )
-    ax.add_feature(land)
-
-    # Set extent to CONUS
-    # ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
-    # Add map features
-    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
+    ax.add_feature(
+        land,
+        facecolor="#F4F5FA",  # Keep facecolor as desired
+        edgecolor="black",  # Set edgecolor to black
+        linewidth=1.0,  # Optionally adjust linewidth for edges
+    )
 
     # Plotting the filtered data
     if stats == "normal":
@@ -448,16 +454,20 @@ def plot_sig_map(
             vmin=llim,
             vmax=ulim,
         )
-        cbar = plt.colorbar(plot_obj, ax=ax, shrink=0.5)
-        cbar.set_label(cbar_label, rotation=270, labelpad=30)
+        cax = inset_axes(
+            ax, width="2.5%", height="35%", loc="lower right", borderpad=1.2
+        )
+        cbar = plt.colorbar(plot_obj, cax=cax)
+        cbar.ax.tick_params(labelsize=10)
+        cbar.set_label(cbar_label, rotation=270, labelpad=12)
     elif plot_mode == "polygon":
-        df_sorted = df.sort_values("area", ascending=False)
-        df_sorted = df.sort_values("order", ascending=False)
-        plot_obj = df_sorted.plot(
+        df["area"] = df.geometry.area
+        df.sort_values("area", ascending=False, inplace=True)
+        plot_obj = df.plot(
             ax=ax,
             column=sig_name,
             cmap=cmap,
-            alpha=0.7,
+            alpha=0.5,
             vmin=llim,
             vmax=ulim,
             zorder=99,
@@ -466,11 +476,17 @@ def plot_sig_map(
         # Add a colorbar
         sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm._A = []  # Empty array for ScalarMappable
-        cbar = plt.colorbar(sm, ax=ax, shrink=0.5)
-        cbar.set_label(cbar_label, rotation=270, labelpad=30)
+        cax = inset_axes(
+            ax, width="2.5%", height="35%", loc="lower right", borderpad=1.2
+        )
+        cbar = plt.colorbar(sm, cax=cax)
+        cbar.ax.tick_params(labelsize=14)
+        cbar.set_label(cbar_label, rotation=270, labelpad=12)
 
     ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
-    ax.set_title(title_label)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    # ax.set_title(title_label)
 
     plt.tight_layout(pad=1.5)
     plt.tight_layout()
@@ -486,15 +502,15 @@ def plot_sig_map(
 # _____________________________________________________________________________
 # Plot signature value map
 # # For testing
-# plot_sig_map(
-#     df_sigs,
-#     "StorageFromBaseflow",
-#     ecoregion_overlay,
-#     stats="normal",
-#     plot_mode="scatter",
-# )
+plot_sig_map(
+    df_sigs,
+    "BFI",
+    ecoregion_overlay,
+    stats="normal",
+    plot_mode="polygon",
+)
 
-# %% For all signatures
+# %% For all signatures except Wu
 for sigs_name in tqdm(
     plot_sigs_config.column_name, desc="Plotting maps of signature values", leave=False
 ):
@@ -622,15 +638,13 @@ def plot_bivariate_map(df, sig1, sig2, overlay_layer, fig_dir, plot_mode="polygo
         df["area"] = df.geometry.area
 
         # Sort by area in descending order so smaller polygons are plotted last
-        df_sorted = df.sort_values("area", ascending=False)
-        df_sorted = df.sort_values("order", ascending=False)
-        df_sorted = df.sort_values("bivariate_class", ascending=False)
+        df.sort_values("area", ascending=False, inplace=True)
 
-        df_sorted.plot(
+        df.plot(
             ax=ax,
             color=df["color"],
             linewidth=0.2,
-            alpha=0.5,
+            alpha=0.4,
             zorder=99,
         )
 
@@ -983,10 +997,10 @@ def plot_process_dominance_map():
     df_ET.sort_values("area", ascending=False, inplace=True)
     df_high_str.sort_values("area", ascending=False, inplace=True)
     #
-    df_baseflow.sort_values("order", ascending=False, inplace=True)
-    df_overland.sort_values("order", ascending=False, inplace=True)
-    df_ET.sort_values("order", ascending=False, inplace=True)
-    df_high_str.sort_values("order", ascending=False, inplace=True)
+    # df_baseflow.sort_values("order", ascending=False, inplace=True)
+    # df_overland.sort_values("order", ascending=False, inplace=True)
+    # df_ET.sort_values("order", ascending=False, inplace=True)
+    # df_high_str.sort_values("order", ascending=False, inplace=True)
 
     # Define the classes to include with their alpha values
     classes_alpha = {
@@ -1023,7 +1037,7 @@ def plot_process_dominance_map():
     common_indices = df_sigs.index[baseflow_aligned & overland_aligned]
     df_unclassified = df_sigs[df_sigs.index.isin(common_indices)]
     df_unclassified.sort_values("area", ascending=False, inplace=True)
-    df_unclassified.sort_values("order", ascending=False, inplace=True)
+    # df_unclassified.sort_values("order", ascending=False, inplace=True)
     print(f"Unclassified watersheds: {len(df_unclassified)}")
 
     legend_elements = []
@@ -1099,19 +1113,19 @@ def plot_process_dominance_map():
             if len(df_class) > 0:
                 # For Water balance loss, only plot the 1-4 class
                 if i == 2:
-                    if class_name == "1-4":
-                        with plt.rc_context({"hatch.linewidth": 0.01}):
-                            df_class.plot(
-                                ax=ax,
-                                facecolor="none",
-                                edgecolor="white",
-                                linewidth=0.01,
-                                alpha=0.3,
-                                hatch="////",
-                                zorder=101,
-                            )
-                    else:
-                        None
+                    # if class_name == "1-4":
+                    with plt.rc_context({"hatch.linewidth": 0.01}):
+                        df_class.plot(
+                            ax=ax,
+                            facecolor="none",
+                            edgecolor="white",
+                            linewidth=0.01,
+                            alpha=0.3,
+                            hatch="////",
+                            zorder=101,
+                        )
+                    # else:
+                    #     None
                 # For Storage capacity, plot all high 4 classes
                 elif i == 3:
                     df_class.plot(
