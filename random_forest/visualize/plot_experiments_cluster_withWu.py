@@ -827,7 +827,7 @@ def plot_shap_in_map(df, sig_name, var_name):
 # SHAP % IN A MAP
 #####################################################
 # Plot the relative contribution of each attribute to the signature
-for sig_name in tqdm(sigs_RF_names_ordered, desc="Processing SHAP in map"):
+for sig_name in tqdm(sigs_RF_names_ordered[:-2], desc="Processing SHAP in map"):
     plot_shap_in_map(df_shap_with_attrs, sig_name, "phi_perc")
 
 

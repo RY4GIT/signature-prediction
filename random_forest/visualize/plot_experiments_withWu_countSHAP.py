@@ -12,13 +12,13 @@ import json
 cloud_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 rf_dir = os.path.join(cloud_dir, "out", "rf")
 rf_out_dir = os.path.join(
-    rf_dir, "output_raraki_20250728_cluster_all"
+    rf_dir, "output_raraki_20250826_cluster_all"
 )  # Random forest output directory (except Wu's)
 fig_dir = os.path.join(
-    rf_dir, "output_raraki_20250728_figures"
+    rf_dir, "output_raraki_20250826_figures"
 )  # Figure output directory
 rf_out_dir_Wu = os.path.join(
-    rf_dir, "output_raraki_20250820_cluster_all_Wu"
+    rf_dir, "output_raraki_20250827_cluster_all_Wu"
 )  # Wu's random forest output directory
 user_name = "raraki"  # User name
 # file_type = "png"  # or "pdf" if you prefer PDF output
@@ -267,16 +267,17 @@ def plot_tile_counts_grid_by_region_all_sigs(
         if "color" not in df_sig.columns:
             df_sig["color"] = df_sig["Group"].map(attrs_colors)
 
-        # Aggregate total counts per feature (across groups) and select top-k
+        # Aggregate total counts per feature and group, keep color/group for each feature
         df_totals = (
-            df_sig.groupby("feature", dropna=False)["count"]
+            df_sig.groupby(["feature", "Group", "color"], dropna=False)["count"]
             .sum()
-            .sort_values(ascending=False)
+            .reset_index()
+            .sort_values("count", ascending=False)
+            .groupby("feature")
+            .first()
+            .sort_values("count", ascending=False)
         )
         features_to_show = list(df_totals.index[:top_k_features])
-
-        # Map colors
-        df_totals["color"] = df_totals["Group"].map(attrs_colors)
 
         # Build plotting frame
         # Select the top features
@@ -321,3 +322,5 @@ for region in regions:
         top_k_features=12,
         top_n=top_n,
     )
+
+# %%
