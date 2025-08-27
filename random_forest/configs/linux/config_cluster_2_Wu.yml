@@ -6,10 +6,10 @@ paths:
     attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
   test:
     attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
-experiment_name: cluster_all
+experiment_name: cluster_2
 filter_by_cluster:
-  run: false
-  name: NA
+  run: true
+  name: 2
 settings:
   seed: 0
   ntree: 500

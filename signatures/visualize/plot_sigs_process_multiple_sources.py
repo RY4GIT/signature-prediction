@@ -455,7 +455,7 @@ def plot_sig_map(
             vmax=ulim,
         )
         cax = inset_axes(
-            ax, width="2.5%", height="35%", loc="lower right", borderpad=1.2
+            ax, width="2.0%", height="35%", loc="lower right", borderpad=3.0
         )
         cbar = plt.colorbar(plot_obj, cax=cax)
         cbar.ax.tick_params(labelsize=10)
@@ -477,11 +477,11 @@ def plot_sig_map(
         sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm._A = []  # Empty array for ScalarMappable
         cax = inset_axes(
-            ax, width="2.5%", height="35%", loc="lower right", borderpad=1.2
+            ax, width="2.0%", height="35%", loc="lower right", borderpad=5.0
         )
         cbar = plt.colorbar(sm, cax=cax)
         cbar.ax.tick_params(labelsize=14)
-        cbar.set_label(cbar_label, rotation=270, labelpad=12)
+        cbar.set_label(cbar_label)
 
     ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
     for spine in ax.spines.values():
@@ -516,14 +516,14 @@ for sigs_name in tqdm(
 ):
     try:
         warnings.filterwarnings("ignore")
-        plot_sig_map(
-            df_sigs,
-            sigs_name,
-            ecoregion_overlay,
-            stats="normal",
-            plot_mode="scatter",
-            source="all",
-        )
+        # plot_sig_map(
+        #     df_sigs,
+        #     sigs_name,
+        #     ecoregion_overlay,
+        #     stats="normal",
+        #     plot_mode="scatter",
+        #     source="all",
+        # )
         plot_sig_map(
             df_sigs,
             sigs_name,

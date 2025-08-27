@@ -10,6 +10,7 @@ import matplotlib as mpl
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 # %% #######################################
 # Config
@@ -290,24 +291,24 @@ for sig_name in [
         vmin = -0.1
         vmax = 0.1
     else:
-        cmap = "viridis"
+        cmap = "viridis"  # or "plasma"
         vmin = -0.5
         vmax = 1
 
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
 
-    # Drop where geometry is nan
-    sigs_plot = sigs_filt[sigs_filt.geometry.notna()].copy()
-    # Map plotting order and sort so lower layers are drawn first
-    if "data_name" in sigs_plot.columns:
-        sigs_plot["layer_order"] = (
-            sigs_plot["data_name"].map(source_order_map).fillna(-1)
-        )
-        sigs_plot = sigs_plot.sort_values(by=["layer_order"])  # bottom -> top
+    # # Drop where geometry is nan
+    # sigs_plot = sigs_filt[sigs_filt.geometry.notna()].copy()
+    # # Map plotting order and sort so lower layers are drawn first
+    # if "data_name" in sigs_plot.columns:
+    #     sigs_plot["layer_order"] = (
+    #         sigs_plot["data_name"].map(source_order_map).fillna(-1)
+    #     )
+    # sigs_plot = sigs_plot.sort_values(by=["layer_order"])  # bottom -> top
 
     # Sort by source order
-    sigs_plot["source_order"] = sigs_plot["data_name"].map(source_order_map)
-    sigs_plot = sigs_plot.sort_values(by="source_order", ascending=True)
+    # sigs_plot["source_order"] = sigs_plot["data_name"].map(source_order_map)
+    sigs_plot = sigs_filt.sort_values(by="area", ascending=False)
 
     # Plot the signature data
     sigs_plot.plot(
@@ -342,12 +343,21 @@ for sig_name in [
         )
         plt.close(fig_cb)
     else:
+        # Add a colorbar
         sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm._A = []  # Empty array for ScalarMappable
-        cbar = plt.colorbar(sm, ax=ax, shrink=0.3)
-        cbar.ax.tick_params(labelsize=18)  # Set font size
-        cbar.set_ticks(np.linspace(vmin, vmax, 5))
-        cbar.set_label(cbar_label, rotation=270, labelpad=30, fontsize=18)
+        cax = inset_axes(
+            ax, width="2.0%", height="35%", loc="lower right", borderpad=5.0
+        )
+        cbar = plt.colorbar(sm, cax=cax)
+        cbar.ax.tick_params(labelsize=14)
+        cbar.set_label(cbar_label)
+        # sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+        # sm._A = []  # Empty array for ScalarMappable
+        # cbar = plt.colorbar(sm, ax=ax, shrink=0.3)
+        # cbar.ax.tick_params(labelsize=18)  # Set font size
+        # cbar.set_ticks(np.linspace(vmin, vmax, 5))
+        # cbar.set_label(cbar_label, rotation=270, labelpad=30, fontsize=18)
 
     # ax.set_title(title_label)
     ax.set_extent(conus_extent)
@@ -481,4 +491,6 @@ for source_name in data_sources:
         plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
         plt.close(fig)
 
+# %%
+print("Figures are saved in: ", fig_dir)
 # %%

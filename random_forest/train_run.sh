@@ -30,10 +30,11 @@ run_experiment() {
     echo "----------------------------------------"
 }
 
-# # Run experiments for individual clusters
-# for i in 0 1 2 3 4 5; do
-#     run_experiment "config_cluster_$i"
-# done
+# Run experiments for individual clusters
+for i in 0 1 2 3 4 5; do
+    run_experiment "config_cluster_$i"
+done
+
 
 # Run all clusters
 run_experiment "config_cluster_all"

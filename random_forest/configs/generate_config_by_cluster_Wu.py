@@ -25,15 +25,15 @@ if not os.path.exists(config_out_dir):
 if os_type == "win":
     home_dir = "G:/Shared drives/Signatures -- large scale/baseflow"
     rf_out_dir = "RAraki/out/rf"
-    sigs_file = "RAraki/out/signatures/caravan_us_20250525/out_calc_All_custom_filt_qc_snow_area.csv"
+    sigs_file = (
+        "RAraki/out/signatures/Wu_sigs_20250812/out_sigEvent_cara_gg2_rf_train.csv"
+    )
     attrs_file = "AHolt/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
 
 elif os_type == "linux":
     home_dir = "/home/raraki/data/signature-prediction"
     rf_out_dir = "/out/rf"
-    sigs_file = (
-        "/signatures/caravan_us_20250525/out_calc_All_custom_filt_qc_snow_area.csv"
-    )
+    sigs_file = "/signatures/Wu_sigs_20250812/out_sigEvent_cara_gg2_rf_train.csv"
     attrs_file = (
         "/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv"
     )
@@ -75,30 +75,8 @@ template_yaml = {
     "save_models": True,
     "parallel": {"nCores": 16},
     "sigs_predict": [
-        "TotalRR",
-        # "RR_Seasonality",
-        "EventRR",
-        "Recession_a_Seasonality",
-        "AverageStorage",
-        "RecessionParameters_b",
-        # "RecessionParameters_T0",
-        # "First_Recession_Slope",
-        # "Mid_Recession_Slope",
-        # "EventRR_TotalRR_ratio",
-        "VariabilityIndex",
-        "BFI",
-        "BaseflowRecessionK",
-        "IE_thresh_signif",
-        "SE_thresh_signif",
-        # "Storage_thresh_signif",
-        "IE_thresh",
-        "SE_thresh",
-        # "IE_effect",
-        # "SE_effect",
-        # "Storage_thresh",
-        # "SE_slope",
-        # "R_Pvol_RC",
-        # "R_Pint_RC",
+        "R_Pvol_RC",
+        "R_Pint_RC",
     ],
     "attrs_of_interest": [
         "ELEV_MEAN_M_BASIN",
@@ -151,7 +129,7 @@ def generate_yaml_files(clusters, template_yaml, out_dir):
         # yaml_content["save_models"] = False # Save all models
 
         # Define the output filename
-        output_filename = f"config_cluster_{cluster_num}.yml"
+        output_filename = f"config_cluster_{cluster_num}_Wu.yml"
 
         # Write the YAML content to the file
         with open(os.path.join(out_dir, output_filename), "w") as file:
@@ -171,7 +149,7 @@ yaml_content["filter_by_cluster"]["run"] = False
 yaml_content["filter_by_cluster"]["name"] = "NA"
 
 # Define the output filename
-output_filename = "config_cluster_all.yml"
+output_filename = "config_cluster_all_Wu.yml"
 
 # Write the YAML content to the file
 with open(os.path.join(config_out_dir, output_filename), "w") as file:
