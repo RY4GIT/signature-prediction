@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import json
+import numpy as np
 
 # %% #########################################################
 # Configs
@@ -308,7 +309,7 @@ def plot_tile_counts_grid_by_region_all_sigs(
         axes[j].set_visible(False)
 
     fig.suptitle(f"Top {top_n} SHAP count — {region}", fontsize=14)
-    out_grid = f"bar_SHAPcount_by_region_all_signatures_{region}_top{top_n}.{file_type}"
+    out_grid = f"shap_count_top{top_n}_by_region_per_signature_{region}.{file_type}"
     fig.savefig(os.path.join(fig_dir, out_grid), dpi=300, bbox_inches="tight")
     # plt.close(fig)
 
@@ -324,3 +325,21 @@ for region in regions:
     )
 
 # %%
+
+# %% #########################################################
+# COUNT SHAP VALUES PER GAUGE ACROSS SIGNATURES
+#############################################################
+
+
+#############################################
+# BY CLUSTER
+#############################################
+# Clear
+df_shap_with_attrs["rank_abs_phi"] = np.nan
+df_shap_with_attrs["is_top_n"] = np.nan
+
+
+# %%
+#############################################
+# BY BROADER REGIONS
+#############################################
