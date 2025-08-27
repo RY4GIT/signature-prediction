@@ -6,7 +6,7 @@ paths:
     attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
   test:
     attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
-experiment_name: cluster_3
+experiment_name: cluster_3_Wu
 filter_by_cluster:
   run: true
   name: 3

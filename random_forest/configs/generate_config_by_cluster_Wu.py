@@ -124,7 +124,7 @@ def generate_yaml_files(clusters, template_yaml, out_dir):
     for cluster_num in clusters:
         yaml_content = template_yaml.copy()
 
-        yaml_content["experiment_name"] = f"cluster_{cluster_num}"
+        yaml_content["experiment_name"] = f"cluster_{cluster_num}_Wu"
         yaml_content["filter_by_cluster"]["name"] = cluster_num
         # yaml_content["save_models"] = False # Save all models
 
@@ -144,7 +144,7 @@ generate_yaml_files(clusters, template_yaml, config_out_dir)
 yaml_content = template_yaml.copy()
 
 # Modify the experiment_name and filter_by_cluster$name
-yaml_content["experiment_name"] = "cluster_all"
+yaml_content["experiment_name"] = "cluster_all_Wu"
 yaml_content["filter_by_cluster"]["run"] = False
 yaml_content["filter_by_cluster"]["name"] = "NA"
 
