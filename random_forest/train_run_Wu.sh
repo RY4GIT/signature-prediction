@@ -32,8 +32,8 @@ run_experiment() {
 
 # Run experiments for individual clusters
 for i in 0 1 2 3 4 5; do
-    run_experiment "config_cluster_$i_Wu"
+    run_experiment "config_Wu_cluster_$i"
 done
 
 # Run all clusters
-run_experiment "config_cluster_all_Wu"
+run_experiment "config_Wu_cluster_all"

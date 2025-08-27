@@ -129,7 +129,7 @@ def generate_yaml_files(clusters, template_yaml, out_dir):
         # yaml_content["save_models"] = False # Save all models
 
         # Define the output filename
-        output_filename = f"config_cluster_{cluster_num}_Wu.yml"
+        output_filename = f"config_Wu_cluster_{cluster_num}.yml"
 
         # Write the YAML content to the file
         with open(os.path.join(out_dir, output_filename), "w") as file:
@@ -149,7 +149,7 @@ yaml_content["filter_by_cluster"]["run"] = False
 yaml_content["filter_by_cluster"]["name"] = "NA"
 
 # Define the output filename
-output_filename = "config_cluster_all_Wu.yml"
+output_filename = "config_Wu_cluster_all.yml"
 
 # Write the YAML content to the file
 with open(os.path.join(config_out_dir, output_filename), "w") as file:
