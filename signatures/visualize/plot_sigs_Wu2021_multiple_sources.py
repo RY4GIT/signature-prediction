@@ -1,4 +1,4 @@
-# %%
+# %% Plot Wu 2021 signatures from multiple sources (Caravan, GAGES-II, RF predictions)
 import os
 import pandas as pd
 import numpy as np

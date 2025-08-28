@@ -2,7 +2,7 @@ paths:
   home_dir: "G:/Shared drives/Signatures -- large scale/baseflow"
   out_dir: "RAraki/out/rf"
   predict:
-    model_dir: "RAraki/out/rf/output_raraki_20250820_cluster_all_Wu"
+    model_dir: "RAraki/out/rf/output_raraki_20250827_cluster_all_Wu"
     attributes: "RAraki/data/Caravan_attrs_gages2/attributes_to_pred_forWuRF_psudo_name.csv"
 experiment_name: "pred_gg2_only_Wu"
 parallel:

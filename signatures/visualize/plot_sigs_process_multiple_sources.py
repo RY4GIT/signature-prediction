@@ -1,4 +1,4 @@
-# %%
+# %% Plot signatures from multiple sources (Caravan, GAGES-II, RF predictions)
 import os
 import pandas as pd
 import numpy as np
@@ -6,7 +6,7 @@ import geopandas as gpd
 from tqdm import tqdm
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from matplotlib.colors import ListedColormap
 from matplotlib.patches import Rectangle, Patch
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -36,8 +36,14 @@ local_dir = r"D:\data"
 # Output directory (For signatures results, change name to match the current run dates)
 out_dir = os.path.join(gdrive_dir, "out", "signatures", "caravan_us_20250525")
 out_dir_gages2 = os.path.join(gdrive_dir, "out", "signatures", "gages2_20250608")
-rf_out_dir = os.path.join(gdrive_dir, "out", "rf", "output_raraki_20250716_cluster_all")
-
+rf_out_dir = os.path.join(gdrive_dir, "out", "rf", "output_raraki_20250826_cluster_all")
+fig_dir = os.path.join(
+    gdrive_dir,
+    "out",
+    "rf",
+    "output_raraki_20250826_figures",
+    "figs_sigs_process_multiple_sources",
+)
 # Plotting config
 plot_sigs_config_path = "plot_sigs_config_selected.csv"
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
@@ -49,16 +55,18 @@ plot_sigs_config = plot_sigs_config[
     )
 ]
 
-# Figure directory
-fig_dir = os.path.join(rf_out_dir, "figs_sig_pred_obs")
+# Make Figure directory
 if not os.path.exists(fig_dir):
     os.makedirs(fig_dir)
 
+# Conus extent
 conus_extent = [-125.5, -66.95, 24.396308, 47.5]
+
 # %%
 # ____________________________________________________________________________________
 # Load overlay layer for plotting
 print("Loading overlay layer...")
+# Ecoregion overlay
 _ecoregion_overlay = gpd.read_file(
     os.path.join(gdrive_dir, "data", "EcoRegions", "NA_CEC_Eco_Level2.shp")
 )
@@ -188,6 +196,7 @@ _df_sigs_rf_gg2_only["source"] = "RF_gg2_only"
 _df_sigs_rf_gg2_only["order"] = 5
 
 # %%
+print("Concatenating signatures results...")
 _df_sigs = pd.concat(
     [
         _df_sigs_cara,
@@ -201,19 +210,16 @@ _df_sigs = _df_sigs.drop(
     columns=["gauge_name", "country", "gauge_lat", "gauge_lon", "area"]
 ).join(attrs_caravan, how="left")
 df_sigs = _df_sigs.join(eco_caravan, how="left")
-df_sigs.to_csv(os.path.join(rf_out_dir, "predicted_observed_sigs_joined.csv"))
-
+df_sigs.to_csv(os.path.join(rf_out_dir, "sigs_predicted_observed_joined.csv"))
 
 # %%
+# Join the watershed polygons to the signatures data
 df_sigs = wspolygon.join(df_sigs, how="right")
 
 # %% Check gages2_ basins are joined correctly
 df_sigs[df_sigs["source"] == "GAGES2_obs"].head()
-# %%
 df_sigs.head()
-# %%
-print("Baseflow data length: ", len(df_sigs[df_sigs["BFI"].notna()]))
-print("Overlandflow data length: ", len(df_sigs[df_sigs["IE_thresh"].notna()]))
+
 # %%
 #######################################################
 # Preprocess the data
@@ -230,11 +236,12 @@ df_sigs["avg_IE_SE_signif"] = (
 ) / 2
 df_sigs["avg_IE_SE_thresh"].iloc[df_sigs["avg_IE_SE_thresh"] > 300] = np.nan
 # %%
+# Mask out gauges with high snow
 frac_snow_thresh = 0.2
-snow_mask = (
+low_snow = (
     (df_sigs["SNOW_PCT_PRECIP"] < frac_snow_thresh * 100)
-    & (~df_sigs["SNOW_PCT_PRECIP"].isna())
-) | ((df_sigs["SNOWICENLCD06"] < frac_snow_thresh) & (~df_sigs["SNOWICENLCD06"].isna()))
+    | (df_sigs["SNOW_PCT_PRECIP"].isna())
+) | ((df_sigs["SNOWICENLCD06"] < frac_snow_thresh) | (df_sigs["SNOWICENLCD06"].isna()))
 mask_cols = [
     "IE_thresh",
     "SE_thresh",
@@ -243,14 +250,18 @@ mask_cols = [
     "SE_thresh_signif",
     "Storage_thresh_signif",
 ]
-# Yes, this line replaces values with NaN for any rows where snow_mask is False
-# snow_mask is True for gauges with snow < threshold, False otherwise
-# So ~snow_mask is True for gauges with high snow, which get masked to NaN
-df_sigs[mask_cols] = df_sigs[mask_cols].mask(~snow_mask)
+# Yes, this line replaces values with NaN for any rows where low_snow is False
+# low_snow is True for gauges with snow < threshold, False otherwise
+# So ~low_snow is True for gauges with high snow, which get masked to NaN
+df_sigs[mask_cols] = df_sigs[mask_cols].mask(~low_snow)
 
 print(
-    f"{df_sigs['IE_thresh'].isna().sum()} gauges ({df_sigs['IE_thresh'].isna().sum() / len(df_sigs) * 100:.1f}%) have snow data below {frac_snow_thresh * 100}%"
+    f"{df_sigs['IE_thresh'].isna().sum()} gauges ({df_sigs['IE_thresh'].isna().sum() / len(df_sigs) * 100:.1f}%) have snow data above {frac_snow_thresh * 100}%"
 )
+# %%
+print("Data length: ", len(df_sigs))
+print("Baseflow data length: ", len(df_sigs[df_sigs["BFI"].notna()]))
+print("Overlandflow data length: ", len(df_sigs[df_sigs["IE_thresh"].notna()]))
 
 
 # %%
@@ -372,24 +383,12 @@ plot_source(df_sigs, ecoregion_overlay)
 ##########################
 
 
-def plot_sig_map(
-    df, sig_name, overlay_layer, stats="normal", plot_mode="scatter", source=None
-):
+def plot_sig_map(df, sig_name, stats="normal", plot_mode="scatter", source=None):
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
     # Add the BORDERS feature first
     ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
-
-    # # Add a legend
-    # overlay_layer.plot(
-    #     ax=ax,
-    #     edgecolor="grey",
-    #     facecolor="none",
-    #     linewidth=0.5,
-    #     aspect=1.1,
-    #     zorder=100,
-    # )
 
     # Add the land feature with edgecolor set to black
     land = cfeature.NaturalEarthFeature(
@@ -399,7 +398,8 @@ def plot_sig_map(
     )
     ax.add_feature(
         land,
-        facecolor="#F4F5FA",  # Keep facecolor as desired
+        facecolor="dimgrey",
+        #        facecolor="#F4F5FA",  # Keep facecolor as desired
         edgecolor="black",  # Set edgecolor to black
         linewidth=1.0,  # Optionally adjust linewidth for edges
     )
@@ -436,6 +436,8 @@ def plot_sig_map(
     # Create a colormap and normalize
     cmap = plt.cm.Blues
     # cmap = plt.cm.YlGnBu
+    if "signif" in sig_name:
+        cmap = plt.cm.Blues_r
     if "diff_" in sig_name:
         cmap = plt.cm.RdBu_r
     norm = mpl.colors.Normalize(vmin=llim, vmax=ulim)
@@ -480,8 +482,8 @@ def plot_sig_map(
             ax, width="2.0%", height="35%", loc="lower right", borderpad=5.0
         )
         cbar = plt.colorbar(sm, cax=cax)
-        cbar.ax.tick_params(labelsize=14)
-        cbar.set_label(cbar_label)
+        cbar.ax.tick_params(labelsize=18)
+        cbar.set_label(cbar_label, fontsize=18)
 
     ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
     for spine in ax.spines.values():
@@ -505,9 +507,9 @@ def plot_sig_map(
 plot_sig_map(
     df_sigs,
     "BFI",
-    ecoregion_overlay,
     stats="normal",
     plot_mode="polygon",
+    source="all",
 )
 
 # %% For all signatures except Wu
@@ -516,18 +518,16 @@ for sigs_name in tqdm(
 ):
     try:
         warnings.filterwarnings("ignore")
-        # plot_sig_map(
-        #     df_sigs,
-        #     sigs_name,
-        #     ecoregion_overlay,
-        #     stats="normal",
-        #     plot_mode="scatter",
-        #     source="all",
-        # )
         plot_sig_map(
             df_sigs,
             sigs_name,
-            ecoregion_overlay,
+            stats="normal",
+            plot_mode="scatter",
+            source="all",
+        )
+        plot_sig_map(
+            df_sigs,
+            sigs_name,
             stats="normal",
             plot_mode="polygon",
             source="all",
@@ -547,13 +547,11 @@ for source in df_sigs["source"].unique():
         plot_sig_map(
             df_sigs[df_sigs["source"] == source],
             sigs_name,
-            ecoregion_overlay,
             stats="normal",
             plot_mode="polygon",
             source=source,
         )
 # %%
-
 ########################################################################################
 #
 # Plot the bivariate map
@@ -601,7 +599,7 @@ def get_bivariate_class(df, sig1, sig2, sig1_label, sig2_label):
     return df_clean
 
 
-def plot_bivariate_map(df, sig1, sig2, overlay_layer, fig_dir, plot_mode="polygon"):
+def plot_bivariate_map(df, sig1, sig2, fig_dir, plot_mode="polygon"):
     # Set up the map
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
@@ -640,6 +638,7 @@ def plot_bivariate_map(df, sig1, sig2, overlay_layer, fig_dir, plot_mode="polygo
         # Sort by area in descending order so smaller polygons are plotted last
         df.sort_values("area", ascending=False, inplace=True)
 
+        # Plot the polygons
         df.plot(
             ax=ax,
             color=df["color"],
@@ -648,17 +647,7 @@ def plot_bivariate_map(df, sig1, sig2, overlay_layer, fig_dir, plot_mode="polygo
             zorder=99,
         )
 
-    # # Add a legend
-    # overlay_layer.plot(
-    #     ax=ax,
-    #     edgecolor="grey",
-    #     facecolor="none",
-    #     linewidth=0.5,
-    #     aspect=1.1,
-    #     zorder=100,
-    # )
-
-    title_label = f"Bivariate map of {sig1.label} vs. {sig2.label}"
+    # title_label = f"Bivariate map of {sig1.label} vs. {sig2.label}"
     # ax.set_title(title_label)
     # Set extent to CONUS
     ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
@@ -862,40 +851,6 @@ for process_name in tqdm(
         sig1_dir = dir_label_rev
         sig2_dir = dir_label
 
-    ###############################
-    # For Infiltration Excess Overlandflow
-    if process_name == "Infiltration Excess Overlandflow":
-        sig1 = process_columns.loc[
-            process_columns.column_name == "IE_thresh_signif"
-        ].squeeze()  # X variable
-        sig2 = process_columns.loc[
-            process_columns.column_name == "IE_thresh"
-        ].squeeze()  # Y variable
-
-        sig1_label = labels_rev
-        sig2_label = labels
-
-        sig1_dir = dir_label_rev
-        sig2_dir = dir_label
-
-    ###############################
-
-    # For Saturation Excess Overlandflow
-
-    if process_name == "Saturation Excess Overlandflow":
-        sig1 = process_columns.loc[
-            process_columns.column_name == "Storage_thresh_signif"
-        ].squeeze()  # X variable, IE_thresh_signif
-        sig2 = process_columns.loc[
-            process_columns.column_name == "Storage_thresh"
-        ].squeeze()  # Y variable, IE_thresh
-
-        sig1_label = labels_rev
-        sig2_label = labels
-
-        sig1_dir = dir_label_rev
-        sig2_dir = dir_label
-
     # If looking at the significance of the threshold values,
     # use the percentile columns, instead of the original p-values
     update_column_name(sig1)
@@ -913,12 +868,8 @@ for process_name in tqdm(
     df_sigs_clean = get_bivariate_class(df_sigs, sig1, sig2, sig1_label, sig2_label)
 
     # Plot the bivariate map
-    plot_bivariate_map(
-        df_sigs_clean, sig1, sig2, ecoregion_overlay, fig_dir, plot_mode="polygon"
-    )
-    plot_bivariate_map(
-        df_sigs_clean, sig1, sig2, ecoregion_overlay, fig_dir, plot_mode="scatter"
-    )
+    plot_bivariate_map(df_sigs_clean, sig1, sig2, fig_dir, plot_mode="polygon")
+    plot_bivariate_map(df_sigs_clean, sig1, sig2, fig_dir, plot_mode="scatter")
 
     # Create the legend
     # Define axis labels and tick labels
@@ -991,16 +942,12 @@ def plot_process_dominance_map():
     df_overland = get_bivariate_class(df_sigs, sig1_of, sig2_of, labels_rev, labels)
     df_ET = get_bivariate_class(df_sigs, sig1_ET, sig2_ET, labels, labels_rev)
     df_high_str = get_bivariate_class(df_sigs, sig1_str, sig2_str, labels_rev, labels)
-    #
+
+    # Sort by area in descending order so smaller polygons are plotted last
     df_baseflow.sort_values("area", ascending=False, inplace=True)
     df_overland.sort_values("area", ascending=False, inplace=True)
     df_ET.sort_values("area", ascending=False, inplace=True)
     df_high_str.sort_values("area", ascending=False, inplace=True)
-    #
-    # df_baseflow.sort_values("order", ascending=False, inplace=True)
-    # df_overland.sort_values("order", ascending=False, inplace=True)
-    # df_ET.sort_values("order", ascending=False, inplace=True)
-    # df_high_str.sort_values("order", ascending=False, inplace=True)
 
     # Define the classes to include with their alpha values
     classes_alpha = {
@@ -1088,7 +1035,7 @@ def plot_process_dominance_map():
                             label=f"{process}",
                         )
                     )
-                # For Storage capacity
+                # For High storage capacity
                 elif i == 3:
                     legend_elements.append(
                         Patch(
@@ -1098,6 +1045,7 @@ def plot_process_dominance_map():
                             label=f"{process}",
                         )
                     )
+                # For Baseflow and Overland flow
                 else:
                     legend_elements.append(
                         Patch(
@@ -1111,9 +1059,8 @@ def plot_process_dominance_map():
             # _______________________________________________________________________
             # Plot watershed polygons
             if len(df_class) > 0:
-                # For Water balance loss, only plot the 1-4 class
+                # For Water balance losses
                 if i == 2:
-                    # if class_name == "1-4":
                     with plt.rc_context({"hatch.linewidth": 0.01}):
                         df_class.plot(
                             ax=ax,
@@ -1124,9 +1071,7 @@ def plot_process_dominance_map():
                             hatch="////",
                             zorder=101,
                         )
-                    # else:
-                    #     None
-                # For Storage capacity, plot all high 4 classes
+                # For Storage capacity
                 elif i == 3:
                     df_class.plot(
                         ax=ax,
@@ -1136,7 +1081,7 @@ def plot_process_dominance_map():
                         alpha=0.8,
                         zorder=102,
                     )
-                # For Baseflow and Overland flow, plot all high 4 classes
+                # For Baseflow and Overland flow
                 else:
                     df_class.plot(
                         ax=ax,
@@ -1148,16 +1093,6 @@ def plot_process_dominance_map():
                     )
                 print(f"{process} class {class_name}: {len(df_class)} watersheds")
 
-    # # Add ecoregion overlay
-    # ecoregion_overlay.plot(
-    #     ax=ax,
-    #     edgecolor="grey",
-    #     facecolor="none",
-    #     linewidth=0.5,
-    #     aspect=1.1,
-    #     zorder=5,
-    # )
-
     # Add legend and title
     ax.legend(
         title="Dominant Process",
@@ -1166,13 +1101,10 @@ def plot_process_dominance_map():
         fontsize=11,
     )
 
-    # ax.set_title("(a) Dominant Processes", loc="left", fontweight="bold")
-
     # Set extent to CONUS
     ax.set_extent(conus_extent)
 
     # Set spines invisible
-    # ax.outline_patch.set_visible(False)
     for spine in ax.spines.values():
         spine.set_visible(False)
 

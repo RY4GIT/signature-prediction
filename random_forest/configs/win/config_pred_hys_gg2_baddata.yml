@@ -2,34 +2,24 @@ paths:
   home_dir: "G:/Shared drives/Signatures -- large scale/baseflow"
   out_dir: "RAraki/out/rf"
   predict:
-    model_dir: "RAraki/out/rf/output_raraki_20250716_cluster_all"
+    model_dir: "RAraki/out/rf/output_raraki_20250826_cluster_all"
     attributes: "RAraki/data/derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster_forRF_hys2_gg2_baddata.csv"
 experiment_name: "pred_hys_gg2_baddata"
 parallel:
   nCores: 16
 sigs_predict:
 - TotalRR
-- RR_Seasonality
 - EventRR
 - Recession_a_Seasonality
 - AverageStorage
 - RecessionParameters_b
-- RecessionParameters_T0
-- First_Recession_Slope
-- Mid_Recession_Slope
-- EventRR_TotalRR_ratio
 - VariabilityIndex
 - BFI
 - BaseflowRecessionK
 - IE_thresh_signif
 - SE_thresh_signif
-- Storage_thresh_signif
 - IE_thresh
 - SE_thresh
-- IE_effect
-- SE_effect
-- Storage_thresh
-- SE_slope
 attrs_of_interest:
 - ELEV_MEAN_M_BASIN
 - DRAIN_SQKM

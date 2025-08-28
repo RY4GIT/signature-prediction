@@ -1,4 +1,4 @@
-# %%
+# %% Plot signatures from a single source (Caravan)
 import os
 import pandas as pd
 import numpy as np
