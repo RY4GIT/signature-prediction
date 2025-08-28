@@ -158,6 +158,17 @@ df_shap_with_attrs[grouping_col] = cluster_num.map(cluster_to_reclass)
 
 top_n = 3  # Number of top attributes to assign 1 score
 regions = ["Eastern U.S.", "Midwest", "West", "all"]  # Regions to show
+clusters = ["all", 0, 1, 2, 3, 4, 5]
+cluster_names = [
+    "CONUS-wide",
+    "Midwest",
+    "South",
+    "Mountain West",
+    "Pacific Northwest",
+    "Western Coast and Deserts",
+    "Northeast",
+]
+
 show_k = 10  # Number of attributes to show in plots
 
 #############################################################
@@ -202,7 +213,7 @@ df_top_counts_all[grouping_col] = "all"
 
 # Concatenate the overall summary with the per-region summaries
 df_top_counts = pd.concat([df_top_counts, df_top_counts_all], ignore_index=True)
-
+df_top_counts.head()
 # %% #########################################################
 # Show and save the table for the top 10 SHAP values per region
 #############################################################
@@ -227,6 +238,9 @@ for region in regions:
 df_top_counts.to_csv(
     os.path.join(fig_dir, f"top{top_n}_attrs_by_SHAP_count.csv"), index=False
 )
+
+
+# %%
 
 
 # %% #########################################################
@@ -324,7 +338,6 @@ for region in regions:
         top_n=top_n,
     )
 
-# %%
 
 # %% #########################################################
 # COUNT SHAP VALUES PER GAUGE ACROSS SIGNATURES
@@ -335,11 +348,213 @@ for region in regions:
 # BY CLUSTER
 #############################################
 # Clear
-df_shap_with_attrs["rank_abs_phi"] = np.nan
-df_shap_with_attrs["is_top_n"] = np.nan
+# Aggregate counts of top-N occurrences per cluster per signature and attribute
+print(f"Counting top-{top_n} SHAP values per cluster...")
+grouping_col = "cluster"
+df_top_counts_cluster_across_sigs = (
+    df_shap_with_attrs[df_shap_with_attrs["is_top_n"] == 1]
+    .groupby([grouping_col, "feature", "Group"], dropna=False)
+    .agg(count=("is_top_n", "sum"))
+    .reset_index()
+)
+df_top_counts_cluster_across_sigs_all = (
+    df_shap_with_attrs[df_shap_with_attrs["is_top_n"] == 1]
+    .groupby(["feature", "Group"], dropna=False)
+    .agg(count=("is_top_n", "sum"))
+    .reset_index()
+)
+df_top_counts_cluster_across_sigs_all[grouping_col] = "all"
+df_top_counts_cluster_across_sigs = pd.concat(
+    [df_top_counts_cluster_across_sigs, df_top_counts_cluster_across_sigs_all],
+    ignore_index=True,
+)
+df_top_counts_cluster_across_sigs.head()
+# %%
 
+
+def plot_counts_by_cluster(
+    df_counts: pd.DataFrame,
+    clusters: list,
+    cluster_names: list,
+    top_k_features: int = 15,
+    top_n: int = 3,
+):
+    # Create a figure with subplots
+    n_cols = 3
+    n_rows = (len(clusters) + n_cols - 1) // n_cols
+    fig, axes = plt.subplots(
+        n_rows,
+        n_cols,
+        figsize=(4 * n_cols, 2.8 * n_rows),
+        constrained_layout=True,
+    )
+    axes = axes.flatten()
+
+    # Plot each signature
+    for i, (cluster, cluster_name) in enumerate(zip(clusters, cluster_names)):
+        ax = axes[i]
+
+        # Subset the data
+        df = df_counts[(df_counts["cluster"] == cluster)].copy()
+        if df.empty:
+            ax.set_visible(False)
+            continue
+
+        # Map colors from Group
+        if "color" not in df.columns:
+            if "Group" not in df.columns:
+                df = df.merge(
+                    attrs_info, how="left", left_on="feature", right_on="variable_name"
+                )
+            df["color"] = df["Group"].map(attrs_colors)
+
+        # Aggregate total counts per feature and group, keep color/group for each feature
+        df.sort_values("count", ascending=False, inplace=True)
+        features_to_show = list(df.index[:top_k_features])
+
+        # Build plotting frame
+        # Select the top features
+        df_plot = (
+            df.loc[features_to_show]
+            .reset_index()
+            .rename(columns={"count": "total_count"})
+        )
+
+        ax.barh(
+            y=df_plot["feature"],
+            width=df_plot["total_count"],
+            color=df_plot["color"],
+            edgecolor="dimgray",
+        )
+        ax.invert_yaxis()
+        ax.set_title(f"{cluster} - {cluster_name}", fontsize=10, loc="left")
+        ax.set_xlabel(f"#appearance as top-{top_n}")
+        ax.set_ylabel(None)
+        ax.tick_params(labelsize=7)
+
+    # Hide any extra axes
+    for j in range(i + 1, len(axes)):
+        axes[j].set_visible(False)
+
+    fig.suptitle(f"Top {top_n} SHAP count, across signatures", fontsize=14)
+    out_grid = f"shap_count_top{top_n}_all_signatures_by_clusters.{file_type}"
+    fig.savefig(os.path.join(fig_dir, out_grid), dpi=300, bbox_inches="tight")
+    # plt.close(fig)
+
+
+plot_counts_by_cluster(
+    df_top_counts_cluster_across_sigs.sort_values("count", ascending=False),
+    clusters=clusters,
+    cluster_names=cluster_names,
+    top_k_features=12,
+    top_n=top_n,
+)
 
 # %%
 #############################################
 # BY BROADER REGIONS
 #############################################
+
+# Aggregate counts of top-N occurrences per region per signature and attribute
+print(f"Counting top-{top_n} SHAP values per region...")
+grouping_col = "region"
+df_top_counts_region_across_sigs = (
+    df_shap_with_attrs[df_shap_with_attrs["is_top_n"] == 1]
+    .groupby([grouping_col, "feature", "Group"], dropna=False)
+    .agg(count=("is_top_n", "sum"))
+    .reset_index()
+)
+df_top_counts_region_across_sigs_all = (
+    df_shap_with_attrs[df_shap_with_attrs["is_top_n"] == 1]
+    .groupby(["feature", "Group"], dropna=False)
+    .agg(count=("is_top_n", "sum"))
+    .reset_index()
+)
+df_top_counts_region_across_sigs_all[grouping_col] = "all"
+df_top_counts_region_across_sigs = pd.concat(
+    [df_top_counts_region_across_sigs, df_top_counts_region_across_sigs_all],
+    ignore_index=True,
+)
+df_top_counts_region_across_sigs.head()
+
+
+# %% #########################################################
+# SHOW THE COUNTS IN BAR PLOTS  — ONE SUBPLOT PER SIGNATURE
+#############################################################
+def plot_counts_by_region(
+    df_counts: pd.DataFrame,
+    regions: list,
+    top_k_features: int = 15,
+    top_n: int = 3,
+):
+    # Create a figure with subplots
+    n_cols = 3
+    n_rows = (len(clusters) + n_cols - 1) // n_cols
+    fig, axes = plt.subplots(
+        n_rows,
+        n_cols,
+        figsize=(4 * n_cols, 2.8 * n_rows),
+        constrained_layout=True,
+    )
+    axes = axes.flatten()
+
+    # Plot each signature
+    for i, region in enumerate(regions):
+        ax = axes[i]
+
+        # Subset the data
+        df = df_counts[(df_counts["region"] == region)].copy()
+        if df.empty:
+            ax.set_visible(False)
+            continue
+
+        # Map colors from Group
+        if "color" not in df.columns:
+            if "Group" not in df.columns:
+                df = df.merge(
+                    attrs_info, how="left", left_on="feature", right_on="variable_name"
+                )
+            df["color"] = df["Group"].map(attrs_colors)
+
+        # Aggregate total counts per feature and group, keep color/group for each feature
+        df.sort_values("count", ascending=False, inplace=True)
+        features_to_show = list(df.index[:top_k_features])
+
+        # Build plotting frame
+        # Select the top features
+        df_plot = (
+            df.loc[features_to_show]
+            .reset_index()
+            .rename(columns={"count": "total_count"})
+        )
+
+        ax.barh(
+            y=df_plot["feature"],
+            width=df_plot["total_count"],
+            color=df_plot["color"],
+            edgecolor="dimgray",
+        )
+        ax.invert_yaxis()
+        ax.set_title(f"{region}", fontsize=10, loc="left")
+        ax.set_xlabel(f"#appearance as top-{top_n}")
+        ax.set_ylabel(None)
+        ax.tick_params(labelsize=7)
+
+    # Hide any extra axes
+    for j in range(i + 1, len(axes)):
+        axes[j].set_visible(False)
+
+    fig.suptitle(f"Top {top_n} SHAP count, across signatures", fontsize=14)
+    out_grid = f"shap_count_top{top_n}_all_signatures_by_broader_regions.{file_type}"
+    fig.savefig(os.path.join(fig_dir, out_grid), dpi=300, bbox_inches="tight")
+    # plt.close(fig)
+
+
+plot_counts_by_region(
+    df_top_counts_region_across_sigs,
+    regions=regions,
+    top_k_features=12,
+    top_n=top_n,
+)
+
+# %%
