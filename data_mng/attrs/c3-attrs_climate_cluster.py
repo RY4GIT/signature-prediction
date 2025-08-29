@@ -184,14 +184,30 @@ plt.show()
 #
 ##############################################################################
 # Create a scatter plot on a map
-plt.figure(figsize=(10, 6))
-ax = plt.axes(projection=ccrs.PlateCarree())
-ax.add_feature(cfeature.LAND)
-ax.add_feature(cfeature.OCEAN)
-ax.add_feature(cfeature.COASTLINE)
-ax.add_feature(cfeature.BORDERS, linestyle=":")
+
+# Set up the map
+fig = plt.figure(figsize=(10, 12))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+
+# Add the BORDERS feature first
+ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
+
+# Add the land feature with edgecolor set to black
+land = cfeature.NaturalEarthFeature(
+    "physical",
+    "land",
+    "50m",
+)
+ax.add_feature(
+    land,
+    facecolor="#F4F5FA",  # Keep facecolor as desired
+    edgecolor="black",  # Set edgecolor to black
+    linewidth=1.0,  # Optionally adjust linewidth for edges
+)
+# ax.add_feature(cfeature.COASTLINE)
+# ax.add_feature(cfeature.BORDERS, linestyle=":")
 ax.add_feature(cfeature.LAKES, alpha=0.5)
-ax.add_feature(cfeature.RIVERS)
+# ax.add_feature(cfeature.RIVERS)
 
 # Scatter plot with color based on clusters
 scatter = ax.scatter(
@@ -199,16 +215,29 @@ scatter = ax.scatter(
     lat_lon["gauge_lat"],
     c=clusters,
     cmap=cmap,
-    s=3,
+    s=5,
     alpha=0.5,
     transform=ccrs.PlateCarree(),
+    zorder=99,
 )
 cbar = plt.colorbar(
-    mappable=scatter, ticks=np.arange(np.min(clusters), np.max(clusters) + 1)
+    mappable=scatter,
+    ticks=np.arange(np.min(clusters), np.max(clusters) + 1),
+    shrink=0.3,
 )
-cbar.set_label("Cluster")
-plt.title("t-SNE Clusters on Map")
-plt.show()
+cbar.set_label("Cluster number")
+# plt.title("t-SNE clusters on map")
+
+ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+for spine in ax.spines.values():
+    spine.set_visible(False)
+plt.tight_layout()
+out_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\figs"
+plt.savefig(
+    os.path.join(out_path, f"t-SNE_clusters_on_map.png"),
+    dpi=300,
+)
+
 
 # %%
 # Plot each cluster on a map in a 3-by-2 subplot layout
