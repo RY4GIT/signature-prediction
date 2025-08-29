@@ -32,7 +32,7 @@ if not os.path.exists(fig_dir):
 # Attributes info & colors
 config_attrs_info_file = "plot_config_attrs_info.csv"
 attrs_info = pd.read_csv(config_attrs_info_file)
-with open("plot_config_attrs_colors.json", "r") as file:
+with open("plot_config_attrs_colors_high_contrast.json", "r") as file:
     attrs_colors = json.load(file)
 
 # Signature info
@@ -186,16 +186,16 @@ df_imp.tail()
 top_n = 3  # Number of top attributes to assign 1 score
 show_k = 10  # Number of attributes to show in plots
 regions = ["Eastern U.S.", "Midwest", "West", "all"]  # Regions to show
-clusters = ["all", 0, 1, 2, 3, 4, 5]
-cluster_names = [
-    "CONUS-wide",
-    "Midwest",
-    "South",
-    "Mountain West",
-    "Pacific Northwest",
-    "Western Coast and Deserts",
-    "Northeast",
-]
+cluster_dict = {
+    3: "Pacific Northwest",
+    0: "Midwest",
+    5: "Northeast",
+    4: "Western Coast and Deserts",
+    2: "Mountain West",
+    1: "South",
+}
+clusters = ["all", *cluster_dict.keys()]
+cluster_names = ["CONUS-wide", *cluster_dict.values()]
 
 
 #############################################################
@@ -270,9 +270,11 @@ def plot_counts_by_cluster(
     fig, axes = plt.subplots(
         n_rows,
         n_cols,
-        figsize=(4 * n_cols, 2.8 * n_rows),
+        figsize=(4 * n_cols, 3.2 * n_rows),
         constrained_layout=True,
     )
+    # increase font size
+    plt.rcParams.update({"font.size": 12})
     axes = axes.flatten()
 
     # Plot each signature
@@ -311,16 +313,19 @@ def plot_counts_by_cluster(
             edgecolor="dimgray",
         )
         ax.invert_yaxis()
-        ax.set_title(f"{cluster} - {cluster_name}", fontsize=10, loc="left")
+        ax.set_title(f"{cluster_name}", fontsize=13, loc="left", fontstyle="italic")
         ax.set_xlabel(f"#appearance as top-{top_n}")
+        # increase y ticks font size
         ax.set_ylabel(None)
-        ax.tick_params(labelsize=7)
+        ax.tick_params(labelsize=12)
 
     # Hide any extra axes
     for j in range(i + 1, len(axes)):
         axes[j].set_visible(False)
 
-    fig.suptitle(f"Top {top_n} incMSE% count, across signatures", fontsize=14)
+    # fig.suptitle(f"Top {top_n} incMSE% count, across signatures", fontsize=14)
+    fig.suptitle("(b)", fontsize=14, x=0.0)
+    # fig.suptitle(f"Top {top_n} incMSE% count, across signatures", fontsize=14)
     out_grid = f"incMSE_count_top{top_n}_all_signatures_by_clusters.{file_type}"
     fig.savefig(os.path.join(fig_dir, out_grid), dpi=300, bbox_inches="tight")
     # plt.close(fig)
@@ -328,13 +333,11 @@ def plot_counts_by_cluster(
 
 plot_counts_by_cluster(
     df_top_counts,
-    clusters=clusters,
-    cluster_names=cluster_names,
+    clusters=clusters[1:],
+    cluster_names=cluster_names[1:],
     top_k_features=12,
     top_n=top_n,
 )
-
-# %%
 
 #############################################################
 # BY BROADER REGIONS
