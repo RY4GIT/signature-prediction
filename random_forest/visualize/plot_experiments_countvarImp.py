@@ -1,26 +1,17 @@
 # %%
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 import json
 import numpy as np
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-from matplotlib import patches
-from tqdm import tqdm
 
 # %%
 ########################## CHANGE HERE #################
 cloud_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 rf_dir = os.path.join(cloud_dir, "out", "rf")
-# rf_out_dir = os.path.join(rf_dir, "output_raraki_20250826_cluster_all")
 output_date = "20250826"
-# fig_dir = os.path.join(rf_dir, "output_raraki_20250826_figures")
 output_date_Wu = "20250827"
-# rf_out_dir_Wu = os.path.join(rf_dir, "output_raraki_20250827_cluster_all_Wu")
 user_name = "raraki"
-# file_type = "png"  # or "pdf" if you prefer PDF output
 file_type = "pdf"
 ########################################################
 
@@ -45,7 +36,9 @@ with open("plot_config_attrs_colors.json", "r") as file:
     attrs_colors = json.load(file)
 
 # Signature info
-cofig_sigs_file = r"C:\Users\flipl\dev\signature-prediction\signatures\visualize\plot_sigs_config_selected.csv"
+cofig_sigs_file = (
+    r"C:\Users\flipl\dev\signature-prediction\signatures\visualize\plot_sigs_config.csv"
+)
 sigs_info = pd.read_csv(cofig_sigs_file)
 sig_names = sigs_info["column_name"]
 derived_sig_names = [
@@ -177,6 +170,11 @@ df_imp.tail()
 # %% ################################################
 # Count top attributes by incMSE
 #####################################################
+
+# %% #########################################################
+# COUNT SHAP VALUES PER GAUGE
+#############################################################
+
 # %% #########################################################
 # COUNT SHAP VALUES PER GAUGE
 #############################################################

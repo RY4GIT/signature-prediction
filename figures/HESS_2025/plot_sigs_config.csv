@@ -1,0 +1,18 @@
+﻿column_name,label,unit,lower_lim,upper_lim,type,process,relationship
+BFI,BFI,[-],0,1,groundwater,Baseflow,pos
+BaseflowRecessionK,BaseflowRecessionK,[1/d],0,0.3,groundwater,Baseflow,neg
+AverageStorage,AverageStorage,[mm],0,400,groundwater,High storage capacity,pos
+RecessionParameters_b,RecessionParameters_b,[-],0,5,groundwater,High storage capacity,pos
+TotalRR,TotalRR,[-],0,1,groundwater,Water balance losses,neg
+EventRR,EventRR,[-],0,0.8,groundwater,Water balance losses,neg
+Recession_a_Seasonality,Recession_a_Seasonality,[-],0,6,groundwater,Seasonal variability,pos
+VariabilityIndex,VariabilityIndex,[-],0,1,groundwater,Seasonal variability,pos
+avg_IE_SE_thresh,Average threshold (IE and SE),[mm],0,40,overlandflow,Overland Flow,pos
+avg_IE_SE_signif,Average threshold significance (IE and SE),[-],0,0.05,overlandflow,Overland Flow,thresh:0.05:neg
+diff_RCPint_RCPvol,IE_minus_SE_corr,[-],-0.1,0.1,overlandflow,Infiltration Excess Overlandflow,pos
+IE_thresh_signif,IE_thresh (p-value),[-],0,0.05,overlandflow,Infiltration Excess Overlandflow,thresh:0.05:neg
+SE_thresh_signif,SE_thresh (p-value),[-],0,0.05,overlandflow,Saturation Excess Overlandflow,thresh:0.05:neg
+IE_thresh,IE_thresh,[mm/d],0,30,overlandflow,Infiltration Excess Overlandflow,pos
+SE_thresh,SE_thresh,[mm],0,60,overlandflow,Saturation Excess Overlandflow,pos
+R_Pvol_RC,SE_correlation,[-],0,1,overlandflow,Saturation Excess Overlandflow,pos
+R_Pint_RC,IE_correlation,[-],0,1,overlandflow,Infiltration Excess Overlandflow,pos

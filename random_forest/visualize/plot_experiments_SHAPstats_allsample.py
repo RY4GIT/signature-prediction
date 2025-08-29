@@ -15,9 +15,10 @@ import geopandas as gpd
 ########################## CHANGE HERE #################
 cloud_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 rf_dir = os.path.join(cloud_dir, "out", "rf")
-rf_out_dir = os.path.join(rf_dir, "output_raraki_20250728_cluster_all")
-fig_dir = os.path.join(rf_dir, "output_raraki_20250728_figures")
-rf_out_dir_Wu = os.path.join(rf_dir, "output_raraki_20250820_cluster_all_Wu")
+rf_out_dir = os.path.join(rf_dir, "output_raraki_20250826_cluster_all")
+rf_out_dir_Wu = os.path.join(rf_dir, "output_raraki_20250827_cluster_all_Wu")
+fig_dir = os.path.join(rf_dir, "output_raraki_20250826_figures")
+
 user_name = "raraki"
 # file_type = "png"  # or "pdf" if you prefer PDF output
 file_type = "pdf"
@@ -39,7 +40,7 @@ if not os.path.exists(fig_dir):
 # Attributes info & colors
 config_attrs_info_file = "plot_config_attrs_info.csv"
 attrs_info = pd.read_csv(config_attrs_info_file)
-with open("plot_config_attrs_colors.json", "r") as file:
+with open("plot_config_attrs_colors_high_contrast.json", "r") as file:
     attrs_colors = json.load(file)
 
 # Signature info
@@ -115,7 +116,6 @@ _df_r2_Wu = pd.read_csv(
 _df_r2 = pd.read_csv(
     os.path.join(rf_out_dir, "r_squared_all.csv"), index_col="sig_name"
 )
-_df_r2.drop(index=sig_Wu_names, inplace=True)
 df_rf = pd.concat([_df_r2, _df_r2_Wu], axis=0)
 
 print(len(df_rf))
@@ -189,6 +189,28 @@ _df_shap_Wu = pd.read_csv(os.path.join(rf_out_dir_Wu, "shap_values.csv"))
 _df_shap = pd.read_csv(os.path.join(rf_out_dir, "shap_values.csv"))
 _df_shap = _df_shap[~_df_shap["sig_name"].isin(sig_Wu_names)]
 df_shap = pd.concat([_df_shap, _df_shap_Wu], axis=0)
+
+
+# %% Check if the gauge_id overlaps btween _df_r2_Wu and _df_r2
+gauge_id_Wu = _df_shap_Wu["gauge_id"].unique()
+gauge_id = df_shap["gauge_id"].unique()
+
+print(gauge_id_Wu)
+print(gauge_id)
+
+print(len(gauge_id_Wu))
+print(len(gauge_id))
+print("Overlap:")
+print(len(set(gauge_id_Wu) & set(gauge_id)))
+print("Only in Wu:")
+print(len(set(gauge_id_Wu) - set(gauge_id)))
+print("Only in all:")
+print(len(set(gauge_id) - set(gauge_id_Wu)))
+
+
+# %%
+df_shap[df_shap["gauge_id"] == "hysets_07226500"]
+# %%
 
 # Make sure the data is float
 df_shap["feature_value"] = df_shap["feature_value"].astype(float)
@@ -341,7 +363,6 @@ plot_shap_by_category(df_shap, cluster_num="all", cluster_info=cluster_info)
 ########################################################
 
 
-# %%
 def plot_shap_in_map(df, sig_name, var_name):
     attr_names = df["variable_name"].unique()
 
@@ -439,12 +460,12 @@ def plot_shap_in_map(df, sig_name, var_name):
 # SHAP % PER SIGNATURE PER ATTRIBUTE IN A MAP
 #####################################################
 # Plot the relative contribution of each attribute to the signature
-for sig_name in tqdm(sigs_RF_names_ordered, desc="Processing SHAP in map"):
+for sig_name in tqdm(sigs_RF_names_ordered[:-3], desc="Processing SHAP in map"):
     plot_shap_in_map(df_shap_with_attrs, sig_name, "phi_perc")
 
 
 # %% Sometimes the loop runs out of memory, here to redo it manually
-for sig_name in ["R_Pint_RC", "R_Pvol_RC"]:
+for sig_name in ["SE_thresh_signif", "R_Pint_RC", "R_Pvol_RC"]:
     print(f"Processing {sig_name}...")
     plot_shap_in_map(df_shap_with_attrs, sig_name, "phi_perc")
 
@@ -736,7 +757,9 @@ for sig_name in sigs_RF_names_ordered:
     plot_shap_in_map_max(df_group_max, sig_name, varname="max_mean_phi_abs_perc")
 
 
-# %% Get the average contributions from 2 signatures and plot the max category per location
+# %% ###############################################################
+# Get the average contributions from 2 signatures and plot the max category per location
+########################################################
 sig_pairs = {
     # 0: {"Process": "Baseflow", "sigs": ["BFI", "BaseflowRecessionK"]},
     # 1: {
@@ -813,6 +836,7 @@ for pair in sig_pairs.values():
             mean_phi_abs_perc=("mean_phi_abs_perc", stat),
             gauge_lon=("gauge_lon", "first"),
             gauge_lat=("gauge_lat", "first"),
+            count=("mean_phi_abs_perc", "count"),
         )
         .reset_index()
     ).rename(columns={"mean_phi_abs_perc": f"{stat}_phi_abs_perc_sigs"})
@@ -821,7 +845,16 @@ for pair in sig_pairs.values():
     df_group_avg_max = (
         df_group_avg.loc[
             df_group_avg.groupby("gauge_id")[f"{stat}_phi_abs_perc_sigs"].idxmax()
-        ][["gauge_id", f"{stat}_phi_abs_perc_sigs", "Group", "gauge_lon", "gauge_lat"]]
+        ][
+            [
+                "gauge_id",
+                f"{stat}_phi_abs_perc_sigs",
+                "Group",
+                "gauge_lon",
+                "gauge_lat",
+                "count",
+            ]
+        ]
         .rename(
             columns={
                 f"{stat}_phi_abs_perc_sigs": f"max_{stat}_phi_abs_perc",
@@ -854,7 +887,12 @@ print(len(df_group_avg_max_polygon))
 
 
 # %%
+gauge_id_less_sigs = df_group_avg_max_polygon[df_group_avg_max_polygon["count"] < 3]
+gauge_id_less_sigs
 
+# %% ##################################
+# The key figure (without cities)
+#######################################
 fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
@@ -886,112 +924,14 @@ ax.add_feature(
     linewidth=0.75,
 )
 
-# # Add interstate/major roads layer (Natural Earth roads)
-# roads = cfeature.NaturalEarthFeature(
-#     "cultural",
-#     "roads",
-#     "10m",
-# )
-# ax.add_feature(roads, facecolor="none", edgecolor="#9e9e9e", linewidth=0.35, zorder=10)
-
-# ######### Add major cities (dots and labels) #########
-# # Define a list of major cities within the CONUS
-# major_cities = [
-#     {"name": "New York", "lon": -74.0060, "lat": 40.7128},
-#     {"name": "Los Angeles", "lon": -118.2437, "lat": 34.0522},
-#     {"name": "Chicago", "lon": -87.6298, "lat": 41.8781},
-#     {"name": "Houston", "lon": -95.3698, "lat": 29.7604},
-#     {"name": "Phoenix", "lon": -112.0740, "lat": 33.4484},
-#     {"name": "Philadelphia", "lon": -75.1652, "lat": 39.9526},
-#     {"name": "San Antonio", "lon": -98.4936, "lat": 29.4241},
-#     {"name": "San Diego", "lon": -117.1611, "lat": 32.7157},
-#     {"name": "Dallas", "lon": -96.7970, "lat": 32.7767},
-#     {"name": "San Jose", "lon": -121.8863, "lat": 37.3382},
-#     {"name": "Austin", "lon": -97.7431, "lat": 30.2672},
-#     {"name": "Jacksonville", "lon": -81.6557, "lat": 30.3322},
-#     {"name": "San Francisco", "lon": -122.4194, "lat": 37.7749},
-#     {"name": "Seattle", "lon": -122.3321, "lat": 47.6062},
-#     {"name": "Denver", "lon": -104.9903, "lat": 39.7392},
-#     {"name": "Miami", "lon": -80.1918, "lat": 25.7617},
-#     {"name": "Boston", "lon": -71.0589, "lat": 42.3601},
-#     {"name": "Atlanta", "lon": -84.3880, "lat": 33.7490},
-#     {"name": "Washington, DC", "lon": -77.0369, "lat": 38.9072},
-#     {"name": "Detroit", "lon": -83.0458, "lat": 42.3314},
-#     # {"name": "Minneapolis", "lon": -93.2650, "lat": 44.9778},
-#     {"name": "Las Vegas", "lon": -115.1398, "lat": 36.1699},
-#     {"name": "Portland", "lon": -122.6765, "lat": 45.5152},
-#     # Requested additions
-#     {"name": "Cleveland", "lon": -81.6944, "lat": 41.4993},
-#     {"name": "Knoxville", "lon": -83.9207, "lat": 35.9606},
-#     {"name": "Nashville", "lon": -86.7816, "lat": 36.1627},
-#     {"name": "Benton", "lon": -92.5868, "lat": 34.5645},  # AR
-#     {"name": "Memphis", "lon": -90.0490, "lat": 35.1495},
-#     {"name": "Birmingham", "lon": -86.8104, "lat": 33.5186},
-#     {"name": "Charlotte", "lon": -80.8431, "lat": 35.2271},
-#     {"name": "St. Louis", "lon": -90.1994, "lat": 38.6270},
-#     {"name": "Raleigh", "lon": -78.6382, "lat": 35.7796},
-#     {"name": "Cincinnati", "lon": -84.5120, "lat": 39.1031},
-#     {"name": "Pierre", "lon": -100.3510, "lat": 44.3683},
-#     {"name": "Omaha", "lon": -95.9970, "lat": 41.2524},
-#     {"name": "Kansas City", "lon": -94.5786, "lat": 39.0997},
-#     {"name": "Oklahoma City", "lon": -97.5164, "lat": 35.4676},
-#     {"name": "Santa Fe", "lon": -105.9378, "lat": 35.6870},
-# ]
-
-# # Plot city markers
-# for city in major_cities:
-#     ax.scatter(
-#         city["lon"],
-#         city["lat"],
-#         c="k",
-#         s=18,
-#         edgecolors="white",
-#         linewidths=0.5,
-#         zorder=300,
-#         transform=ccrs.PlateCarree(),
-#     )
-#     ax.text(
-#         city["lon"] + 0.3,
-#         city["lat"] + 0.15,
-#         city["name"],
-#         fontsize=8,
-#         color="k",
-#         zorder=301,
-#         transform=ccrs.PlateCarree(),
-#         ha="left",
-#         va="bottom",
-#         path_effects=[pe.withStroke(linewidth=2, foreground="white")],
-#     )
-
 
 df_group_avg_max_polygon["area"] = df_group_avg_max_polygon["geometry"].area
-# # Define custom sort order
-# custom_order = [
-#     "Climate",
-#     "Topography",
-#     "Soils & Geology",
-#     "Human alteration",
-#     "Land Cover",
-# ]
-
-# # Make the column categorical with the defined order
-# df_group_avg_max_polygon["Group_max"] = pd.Categorical(
-#     df_group_avg_max_polygon["Group_max"],
-#     categories=custom_order,
-#     ordered=True
-# )
-
-# # Now sort by it
-# df_group_avg_max_polygon.sort_values(
-#     by="Group_max",
-#     inplace=True
-# )
-
 df_group_avg_max_polygon.sort_values(by="area", ascending=False, inplace=True)
 
 # Plot the max category per location
 df_group_avg_max_polygon.dropna(subset=["max_median_phi_abs_perc"], inplace=True)
 max_opacity = df_group_avg_max_polygon["max_median_phi_abs_perc"].quantile(0.75)
+
 
 polygon_obj = df_group_avg_max_polygon.plot(
     ax=ax,
@@ -1015,7 +955,7 @@ legend_elements = [
 ax.legend(handles=legend_elements, loc="lower right", fontsize=11)
 
 # Save plot
-file_name = f"shap_most_important_cat_in_map_all_processes.{file_type}"
+file_name = f"shap_most_important_cat_in_map_all_processes_median.{file_type}"
 
 # Set extent to CONUS
 ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
@@ -1032,10 +972,232 @@ fig.savefig(
     dpi=300,
     bbox_inches="tight",
 )
-# plt.close(fig)
-# %% #####################################################
-# COUNTING THE ATTRIBUTES OCCURRENCES
-########################################################
-# TO DO:
-attrs_colors
+
+
+# %%
+# %% ##################################
+# The key figure (with cities)
+#######################################
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+
+# Add the BORDERS feature first
+ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
+
+# Add the BORDERS feature first
+ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
+
+
+# Add the land feature with edgecolor set to black
+land = cfeature.NaturalEarthFeature(
+    "physical",
+    "land",
+    "50m",
+)
+ax.add_feature(
+    land,
+    facecolor="#c3c4c8",  # Keep facecolor as desired
+    edgecolor="black",  # Set edgecolor to black
+    linewidth=1.0,  # Optionally adjust linewidth for edges
+)
+
+
+# Add state boundary lines beneath data
+ax.add_feature(
+    cfeature.STATES,
+    edgecolor="#9e9e9e",
+    linewidth=0.75,
+)
+
+
+######### Add major cities (dots and labels) #########
+# Define a list of major cities within the CONUS
+
+major_cities = [
+    {"name": "New York", "lon": -74.0060, "lat": 40.7128},
+    {"name": "Los Angeles", "lon": -118.2437, "lat": 34.0522},
+    {"name": "Chicago", "lon": -87.6298, "lat": 41.8781},
+    {"name": "Houston", "lon": -95.3698, "lat": 29.7604},
+    {"name": "Phoenix", "lon": -112.0740, "lat": 33.4484},
+    {"name": "Philadelphia", "lon": -75.1652, "lat": 39.9526},
+    {"name": "San Antonio", "lon": -98.4936, "lat": 29.4241},
+    {"name": "San Diego", "lon": -117.1611, "lat": 32.7157},
+    {"name": "Dallas", "lon": -96.7970, "lat": 32.7767},
+    {"name": "San Jose", "lon": -121.8863, "lat": 37.3382},
+    {"name": "Austin", "lon": -97.7431, "lat": 30.2672},
+    {"name": "Jacksonville", "lon": -81.6557, "lat": 30.3322},
+    {"name": "San Francisco", "lon": -122.4194, "lat": 37.7749},
+    {"name": "Seattle", "lon": -122.3321, "lat": 47.6062},
+    {"name": "Denver", "lon": -104.9903, "lat": 39.7392},
+    {"name": "Miami", "lon": -80.1918, "lat": 25.7617},
+    {"name": "Boston", "lon": -71.0589, "lat": 42.3601},
+    {"name": "Atlanta", "lon": -84.3880, "lat": 33.7490},
+    {"name": "Washington, DC", "lon": -77.0369, "lat": 38.9072},
+    {"name": "Detroit", "lon": -83.0458, "lat": 42.3314},
+    # {"name": "Minneapolis", "lon": -93.2650, "lat": 44.9778},
+    {"name": "Las Vegas", "lon": -115.1398, "lat": 36.1699},
+    {"name": "Portland", "lon": -122.6765, "lat": 45.5152},
+    # Requested additions
+    {"name": "Cleveland", "lon": -81.6944, "lat": 41.4993},
+    {"name": "Knoxville", "lon": -83.9207, "lat": 35.9606},
+    {"name": "Nashville", "lon": -86.7816, "lat": 36.1627},
+    {"name": "Benton", "lon": -92.5868, "lat": 34.5645},  # AR
+    {"name": "Memphis", "lon": -90.0490, "lat": 35.1495},
+    {"name": "Birmingham", "lon": -86.8104, "lat": 33.5186},
+    {"name": "Charlotte", "lon": -80.8431, "lat": 35.2271},
+    {"name": "St. Louis", "lon": -90.1994, "lat": 38.6270},
+    {"name": "Raleigh", "lon": -78.6382, "lat": 35.7796},
+    {"name": "Cincinnati", "lon": -84.5120, "lat": 39.1031},
+    {"name": "Pierre", "lon": -100.3510, "lat": 44.3683},
+    {"name": "Omaha", "lon": -95.9970, "lat": 41.2524},
+    {"name": "Kansas City", "lon": -94.5786, "lat": 39.0997},
+    {"name": "Oklahoma City", "lon": -97.5164, "lat": 35.4676},
+    {"name": "Santa Fe", "lon": -105.9378, "lat": 35.6870},
+]
+
+# Plot city markers
+for city in major_cities:
+    ax.scatter(
+        city["lon"],
+        city["lat"],
+        c="k",
+        s=18,
+        edgecolors="white",
+        linewidths=0.5,
+        zorder=300,
+        transform=ccrs.PlateCarree(),
+    )
+    import matplotlib.patheffects as pe
+
+    ax.text(
+        city["lon"] + 0.3,
+        city["lat"] + 0.15,
+        city["name"],
+        fontsize=8,
+        color="k",
+        zorder=301,
+        transform=ccrs.PlateCarree(),
+        ha="left",
+        va="bottom",
+        path_effects=[pe.withStroke(linewidth=2, foreground="white")],
+    )
+
+df_group_avg_max_polygon["area"] = df_group_avg_max_polygon["geometry"].area
+df_group_avg_max_polygon.sort_values(by="area", ascending=False, inplace=True)
+
+# Plot the max category per location
+df_group_avg_max_polygon.dropna(subset=["max_median_phi_abs_perc"], inplace=True)
+max_opacity = df_group_avg_max_polygon["max_median_phi_abs_perc"].quantile(0.75)
+
+df_plot = df_group_avg_max_polygon[df_group_avg_max_polygon["count"] > 3]
+polygon_obj = df_plot.plot(
+    ax=ax,
+    color=df_group_avg_max_polygon["color"],
+    alpha=np.clip(
+        df_group_avg_max_polygon["max_median_phi_abs_perc"] / max_opacity, 0, 1
+    ),  # Scale alpha by mean_phi_abs_perc percentage
+    zorder=99,
+)
+# ax.set_title(sig_name)
+
+# Add a legend
+legend_elements = [
+    patches.Patch(
+        facecolor=attrs_colors[group],
+        edgecolor="black",
+        label=f"{group} ({df_group_avg_max_polygon.groupby('Group_max').count()['geometry'].get(group, 0):d})",
+    )
+    for group in attrs_colors.keys()
+]
+ax.legend(handles=legend_elements, loc="lower right", fontsize=11)
+
+# Save plot
+file_name = (
+    f"shap_most_important_cat_in_map_all_processes_median_with_cities.{file_type}"
+)
+
+# Set extent to CONUS
+ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+# ax.set_extent(conus_extent)
+
+# Set spines invisible
+for spine in ax.spines.values():
+    spine.set_visible(False)
+
+# Display the map
+plt.tight_layout()
+fig.savefig(
+    os.path.join(fig_dir, file_name),
+    dpi=300,
+    bbox_inches="tight",
+)
+
+# %% ###############################################################
+# Investigate the New Mexico outlier
+####################################################################
+
+# Get the row with the Group_max being "Topography" where the gauge_lon and gauge_lat are within the New Mexico
+gauge_id_interest = df_group_avg_max_polygon[
+    (df_group_avg_max_polygon["Group_max"] == "Human alteration")
+    & (df_group_avg_max_polygon["gauge_lon"] > -109.203680)
+    & (df_group_avg_max_polygon["gauge_lon"] < -102.986323)
+    & (df_group_avg_max_polygon["gauge_lat"] > 31.166394)
+    & (df_group_avg_max_polygon["gauge_lat"] < 37.128153)
+].index
+print(gauge_id_interest)
+# %% Get the mean phi_abs_perc for the gauge_id_interest
+# df_shap_with_attrs.merge(attrs_info, on="variable_name", how="left")
+
+# %%
+df_gauges_of_interest = df_shap_with_attrs[
+    df_shap_with_attrs["gauge_id"].isin(gauge_id_interest)
+].sort_values(by="phi_perc", ascending=False)
+df_gauges_of_interest.head()
+
+
+# %%
+check_dir = "G:/Shared drives/Signatures -- large scale/baseflow/RAraki/out/rf/output_raraki_20250826_figures/check_results"
+os.makedirs(check_dir, exist_ok=True)
+for gauge_id in gauge_id_interest:
+    for sig_name in sigs_RF_names_ordered:
+        df_plot = (
+            df_shap_with_attrs[df_shap_with_attrs["gauge_id"] == gauge_id]
+            .loc[df_shap_with_attrs["sig_name"] == sig_name]
+            .sort_values(by="phi_perc", ascending=False)
+        )
+
+        if len(df_plot) > 0:  # Only plot if there is data
+            plt.figure(figsize=(10, 6))
+
+            # Create the bar plot manually instead of using df.plot()
+            y_pos = np.arange(len(df_plot))
+            colors = [attrs_colors.get(group, "gray") for group in df_plot["Group"]]
+
+            plt.barh(y_pos, df_plot["phi_perc"], color=colors)
+            plt.yticks(y_pos, df_plot["variable_name"])
+            plt.title(f"Gauge ID: {gauge_id}, Signature: {sig_name}")
+            plt.xlabel("SHAP Value Percentage")
+
+            plt.tight_layout()
+            plt.savefig(os.path.join(check_dir, f"{gauge_id}_{sig_name}.png"))
+            plt.close()
+
+# %%
+df_shap_with_attrs["color"] = df_shap_with_attrs["Group"].map(attrs_colors)
+df_shap_with_attrs
+# %%
+
+df_group_avg_max_polygon[df_group_avg_max_polygon["gauge_id"].isin(gauge_id_interest)]
+
+# %%
+sigs_RF_names_ordered
+# %%
+df_shap_with_attrs
+# %%
+df_group_avg_max_polygon
+# %%
+# df_group_avg
+# # %%
+# df_shap_with_attrs[df_shap_with_attrs["gauge_id"] == "camels_01013500"]
+df_group_avg_max_polygon
 # %%
