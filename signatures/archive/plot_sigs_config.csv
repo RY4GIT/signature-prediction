@@ -1,0 +1,32 @@
+﻿column_name,label,unit,lower_lim,upper_lim,type,process,relationship
+TotalRR,TotalRR,[-],0,1,groundwater,Water balance losses,neg
+EventRR,EventRR,[-],0,0.8,groundwater,Water balance losses,neg
+RR_Seasonality,RR_Seasonality,[-],0,4,groundwater,Water balance losses,pos
+AverageStorage,AverageStorage,[mm],0,400,groundwater,Storage capacity and retention,pos
+StorageFromBaseflow,StorageFromBaseflow,[mm],0,500,groundwater,Storage capacity and retention,pos
+RecessionParameters_b,RecessionParameters_b,[-],0,5,groundwater,Storage capacity and retention,neg
+RecessionParameters_T0,RecessionParameters_T0,[d],0.5,30,groundwater,Storage capacity and retention,pos
+First_Recession_Slope,First_Recession_Slope,[1/d],0,1.5,groundwater,Storage capacity and retention,neg
+Mid_Recession_Slope,Mid_Recession_Slope,[1/d],0,0.6,groundwater,Storage capacity and retention,neg
+EventRR_TotalRR_ratio,EventRR_TotalRR_ratio,[-],0,1,groundwater,Storage capacity and retention,neg
+BFI,BFI,[-],0,1,groundwater,Baseflow,pos
+BaseflowRecessionK,BaseflowRecessionK,[1/d],0,0.3,groundwater,Baseflow,neg
+IE_thresh_signif,IE_thresh (p-value),[-],0,0.05,overlandflow,Infiltration Excess Overlandflow,thresh:0.05:neg
+SE_thresh_signif,SE_thresh (p-value),[-],0,0.05,overlandflow,Saturation Excess Overlandflow,thresh:0.05:neg
+Storage_thresh_signif,Storage_thresh (p-value),[-],0,0.05,overlandflow,Saturation Excess Overlandflow,thresh:0.05:neg
+IE_thresh,IE_thresh,[mm/d],0,30,overlandflow,Infiltration Excess Overlandflow,pos
+SE_thresh,SE_thresh,[mm],0,60,overlandflow,Saturation Excess Overlandflow,pos
+Storage_thresh,Storage_thresh,[mm],0,150,overlandflow,Saturation Excess Overlandflow,pos
+SE_slope,SE_slope,[mm/mm],0,1,overlandflow,Saturation Excess Overlandflow,pos
+R_Pvol_RC,SE_correlation,[-],0,1,overlandflow,Saturation Excess Overlandflow,pos
+R_Pint_RC,IE_correlation,[-],0,1,overlandflow,Infiltration Excess Overlandflow,pos
+diff_RCPint_RCPvol,IE_minus_SE_corr,[-],-0.1,0.1,overlandflow,Infiltration Excess Overlandflow,pos
+RR_Seasonality,RR_Seasonality,[-],0,4,groundwater,Seasonal variability,pos
+TotalRR,TotalRR,[-],0,1,groundwater,Seasonal variability,neg
+Recession_a_Seasonality,Recession_a_Seasonality,[-],0,6,groundwater,Seasonal variability,pos
+VariabilityIndex,VariabilityIndex,[-],0,1,groundwater,Seasonal variability,pos
+diff_IE_SE_thresh,Differences in threshold (IE minus SE),[mm],-20,20,overlandflow,Overland Flow,
+diff_IE_Str_thresh,Differences in threshold (IE minus Storage),[mm],-40,40,overlandflow,Overland Flow,
+diff_SE_Str_thresh,Differences in threshold (SE minus Storage),[mm],-20,20,overlandflow,Overland Flow,
+avg_IE_SE_thresh,Average threshold (IE and SE),[mm],0,40,overlandflow,Overland Flow,
+avg_IE_SE_signif,Average threshold significance (IE and SE),[-],0,0.05,overlandflow,Overland Flow,thresh:0.05:neg

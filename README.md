@@ -40,14 +40,16 @@ If you have downloaded finalized dataset (signature values, landscape attributes
     - R environment: `random_forest\envs`
     - Matlab ver: tested on 2020b-2024b
 
-### 2. Calculate signatures and attributes 
+### 2. Calculate signatures and landscape attributes 
 #### 2.1. Calculate hydrologic signatures (Matlab)
 - Calculate signatures using:  
-    - ```signatures\main_caravan.m``` for Caravan dataset
-    - ```signatures\main_gages2_gridmet.m``` for GAGES2 dataset
+    - ```signatures\main_caravan.m``` for calculating all basic TOSSH signatures for Caravan dataset
+    - ```signatures\WuSigs_main_caravan.m``` for calculating Wu et al., 2021 signatures for Caravan dataset
+    - ```signatures\main_gages2_gridmet.m``` for calculating all basic TOSSH signatures for GAGES2 dataset
+    - ```signatures\WuSigs_main_gages2.m``` for calculating Wu et al., 2021 signatures for GAGES2 dataset
     - (experimental) ```signatures\main_gages2_swi.m``` for GAGES2 dataset with surface input dataset from [Hammond, 2024](https://www.sciencebase.gov/catalog/item/6494515fd34ef77fcb014eb0)
 
-#### 2.1 Calculate additional landscape attributes (Python)
+#### 2.2 Calculate additional landscape attributes (Python)
 - Calculate additional attributes, wetland fraction and geologic ages (Holt and McMillan, 2025) following instructions (step 1-3) in  [```Wetland_GeologicAge_Attributes```](https://github.com/RY4GIT/Wetland_GeologicAge_Attributes) repo
 
 
@@ -57,12 +59,13 @@ If you have downloaded finalized dataset (signature values, landscape attributes
 - Filter out some gauges and signatures using scripts in ```signatures\postprocess\```
     - `signatures\postprocess\postprocess_caravan_sigs_for_RF.py` for Caravan dataset
     - `signatures\postprocess\postprocess_gages2_gridMET_sigs.py` for GAGES2 dataset
+    - `signatures\postprocess\postprocess_Wu2021.py` for Wu et al., 2021 signatures 
     - These scripts copy signature files with extension `_filt_qc.csv` (for meeting conditions 1 & 2), `_filt_qc_snow.csv` (for meeting conditions 1 & 2 & 3), and `_filt_qc_snow_area.csv` (for meeting conditions 1 & 2 & 3 & 4)
         1. Exclude Hysets watersheds with bad data quality (less than 5 years of record OR >30\% record is NaN for the period where data is available)
         2. Exclude Hysets watersheds overlapping with CAMELS OR Exclude GAGES2 watersheds overlapping with Caravan
         3. Event-based overlandflow signatures, exclude Caravan and GAGES2 watersheds dominated with snow with `frac_snow` >20\%
         4. Exclude Caravan watersheds that has >25% error in estimated watershed drainage area between Caravan and GAGES-II estimates (consisting of 31 watersheds)
-#### 3.2. Curate landscape attributes (Python)
+#### 3.2. Assemble and curate landscape attributes (Python)
 - Use ```data_mng\attrs\c*-*.py``` for Caravan-GAGES2 OR Caravan-only gauges 
 - Use ```data_mng\attrs\g*-*.py``` for GAGES2-only gauges 
 
@@ -85,6 +88,7 @@ Once you get the hang of it, use automated workflow for training RF model region
     ```
     cd random_forest
     train_run.sh
+    train_run_Wu.sh
     ```
 - Visualization code available at ```random_forest\visualize```
 

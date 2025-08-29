@@ -17,9 +17,15 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 ############################################
 cloud_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 sig_dir = os.path.join(cloud_dir, "out", "signatures", "Wu_sigs_20250812")
-rf_dir = os.path.join(cloud_dir, "out", "rf", "output_raraki_20250820_cluster_all_Wu")
+rf_dir = os.path.join(cloud_dir, "out", "rf", "output_raraki_20250827_cluster_all_Wu")
 local_dir = r"D:\data"
-fig_dir = sig_dir
+fig_dir = os.path.join(
+    cloud_dir,
+    "out",
+    "rf",
+    "output_raraki_20250826_figures",
+    "figs_sigs_process_multiple_sources",
+)
 
 conus_extent = [-125.5, -66.95, 24.396308, 47.5]
 
@@ -172,13 +178,16 @@ sigs["area"] = sigs.geometry.values.area
 # sigs = sigs.sort_values(by="order", ascending=True)
 sigs = sigs.sort_values(by="area", ascending=False)
 
+# %%
+# #################################################
 # Calculate signature statistics
+# ################################################
 sigs["diff_RCPint_RCPvol"] = sigs["R_Pint_RC"] - sigs["R_Pvol_RC"]
 # Mask where both R_Pint_RC and R_Pvol_RC are negative
 sigs["diff_RCPint_RCPvol_masked"] = sigs["diff_RCPint_RCPvol"].mask(
     (sigs["R_Pint_RC"] < 0) & (sigs["R_Pvol_RC"] < 0)
 )
-# %%
+
 # %% #######################################
 # Filter out gauges with snow data below a threshold
 ############################################
@@ -186,20 +195,20 @@ frac_snow_thresh = 0.2
 sigs_filt = sigs[
     (
         (sigs["SNOW_PCT_PRECIP"] < frac_snow_thresh * 100)
-        & (~sigs["SNOW_PCT_PRECIP"].isna())
+        | (~sigs["SNOW_PCT_PRECIP"].isna())
     )
     | (
         (sigs["SNOW_FRAC_PRECIP"] < frac_snow_thresh)
-        & (~sigs["SNOW_FRAC_PRECIP"].isna())
+        | (~sigs["SNOW_FRAC_PRECIP"].isna())
     )
-    | ((sigs["SNOWICENLCD06"] < frac_snow_thresh) & (~sigs["SNOWICENLCD06"].isna()))
+    | ((sigs["SNOWICENLCD06"] < frac_snow_thresh) | (~sigs["SNOWICENLCD06"].isna()))
     | (
         (sigs["SNOW_PCT_PRECIP_gages2"] < frac_snow_thresh * 100)
-        & (~sigs["SNOW_PCT_PRECIP_gages2"].isna())
+        | (~sigs["SNOW_PCT_PRECIP_gages2"].isna())
     )
     | (
         (sigs["SNOWICENLCD06_gages2"] < frac_snow_thresh)
-        & (~sigs["SNOWICENLCD06_gages2"].isna())
+        | (~sigs["SNOWICENLCD06_gages2"].isna())
     )
 ]
 print(
@@ -208,7 +217,7 @@ print(
 sigs_filt
 
 # %% #######################################
-# Define plotting layer order (bottom to top)
+# Define plotting layer order (bottom to top) - not used in the plot at the moment but kept for reference
 ############################################
 # Top-to-bottom desired order: camels > hysets > gages2 > pred_hys_gg2 > pred_gg2
 # We map to numeric ranks where lower is drawn first (bottom), higher last (top)
@@ -229,7 +238,7 @@ if "data_name" in sigs_filt.columns:
 # %% #######################################
 # Plot signatures
 ############################################
-# Plot R_Pint_RC and R_Pvol_RC and diff_RCPint_RCPvol_masked
+
 for sig_name in [
     "R_Pint_RC",
     "R_Pvol_RC",
@@ -243,7 +252,7 @@ for sig_name in [
     # Add the BORDERS feature first
     ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
 
-    # Add the land feature with edgecolor set to black
+    # Add the land feature
     land = cfeature.NaturalEarthFeature(
         "physical",
         "land",
@@ -251,36 +260,21 @@ for sig_name in [
     )
     ax.add_feature(
         land,
-        facecolor="#F4F5FA",  # Keep facecolor as desired
-        edgecolor="black",  # Set edgecolor to black
-        linewidth=1.0,  # Optionally adjust linewidth for edges
+        facecolor="#F4F5FA",
+        edgecolor="black",
+        linewidth=1.0,
     )
 
     c_data = sigs[sig_name]
     cbar_label = "[-]"
-    out_file_name = f"map_{sig_name}.png"
+    out_file_name = f"map_{sig_name}_polygon_all.png"
 
     if "diff_RCPint_RCPvol" in sig_name:
         diagonal_colors = [
             "#159DD0",
-            # "#2CA6D4",
-            # "#43B0D9",
             "#aeb5b1",
-            # "#E38753",
-            # "#E0783E",
-            "#DD6A29",  #    or # DD6A29
+            "#DD6A29",
         ]
-
-        # diagonal_colors = [
-        #     # "#2CA6D4",
-        #     # "#43B0D9",
-        #     "#aeb5b1",
-        #     "#98B2B5",
-        #     "#159DD0",
-        #     # "#E38753",
-        #     # "#E0783E",
-        #     # "#DD6A29", #    or # DD6A29
-        # ]
 
         # Create the colormap
         diag_cmap = LinearSegmentedColormap.from_list(
@@ -291,33 +285,23 @@ for sig_name in [
         vmin = -0.1
         vmax = 0.1
     else:
-        cmap = "viridis"  # or "plasma"
+        cmap = "viridis"
         vmin = -0.5
         vmax = 1
 
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
 
-    # # Drop where geometry is nan
-    # sigs_plot = sigs_filt[sigs_filt.geometry.notna()].copy()
-    # # Map plotting order and sort so lower layers are drawn first
-    # if "data_name" in sigs_plot.columns:
-    #     sigs_plot["layer_order"] = (
-    #         sigs_plot["data_name"].map(source_order_map).fillna(-1)
-    #     )
-    # sigs_plot = sigs_plot.sort_values(by=["layer_order"])  # bottom -> top
-
-    # Sort by source order
-    # sigs_plot["source_order"] = sigs_plot["data_name"].map(source_order_map)
-    sigs_plot = sigs_filt.sort_values(by="area", ascending=False)
+    # Sort by area in descending order so smaller polygons are plotted last
+    sigs_filt.sort_values(by="area", ascending=False, inplace=True)
 
     # Plot the signature data
-    sigs_plot.plot(
+    sigs_filt.plot(
         ax=ax,
         column=sig_name,
         cmap=cmap,
         norm=norm,
         linewidth=0.2,
-        alpha=0.5,
+        alpha=0.4,
         vmin=vmin,
         vmax=vmax,
         zorder=99,
@@ -336,7 +320,7 @@ for sig_name in [
         cb.ax.tick_params(labelsize=18)
         cb.set_label(cbar_label, rotation=270, labelpad=30, fontsize=18)
         fig_cb.savefig(
-            os.path.join(fig_dir, f"colorbar_{sig_name}.pdf"),
+            os.path.join(fig_dir, f"map_{sig_name}_polygon_all_colorbar.pdf"),
             dpi=300,
             bbox_inches="tight",
             pad_inches=0.2,
@@ -345,21 +329,14 @@ for sig_name in [
     else:
         # Add a colorbar
         sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm._A = []  # Empty array for ScalarMappable
+        sm._A = []
         cax = inset_axes(
             ax, width="2.0%", height="35%", loc="lower right", borderpad=5.0
         )
         cbar = plt.colorbar(sm, cax=cax)
         cbar.ax.tick_params(labelsize=14)
         cbar.set_label(cbar_label)
-        # sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
-        # sm._A = []  # Empty array for ScalarMappable
-        # cbar = plt.colorbar(sm, ax=ax, shrink=0.3)
-        # cbar.ax.tick_params(labelsize=18)  # Set font size
-        # cbar.set_ticks(np.linspace(vmin, vmax, 5))
-        # cbar.set_label(cbar_label, rotation=270, labelpad=30, fontsize=18)
 
-    # ax.set_title(title_label)
     ax.set_extent(conus_extent)
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -418,7 +395,7 @@ for source_name in data_sources:
         )
 
         cbar_label = "[-]"
-        out_file_name = f"map_{sig_name}_source_{source_name}.png"
+        out_file_name = f"map_{sig_name}_polygon_{source_name}.png"
 
         if "diff_RCPint_RCPvol" in sig_name:
             diagonal_colors = [
@@ -449,7 +426,7 @@ for source_name in data_sources:
             cmap=cmap,
             norm=norm,
             linewidth=0.2,
-            alpha=0.5,
+            alpha=0.4,
             vmin=vmin,
             vmax=vmax,
             zorder=99,
@@ -468,7 +445,9 @@ for source_name in data_sources:
             cb.ax.tick_params(labelsize=18)
             cb.set_label(cbar_label, rotation=270, labelpad=30, fontsize=18)
             fig_cb.savefig(
-                os.path.join(fig_dir, f"colorbar_{sig_name}_{source_name}.pdf"),
+                os.path.join(
+                    fig_dir, f"map_{sig_name}_polygon_{source_name}_colorbar.pdf"
+                ),
                 dpi=300,
                 bbox_inches="tight",
                 pad_inches=0.2,

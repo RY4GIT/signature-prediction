@@ -45,7 +45,7 @@ fig_dir = os.path.join(
     "figs_sigs_process_multiple_sources",
 )
 # Plotting config
-plot_sigs_config_path = "plot_sigs_config_selected.csv"
+plot_sigs_config_path = "plot_sigs_config.csv"
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
 # Drop Wu signatures from the plot_sigs_config
