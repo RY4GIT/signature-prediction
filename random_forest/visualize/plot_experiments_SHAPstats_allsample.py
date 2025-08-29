@@ -320,18 +320,19 @@ for process in df_group_all["Process"].unique():
 
     list_group_avg_max.append(_df_group_avg_max)
 
-# %%
+# Concatenate the dataframes
 df_group_avg_max = pd.concat(list_group_avg_max)
 
-# %%
-print(len(wspolygon))
-print(len(df_group_avg_max))
+# Concatenate the dataframes and add the polygon data
+print("Original length of wspolygon: ", len(wspolygon))
+print("Original length of df_group_avg_max: ", len(df_group_avg_max))
 df_group_avg_max_polygon = wspolygon.join(
     df_group_avg_max.set_index("gauge_id"), how="right"
 ).reset_index()
-print(len(df_group_avg_max_polygon))
+print("Length of df_group_avg_max_polygon: ", len(df_group_avg_max_polygon))
 
 df_group_avg_max_polygon.head()
+
 # %% for each process, plot the max category per location
 for process in df_group_avg_max["process"].unique():
     print("--------------------------------")
@@ -406,7 +407,8 @@ def plot_shap_in_map_max(
             # {"name": "Minneapolis", "lon": -93.2650, "lat": 44.9778},
             {"name": "Las Vegas", "lon": -115.1398, "lat": 36.1699},
             {"name": "Portland", "lon": -122.6765, "lat": 45.5152},
-            # Requested additions
+            {"name": "Seattle", "lon": -122.3321, "lat": 47.6062},
+            {"name": "Indianapolis", "lon": -86.1581, "lat": 39.7684},
             {"name": "Cleveland", "lon": -81.6944, "lat": 41.4993},
             {"name": "Knoxville", "lon": -83.9207, "lat": 35.9606},
             {"name": "Nashville", "lon": -86.7816, "lat": 36.1627},
@@ -510,7 +512,9 @@ def plot_shap_in_map_max(
     )
 
 
-# %%
+# %% ######################################################
+# Plot the "All processes" figure
+########################################################
 df_group_avg_max_process = df_group_avg_max_polygon[
     df_group_avg_max_polygon["process"] == "All processes"
 ]
@@ -538,6 +542,54 @@ plot_shap_in_map_max(
     file_type="png",
     show_cities=True,
 )
+
+
+# %% ######################################################
+# Check the impact of the area on the max category
+######################################################
+fig, axes = plt.subplots(5, 1, figsize=(4, 15))
+for i, group in enumerate(df_group_avg_max_process["Group_max"].unique()):
+    df_group_avg_max_process[df_group_avg_max_process["Group_max"] == group][
+        "area"
+    ].hist(
+        ax=axes[i],
+        color=attrs_colors[group],
+        bins=100,
+        alpha=0.5,
+        density=True,
+        label=group,
+    )
+    sns.kdeplot(
+        df_group_avg_max_process[df_group_avg_max_process["Group_max"] == group][
+            "area"
+        ],
+        ax=axes[i],
+        color=attrs_colors[group],
+        # alpha=0.5,
+        # label=group,
+    )
+    axes[i].set_xlabel("Area (km²)")
+    axes[i].set_ylabel("Count")
+    # axes[i].set_title(group)
+    axes[i].set_xlim(0, 1.0)
+    axes[i].legend()
+# plt.legend(attrs_colors.keys())
+plt.show()
+
+# %%
+# Eastern half of the US
+attrs_interest = "ELEV_MEAN_M_BASIN"
+df_interest = df_shap_with_attrs[
+    (df_shap_with_attrs["feature"] == attrs_interest)
+    & (df_shap_with_attrs["gauge_lon"] > -101.072855)
+]
+x_val = df_interest["area"]
+y_val = df_interest["phi_perc"]
+
+plt.scatter(x_val, y_val, alpha=0.5, s=10)
+plt.xlabel("Area (km²)")
+plt.ylabel(r"$\overline{{\phi/\sum|\phi|}}$" + f"of{attrs_interest}")
+plt.show()
 
 
 # %% ###################################################
