@@ -220,7 +220,7 @@ sig_pairs = {
         "sigs": ["IE_thresh_signif", "SE_thresh_signif"],
     },
     7: {
-        "Process": "Overland flow (IE vs. SE)",
+        "Process": "Overland flow type",
         "sigs": ["R_Pint_RC", "R_Pvol_RC"],
     },
     8: {
@@ -229,7 +229,7 @@ sig_pairs = {
     },
 }
 # %% Get the stats per process per category
-
+df_groups = []
 for pair in sig_pairs.values():
     print(pair["Process"])
     print(pair["sigs"])
@@ -237,7 +237,7 @@ for pair in sig_pairs.values():
     # _______________________________________________________________________
     # PREPARE THE DATA
     # Get the data for this signature
-    df_groups = []
+
     for sig_name in pair["sigs"]:
         # Get the data for this signature
         df_shap_sig = df_shap_with_attrs[
@@ -263,10 +263,26 @@ for pair in sig_pairs.values():
     # Get the average contributions from 2 signatures
     df_group_all = pd.concat(df_groups)
 
+print(df_group_all["Process"].unique())
+
 
 # %%
+
+process_list = [
+    "All processes",
+    "Baseflow",
+    "High storage capacity",
+    "Water balance losses",
+    "Seasonal variability",
+    "Overland flow",
+    "Overland flow threshold",
+    "Overland flow significance",
+    "Overland flow type",
+    "All processes",
+]
 list_group_avg_max = []
-for process in df_group_all["Process"].unique():
+for process in process_list:
+    print(process)
     # _______________________________________________________________________
     df_group_all_process = df_group_all[df_group_all["Process"] == process]
     if process == "All processes":
@@ -331,10 +347,11 @@ df_group_avg_max_polygon = wspolygon.join(
 ).reset_index()
 print("Length of df_group_avg_max_polygon: ", len(df_group_avg_max_polygon))
 
-df_group_avg_max_polygon.head()
+df_group_avg_max_polygon["process"].unique()
+
 
 # %% for each process, plot the max category per location
-for process in df_group_avg_max["process"].unique():
+for process in process_list:
     print("--------------------------------")
     df_group_avg_max_process = df_group_avg_max_polygon[
         df_group_avg_max_polygon["process"] == process
@@ -465,7 +482,11 @@ def plot_shap_in_map_max(
     else:
         # Filter out regions with less than 8 signatures considered
         # (8 baseflow & water loss signatures, and 4 overland flow signatures are the default)
-        df_filt = df[df["count"] >= 8]
+        if process == "All processes":
+            df_filt = df[df["count"] >= 8]
+        else:
+            df_filt = df.copy()
+
         df_filt.plot(
             ax=ax,
             column=varname,
@@ -513,36 +534,41 @@ def plot_shap_in_map_max(
 
 
 # %% ######################################################
-# Plot the "All processes" figure
+# Plot the "All processes" etc. figures
 ########################################################
-df_group_avg_max_process = df_group_avg_max_polygon[
-    df_group_avg_max_polygon["process"] == "All processes"
-]
+for process in df_group_avg_max_polygon["process"].unique():
+    df_group_avg_max_process = df_group_avg_max_polygon[
+        df_group_avg_max_polygon["process"] == process
+    ].copy()
 
-plot_shap_in_map_max(
-    df_group_avg_max_process,
-    process="All processes",
-    varname="count",
-    file_type="png",
-    show_cities=False,
-)
+    if process == "All processes":
+        stats = "median"
+    else:
+        stats = "mean"
 
-plot_shap_in_map_max(
-    df_group_avg_max_process,
-    process="All processes",
-    varname="max_median_phi_abs_perc",
-    file_type="png",
-    show_cities=False,
-)
+    plot_shap_in_map_max(
+        df_group_avg_max_process,
+        process=process,
+        varname="count",
+        file_type="png",
+        show_cities=False,
+    )
 
-plot_shap_in_map_max(
-    df_group_avg_max_process,
-    process="All processes",
-    varname="max_median_phi_abs_perc",
-    file_type="png",
-    show_cities=True,
-)
+    plot_shap_in_map_max(
+        df_group_avg_max_process,
+        process=process,
+        varname=f"max_{stats}_phi_abs_perc",
+        file_type="png",
+        show_cities=False,
+    )
 
+    plot_shap_in_map_max(
+        df_group_avg_max_process,
+        process=process,
+        varname=f"max_{stats}_phi_abs_perc",
+        file_type="png",
+        show_cities=True,
+    )
 
 # %% ######################################################
 # Check the impact of the area on the max category
@@ -809,75 +835,7 @@ for sig_name in sigs_RF_names_ordered:
     # Plot the max category per location
     plot_shap_in_map_max(df_group_max, sig_name, varname="max_mean_phi_abs_perc")
 
-# %% ###############################################################
-# Investigate the New Mexico outlier
-####################################################################
 
-# Get the row with the Group_max being "Topography" where the gauge_lon and gauge_lat are within the New Mexico
-gauge_id_interest = df_group_avg_max_polygon[
-    (df_group_avg_max_polygon["Group_max"] == "Human alteration")
-    & (df_group_avg_max_polygon["gauge_lon"] > -109.203680)
-    & (df_group_avg_max_polygon["gauge_lon"] < -102.986323)
-    & (df_group_avg_max_polygon["gauge_lat"] > 31.166394)
-    & (df_group_avg_max_polygon["gauge_lat"] < 37.128153)
-].index
-print(gauge_id_interest)
-# %% Get the mean phi_abs_perc for the gauge_id_interest
-# df_shap_with_attrs.merge(attrs_info, on="variable_name", how="left")
-
-# %%
-df_gauges_of_interest = df_shap_with_attrs[
-    df_shap_with_attrs["gauge_id"].isin(gauge_id_interest)
-].sort_values(by="phi_perc", ascending=False)
-df_gauges_of_interest.head()
-
-
-# %%
-check_dir = "G:/Shared drives/Signatures -- large scale/baseflow/RAraki/out/rf/output_raraki_20250826_figures/check_results"
-os.makedirs(check_dir, exist_ok=True)
-for gauge_id in gauge_id_interest:
-    for sig_name in sigs_RF_names_ordered:
-        df_plot = (
-            df_shap_with_attrs[df_shap_with_attrs["gauge_id"] == gauge_id]
-            .loc[df_shap_with_attrs["sig_name"] == sig_name]
-            .sort_values(by="phi_perc", ascending=False)
-        )
-
-        if len(df_plot) > 0:  # Only plot if there is data
-            plt.figure(figsize=(10, 6))
-
-            # Create the bar plot manually instead of using df.plot()
-            y_pos = np.arange(len(df_plot))
-            colors = [attrs_colors.get(group, "gray") for group in df_plot["Group"]]
-
-            plt.barh(y_pos, df_plot["phi_perc"], color=colors)
-            plt.yticks(y_pos, df_plot["variable_name"])
-            plt.title(f"Gauge ID: {gauge_id}, Signature: {sig_name}")
-            plt.xlabel("SHAP Value Percentage")
-
-            plt.tight_layout()
-            plt.savefig(os.path.join(check_dir, f"{gauge_id}_{sig_name}.png"))
-            plt.close()
-
-# %%
-df_shap_with_attrs["color"] = df_shap_with_attrs["Group"].map(attrs_colors)
-df_shap_with_attrs
-# %%
-
-df_group_avg_max_polygon[df_group_avg_max_polygon["gauge_id"].isin(gauge_id_interest)]
-
-# %%
-sigs_RF_names_ordered
-# %%
-df_shap_with_attrs
-# %%
-df_group_avg_max_polygon
-# %%
-# df_group_avg
-# # %%
-# df_shap_with_attrs[df_shap_with_attrs["gauge_id"] == "camels_01013500"]
-df_group_avg_max_polygon
-# %%
 # %%
 ######################################################
 # R-squares comparison by region
