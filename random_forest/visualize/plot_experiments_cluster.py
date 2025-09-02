@@ -827,7 +827,7 @@ def plot_incMSE_category_delta_vs_conus(
             dpi=300,
             bbox_inches="tight",
         )
-        plt.close(fig)
+        # plt.close(fig)
 
 
 # #####################################################
@@ -967,6 +967,311 @@ plot_incMSE_category_delta_vs_conus__sigs(
     rf_dir, user_name, output_date, output_date_Wu, cluster_dict
 )
 
+
+# %% ###################################################
+# incMSE (category delta vs CONUS-wide)
+########################################################
+
+
+def _compute_rel_importance_by_category(df_imp, sig_name):
+    df_sig = df_imp[df_imp["sig_name"] == sig_name].copy()
+    cat_sum = df_sig.groupby("Group")["%IncMSE"].sum()
+    total = cat_sum.sum()
+    if total == 0 or np.isnan(total):
+        return cat_sum * 0
+    return cat_sum / total * 100.0
+
+
+def plot_incMSE_category_delta_vs_avg(
+    rf_dir, user_name, output_date, output_date_Wu, cluster_info
+):
+    """
+    For each regional cluster (excluding CONUS-wide), create one figure with
+    subplots for all signatures. Each subplot shows category-wise delta (pp)
+    vs average across regional models (clusters 0–5), excluding "all".
+    """
+
+    # Preload data for all regional clusters (exclude "all")
+    regional_clusters = [c for c in cluster_info.keys() if c != "all"]
+    print("--------------------------------")
+    print(regional_clusters)
+    print("--------------------------------")
+    df_by_cluster = {
+        c: load_incMSE_by_cluster(
+            rf_dir, user_name, output_date, output_date_Wu, c, attrs_info
+        )
+        for c in regional_clusters
+    }
+
+    # Use the configured category list for consistent ordering across subplots
+    all_cats = list(attrs_colors.keys())[::-1]
+    bar_colors = [attrs_colors.get(cat, "lightgrey") for cat in all_cats]
+
+    # Compute baseline: mean relative importance across regional clusters for each signature
+    baseline_rel_by_sig = {}
+    for sig_name in sigs_RF_names_ordered:
+        rel_list = []
+        for c in regional_clusters:
+            rel_list.append(
+                _compute_rel_importance_by_category(df_by_cluster[c], sig_name)
+            )
+        if len(rel_list) > 0:
+            baseline_rel_by_sig[sig_name] = pd.concat(rel_list, axis=1).mean(axis=1)
+        else:
+            baseline_rel_by_sig[sig_name] = pd.Series(dtype=float)
+
+    print("--------------------------------")
+    print("--------------------------------")
+    print("-- CALCULATING DELTAS --")
+    print("--------------------------------")
+    print("--------------------------------")
+
+    # Plot per cluster
+    for cluster_num in cluster_info.keys():
+        if cluster_num == "all":
+            continue
+
+        # Pre-compute deltas for all signatures for this cluster
+        df_reg = load_incMSE_by_cluster(
+            rf_dir, user_name, output_date, output_date_Wu, cluster_num, attrs_info
+        )
+
+        deltas = {}
+        max_abs_delta = 0.0
+        for sig_name in sigs_RF_names_ordered:
+            # Get baseline relative importance
+            baseline_rel = baseline_rel_by_sig.get(sig_name, pd.Series(dtype=float))
+            print("--------------------------------")
+            print(f"Baseline for sig_name: {sig_name}")
+            print(baseline_rel)
+            print("--------------------------------")
+            # Get regional relative importance
+            reg_rel = _compute_rel_importance_by_category(df_reg, sig_name)
+            print("--------------------------------")
+            print(f"Regional {cluster_num} for sig_name: {sig_name}")
+            print(reg_rel)
+            print("--------------------------------")
+            # Compute delta
+            delta = reg_rel.reindex(all_cats, fill_value=np.nan) - baseline_rel.reindex(
+                all_cats, fill_value=np.nan
+            )
+            print("--------------------------------")
+            print(f"Delta for sig_name: {sig_name}")
+            print(delta)
+            print("--------------------------------")
+
+            # Store delta
+            deltas[sig_name] = delta
+            max_abs_delta = max(
+                max_abs_delta, float(delta.abs().max() if len(delta) else 0.0)
+            )
+
+        print("--------------------------------")
+        print("Cluster: ", cluster_num)
+        print("Delta:")
+        print(deltas)
+        print("--------------------------------")
+
+        # Figure layout
+        n_cols = 4
+        n_rows = (len(sigs_RF_names_ordered) + n_cols - 1) // n_cols
+        fig, axes = plt.subplots(
+            nrows=n_rows,
+            ncols=n_cols,
+            figsize=(4 * n_cols, 2.6 * n_rows),
+            constrained_layout=True,
+        )
+        axes = axes.flatten()
+
+        # Symmetric x-limits shared across subplots
+        x_margin = max(3.0, max_abs_delta * 0.1)
+        xlim = (-max_abs_delta - x_margin, max_abs_delta + x_margin)
+
+        for i, sig_name in enumerate(sigs_RF_names_ordered):
+            ax = axes[i]
+            delta = deltas[sig_name]
+            ax.barh(all_cats, delta.values, color=bar_colors, alpha=0.9)
+            ax.axvline(0, color="k", linestyle="--", linewidth=0.6, alpha=0.7)
+            ax.set_title(sig_name, fontsize=9, loc="left")
+            ax.set_xlim(xlim)
+            if i % n_cols != 0:
+                ax.set_yticklabels([])
+            else:
+                ax.set_ylabel("Category", fontsize=9)
+            if i // n_cols == n_rows - 1:
+                ax.set_xlabel("Delta (pp)", fontsize=9)
+
+        # Hide any unused axes
+        for j in range(i + 1, len(axes)):
+            axes[j].set_visible(False)
+
+        # cluster_name = f"{cluster_num} - {cluster_info[cluster_num]['name']}"
+        # fig.suptitle(f"Category delta vs CONUS-wide — {cluster_name}", fontsize=14)
+
+        plt.savefig(
+            os.path.join(
+                fig_dir,
+                f"incMSE_category_delta_vs_avg_cluster_{cluster_num}.{file_type}",
+            ),
+            dpi=300,
+            bbox_inches="tight",
+        )
+        # plt.close(fig)
+
+
+# #####################################################
+# incMSE (category delta vs CONUS-wide) — subplots
+# #####################################################
+plot_incMSE_category_delta_vs_avg(
+    rf_dir, user_name, output_date, output_date_Wu, cluster_info
+)
+# %%
+# ###################################################
+# incMSE (category delta vs regional model average)
+########################################################
+
+
+def plot_incMSE_category_delta_vs_avg__sigs(
+    rf_dir, user_name, output_date, output_date_Wu, cluster_info
+):
+    """
+    For each regional cluster (excluding CONUS-wide), create one figure with
+    subplots for all signatures. Each subplot shows category-wise delta (pp)
+    vs average across regional models (clusters 0–5), excluding "all".
+    """
+
+    # Preload data for all regional clusters (exclude "all")
+    regional_clusters = [c for c in cluster_info.keys() if c != "all"]
+    df_by_cluster = {
+        c: load_incMSE_by_cluster(
+            rf_dir, user_name, output_date, output_date_Wu, c, attrs_info
+        )
+        for c in regional_clusters
+    }
+
+    # Use the configured category list for consistent ordering across subplots
+    all_cats = list(attrs_colors.keys())[::-1]
+    bar_colors = [attrs_colors.get(cat, "lightgrey") for cat in all_cats]
+
+    # Compute baseline: mean relative importance across regional clusters for each signature
+    baseline_rel_by_sig = {}
+    for sig_name in sigs_RF_names_ordered:
+        rel_list = []
+        for c in regional_clusters:
+            rel_list.append(
+                _compute_rel_importance_by_category(df_by_cluster[c], sig_name)
+            )
+        if len(rel_list) > 0:
+            baseline_rel_by_sig[sig_name] = pd.concat(rel_list, axis=1).mean(axis=1)
+        else:
+            baseline_rel_by_sig[sig_name] = pd.Series(dtype=float)
+
+    list_deltas = []
+    for cluster_num in cluster_info.keys():
+        if cluster_num == "all":
+            continue
+
+        # Pre-compute deltas for all signatures for this cluster
+        df_reg = load_incMSE_by_cluster(
+            rf_dir, user_name, output_date, output_date_Wu, cluster_num, attrs_info
+        )
+
+        deltas = pd.DataFrame()
+
+        for sig_name in sigs_RF_names_ordered:
+            baseline_rel = baseline_rel_by_sig.get(sig_name, pd.Series(dtype=float))
+            reg_rel = _compute_rel_importance_by_category(df_reg, sig_name)
+            delta = reg_rel.reindex(all_cats, fill_value=np.nan) - baseline_rel.reindex(
+                all_cats, fill_value=np.nan
+            )
+
+            delta_df = pd.DataFrame(
+                {
+                    "delta": delta.values,
+                    "cluster_num": cluster_num,
+                    "sig_name": sig_name,
+                    "category": all_cats,
+                }
+            )
+            list_deltas.append(
+                delta_df
+            )  # or list_deltas.append(delta_df.copy(deep=True))
+            print("--------------------------------")
+            print(sig_name)
+            print(delta_df)
+            print("--------------------------------")
+
+    df_deltas = pd.concat(list_deltas)
+    df_deltas.to_csv(os.path.join(fig_dir, "deltas.csv"), index=False)
+
+    # Figure layout
+    n_cols = 3
+    n_rows = 2
+    fig, axes = plt.subplots(
+        nrows=n_rows,
+        ncols=n_cols,
+        figsize=(4 * n_cols, 3.2 * n_rows),
+        constrained_layout=True,
+    )
+    axes = axes.flatten()
+    plt.rcParams.update({"font.size": 12})
+
+    for i, cluster_num in enumerate(cluster_info.keys()):
+        if cluster_num == "all":
+            continue
+
+        # Symmetric x-limits shared across subplots
+        # x_margin = max(3.0, 12.0)
+        xlim = (-7.0, 7.0)
+
+        df_cluster = df_deltas[df_deltas["cluster_num"] == cluster_num].copy()
+        deltas_mean_across_sigs = df_cluster.groupby("category")["delta"].mean()
+        deltas_mean_across_sigs = deltas_mean_across_sigs.reindex(all_cats)
+
+        ax = axes[i]
+        ax.barh(
+            deltas_mean_across_sigs.index,
+            deltas_mean_across_sigs.values,
+            color=bar_colors,
+            alpha=0.9,
+            edgecolor="dimgrey",
+        )
+        ax.axvline(0, color="k", linestyle="--", linewidth=0.6, alpha=0.7)
+        ax.set_title(cluster_dict[cluster_num], fontsize=13, loc="left", style="italic")
+        ax.set_xlim(xlim)
+        ax.set_xlabel(r"Mean $\Delta RI_{k}$ (%)", fontsize=12)
+        ax.tick_params(labelsize=12)
+
+    # fig.suptitle(
+    #     # f"Changes in variable importance in regional experiments, compared to CONUS-wide experiment",
+    #     fontsize=14,
+    # )
+
+    plt.savefig(
+        os.path.join(
+            fig_dir,
+            f"incMSE_category_delta_vs_avg_cluster_mean_across_sigs.{file_type}",
+        ),
+        dpi=300,
+        bbox_inches="tight",
+    )
+    # plt.close(fig)
+
+
+# #####################################################
+# incMSE (category delta vs regional model average) — subplots
+# #####################################################
+cluster_dict = {
+    3: "Pacific Northwest",
+    0: "Midwest",
+    5: "Northeast",
+    4: "Western Coast and Deserts",
+    2: "Mountain West",
+    1: "South",
+}
+plot_incMSE_category_delta_vs_avg__sigs(
+    rf_dir, user_name, output_date, output_date_Wu, cluster_dict
+)
 
 # %%
 cluster_info.keys()
