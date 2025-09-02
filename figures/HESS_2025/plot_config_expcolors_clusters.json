@@ -1,0 +1,13 @@
+{
+    "all": {
+        "name": "CONUS-wide",
+        "color": "lightgrey"
+    },
+    "0": {"name": "Midwest", "color": "#a6d854"},
+    "1": {"name": "South", "color": "#66c2a5"},
+    "2": {"name": "Mountain West", "color": "#e78ac3"},
+    "3": {"name": "Pacific Northwest", "color": "#8da0cb"},
+    "4": {"name": "Western Coast and Deserts", "color": "#ffd92f"},
+    "5": {"name": "Northeast", "color": "#fc8d62"},
+    "avg": {"name": "Average", "color": "lightgrey"}
+}

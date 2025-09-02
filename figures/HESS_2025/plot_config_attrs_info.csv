@@ -1,0 +1,61 @@
+﻿Group,Description,variable_name,unit
+Topography,"Elevation, average",ele_mt_sav,m above sea level
+Topography,Catchment drainage area,area,km2
+Topography,Stream gradient ,sgr_dk_sav,dm/km
+Topography,,SLOPE_PCT,
+Topography,,ELEV_MEAN_M_BASIN,
+Topography,,DRAIN_SQKM,
+Topography,,beta_ave,
+Topography,,ASPECT_NORTHNESS,
+Topography,,ASPECT_EASTNESS,
+Topography,,SLOPE_DEG_x10,
+Land Cover,Forest cover extent ,for_pc_sse,% cover
+Land Cover,Cropland extent ,crp_pc_sse,% cover
+Land Cover,Pasture extent ,pst_pc_sse,% cover
+Land Cover,Irrigated area extent (equipped) ,ire_pc_sse,% cover
+Land Cover,Permafrost extent ,prm_pc_sse,% cover
+Land Cover,Protected area extent ,pac_pc_sse,% cover
+Land Cover,Isolated wetland area fraction (Annie's),isowet_areafrac,-
+Land Cover,,FORESTNLCD06,
+Land Cover,,PCT_IRRIG_AG,
+Land Cover,,PASTURENLCD06,
+Land Cover,,DEVNLCD06,
+Land Cover,,CROPSNLCD06,
+Land Cover,,PADCAT1_AND_2,
+Soils & Geology,Clay fraction in soil ,cly_pc_sav,%
+Soils & Geology,Silt fraction in soil ,slt_pc_sav,%
+Soils & Geology,Organic carbon content in soil ,soc_th_sav,tonnes/hectare
+Soils & Geology,Karst area extent ,kar_pc_sse,% cover
+Soils & Geology,Weighted average of geologic age (Annie's),geol_weighted_ave_age_ma,ma
+Soils & Geology,,SILTAVE,
+Soils & Geology,,CLAYAVE,
+Soils & Geology,,OMAVE,
+Soils & Geology,,soc_th_sav,
+Human alteration,Population density ,ppd_pk_sav,people per km²
+Human alteration,Gross domestic product ,gdp_ud_sav,USD ($)
+Human alteration,Human development index ,hdi_ix_sav,index value (x1000)
+Human alteration,,PDEN_2000_BLOCK,
+Human alteration,,FRAGUN_BASIN,
+Climate,,SNOW_FRAC_PRECIP,
+Climate,Mean daily precipitation,p_mean,mm/day
+Climate,Mean daily potential evaporation,pet_mean,mm/day
+Climate,"Aridity index, ratio of mean PET and mean precipitation",aridity,-
+Climate,Fraction of precipitation falling as snow,frac_snow,-
+Climate,"Moisture index seasonality in range [0, 2], where 0 indicates no changes in the water/energy budget throughout the year and 2 indicates a change from fully arid to fully humid",seasonality,-
+Climate,"Frequency of high precipitation days, where precipitation ≥5 times mean daily precipitation",high_prec_freq,-
+Climate,"Frequency of low precipitation days, where precipitation <1 mm/day",low_prec_freq,-
+Climate,Average duration of low precipitation events (number of consecutive days where precipitation <1 mm/day),low_prec_dur,days
+Climate,,PET,
+Climate,,peakSWEdivP,
+Climate,,PETdivP,
+Climate,,input_seasonality,
+Climate,,P_mm_day,
+Climate,,PET_mm_day,
+Climate,,input_PET_synchrony,
+Climate,,ARIDITY_GAGES2,
+Climate,,p99_pave,
+Climate,,SNOWICENLCD06,
+Climate,,PPTAVG_BASIN,
+Climate,,SNOW_PCT_PRECIP,
+Climate,,PRECIP_SEAS_IND,
+Climate,,seasonality_FAO_PM,
