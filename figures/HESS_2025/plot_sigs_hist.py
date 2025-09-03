@@ -224,34 +224,96 @@ for sigs_name in plot_sigs_config["column_name"]:
 
 
 def plot_sig_hist(df, sig_name, fig_dir=None):
-    fig = plt.figure(figsize=(3, 2))
+    fig = plt.figure(figsize=(3, 1.5))  # Made figure taller to accommodate colorbar
+    fontsize = 14
     ax = fig.add_subplot(1, 1, 1, facecolor="white")
 
     x_data = df[sig_name].dropna()
     x_data = x_data[~np.isinf(x_data)]
 
     # Plot KDE instead of histogram
-    x_data.plot.kde(ax=ax, color="tab:blue")
+    x_data.plot.kde(ax=ax, color="tab:blue", linewidth=3, label=None)
 
     # Add x line at 0.25, 0.5, 0.75
-    ax.axvline(x_data.quantile(0.25), color="tab:blue", linestyle="--", alpha=0.5)
-    ax.axvline(x_data.quantile(0.5), color="tab:blue", linestyle="--", alpha=0.5)
-    ax.axvline(x_data.quantile(0.75), color="tab:blue", linestyle="--", alpha=0.5)
+    ax.axvline(
+        x_data.quantile(0.25), color="tab:blue", linestyle="--", alpha=0.3, linewidth=2
+    )
+    ax.axvline(
+        x_data.quantile(0.5), color="tab:blue", linestyle="--", alpha=0.3, linewidth=2
+    )
+    ax.axvline(
+        x_data.quantile(0.75),
+        color="tab:blue",
+        linestyle="--",
+        alpha=0.3,
+        label="Quartiles",
+        linewidth=2,
+    )
 
+    # Get x limits from config
+    lower_lim = plot_sigs_config.loc[plot_sigs_config["column_name"] == sig_name][
+        "lower_lim"
+    ].values[0]
+    upper_lim = plot_sigs_config.loc[plot_sigs_config["column_name"] == sig_name][
+        "upper_lim"
+    ].values[0]
     ax.set_xlim(x_data.quantile(0.01), x_data.quantile(0.99))
+    if sig_name == "avg_IE_SE_signif":
+        ax.set_xlim(0, 0.5)
+
     unit_label = plot_sigs_config.loc[plot_sigs_config["column_name"] == sig_name][
         "unit"
     ].values[0]
-    ax.set_xlabel(f"{sig_name} {unit_label}")
-    ax.set_ylabel("Density")
+    # ax.set_xlabel(
+    # f"{sig_name} {unit_label}", fontsize=fontsize, labelpad=10
+    # )  # Increased labelpad from default
+    ax.set_ylabel(None)
+    ax.set_yticklabels([])
+    ax.set_yticks([])
+
+    # Remove spines except the bottom
+    for spine in ax.spines.values():
+        if spine.get_linewidth() > 0:
+            spine.set_visible(False)
+    ax.spines["bottom"].set_visible(True)
+
+    # Add colorbar
+    cmap = plt.cm.Blues_r if "_signif" in sig_name else plt.cm.Blues
+    norm = plt.Normalize(lower_lim, upper_lim)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+
+    # Adjust plot position to make room for colorbar
+    ax.set_position([0.15, 0.25, 0.8, 0.7])  # [left, bottom, width, height]
+
+    # Place colorbar below plot
+    cbar_ax = fig.add_axes(
+        [0.15, 0.1, 0.8, 0.15]
+    )  # [left, bottom, width, height] - increased height from 0.03 to 0.05
+    cbar = plt.colorbar(sm, cax=cbar_ax, orientation="horizontal")
+    # Set the background of the colorbar to the max color of the colormap
+    cbar.ax.set_facecolor(cmap(1.0))
+    cbar.set_label(f"{sig_name} {unit_label}", fontsize=fontsize, labelpad=10)
+
+    # Sync colorbar and x-axis ticks
+    xticks = ax.get_xticks()
+    # increase font size of the cba x ticks
+    cbar.ax.tick_params(labelsize=fontsize)
+    ax.set_xticks(xticks)
+    ax.set_xticklabels([])  # Hide x-axis tick labels
+    cbar.set_ticks(xticks)
+    ax.tick_params(labelsize=fontsize)
 
     # Output
     fig_sigs_dir = os.path.join(fig_dir, "fig_sigs")
     if not os.path.exists(fig_sigs_dir):
         os.makedirs(fig_sigs_dir)
 
-    plt.tight_layout()
-    plt.savefig(os.path.join(fig_sigs_dir, f"hist_{sig_name}.png"), dpi=300)
+    plt.savefig(
+        os.path.join(fig_sigs_dir, f"hist_{sig_name}.png"),
+        dpi=300,
+        bbox_inches="tight",
+        pad_inches=0.1,
+    )
 
 
 # %% For all signatures except Wu

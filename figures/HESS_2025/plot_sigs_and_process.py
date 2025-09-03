@@ -375,15 +375,15 @@ def plot_sig_map(
             zorder=99,
         )
 
-        # Add a colorbar
-        sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm._A = []  # Empty array for ScalarMappable
-        cax = inset_axes(
-            ax, width="2.0%", height="35%", loc="lower right", borderpad=7.0
-        )
-        cbar = plt.colorbar(sm, cax=cax)
-        cbar.ax.tick_params(labelsize=18)
-        cbar.set_label(cbar_label, fontsize=18)
+        # # Add a colorbar - repalce this as plot_sigs_hist
+        # sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+        # sm._A = []  # Empty array for ScalarMappable
+        # cax = inset_axes(
+        #     ax, width="2.0%", height="35%", loc="lower right", borderpad=7.0
+        # )
+        # cbar = plt.colorbar(sm, cax=cax)
+        # cbar.ax.tick_params(labelsize=18)
+        # cbar.set_label(cbar_label, fontsize=18)
 
     ax.set_extent(conus_extent)
     for spine in ax.spines.values():
