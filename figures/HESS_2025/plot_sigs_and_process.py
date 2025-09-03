@@ -39,13 +39,17 @@ out_dir_gages2 = os.path.join(gdrive_dir, "out", "signatures", "gages2_20250608"
 rf_out_dir = os.path.join(gdrive_dir, "out", "rf", "output_raraki_20250826_cluster_all")
 fig_dir = os.path.join(
     gdrive_dir,
-    "out",
-    "rf",
-    "output_raraki_20250826_figures",
-    "figs_sigs_process_multiple_sources",
+    "figs",
 )
+
+# Make Figure directory
+if not os.path.exists(fig_dir):
+    os.makedirs(fig_dir)
+
 # Plotting config
-plot_sigs_config_path = "plot_sigs_config.csv"
+plot_sigs_config_path = (
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS_2025\plot_sigs_config.csv"
+)
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
 # Drop Wu signatures from the plot_sigs_config
@@ -55,23 +59,9 @@ plot_sigs_config = plot_sigs_config[
     )
 ]
 
-# Make Figure directory
-if not os.path.exists(fig_dir):
-    os.makedirs(fig_dir)
-
 # Conus extent
 conus_extent = [-125.5, -66.95, 24.396308, 47.5]
 
-# %%
-# ____________________________________________________________________________________
-# Load overlay layer for plotting
-print("Loading overlay layer...")
-# Ecoregion overlay
-_ecoregion_overlay = gpd.read_file(
-    os.path.join(gdrive_dir, "data", "EcoRegions", "NA_CEC_Eco_Level2.shp")
-)
-_ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
-ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
 # %%
 # ____________________________________________________________________________________
 # Load data
@@ -216,9 +206,6 @@ df_sigs.to_csv(os.path.join(rf_out_dir, "sigs_predicted_observed_joined.csv"))
 # Join the watershed polygons to the signatures data
 df_sigs = wspolygon.join(df_sigs, how="right")
 
-# %% Check gages2_ basins are joined correctly
-df_sigs[df_sigs["source"] == "GAGES2_obs"].head()
-df_sigs.head()
 
 # %%
 #######################################################
@@ -250,10 +237,10 @@ mask_cols = [
     "SE_thresh_signif",
     "Storage_thresh_signif",
 ]
-# Yes, this line replaces values with NaN for any rows where low_snow is False
+df_sigs[mask_cols] = df_sigs[mask_cols].mask(~low_snow)
+# This line replaces values with NaN for any rows where low_snow is False
 # low_snow is True for gauges with snow < threshold, False otherwise
 # So ~low_snow is True for gauges with high snow, which get masked to NaN
-df_sigs[mask_cols] = df_sigs[mask_cols].mask(~low_snow)
 
 print(
     f"{df_sigs['IE_thresh'].isna().sum()} gauges ({df_sigs['IE_thresh'].isna().sum() / len(df_sigs) * 100:.1f}%) have snow data above {frac_snow_thresh * 100}%"
@@ -282,108 +269,21 @@ for sigs_name in plot_sigs_config["column_name"]:
     else:
         df_sigs[sigs_name + "_perc"] = column_data.rank(pct=True) * 100
 
-# %%
-#######################################################
-# Plot the source
-#######################################################
-# Define source colors
-source_colors = {
-    "Caravan_obs": {"color": "lightgrey", "label": "Caravan (Observed)", "alpha": 0.4},
-    "GAGES2_obs": {"color": "tab:blue", "label": "GAGES-II (Observed)", "alpha": 0.7},
-    "RF_overlap_baddata": {
-        "color": "tab:red",
-        "label": "RF (Caravan+GAGES-II\noverlap)",
-        "alpha": 0.7,
-    },
-    "RF_hys_only": {"color": "tab:orange", "label": "RF (Caravan only)", "alpha": 0.7},
-    "RF_gg2_only": {"color": "#F0E442", "label": "RF (GAGES-II only)", "alpha": 0.7},
-}
 
-
-def plot_source(df, overlay_layer):
-    # Get plot config
-
-    # Set up the map
-    fig = plt.figure(figsize=(12, 6))
-    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
-
-    # Add a legend
-    overlay_layer.plot(
-        ax=ax,
-        edgecolor="grey",
-        facecolor="none",
-        linewidth=0.5,
-        aspect=1.1,
-        zorder=100,
-    )
-
-    land = cfeature.NaturalEarthFeature(
-        "physical",
-        "land",
-        "50m",
-        edgecolor="face",
-        facecolor="darkgrey",  # Set land color to light gray
-    )
-    ax.add_feature(land)
-
-    # Add map features
-    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
-
-    # Create legend patches
-    legend_patches = []
-    for source in [
-        "RF_gg2_only",
-        "RF_hys_only",
-        "RF_overlap_baddata",
-        "GAGES2_obs",
-        "Caravan_obs",
-    ]:
-        # Create a patch for each source
-        patch = mpl.patches.Patch(
-            facecolor=source_colors[source]["color"],
-            edgecolor="black",
-            alpha=1.0,
-            label=source_colors[source]["label"],
-        )
-        legend_patches.append(patch)
-
-        # Plot the data
-        df_source = df[df["source"] == source].copy()
-        df_source.sort_values("area", ascending=False, inplace=True)
-        df_source.plot(
-            ax=ax,
-            color=source_colors[source]["color"],
-            alpha=source_colors[source]["alpha"],
-            zorder=99,
-        )
-
-    ax.set_extent(conus_extent)
-    # ax.set_title("Sources")
-
-    # Add custom legend
-    ax.legend(
-        title="Sources",
-        handles=legend_patches[::-1],
-        loc="lower right",
-        bbox_to_anchor=(1.0, 0.0),
-        ncol=1,
-        fontsize=10,
-    )
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-
-    plt.tight_layout(pad=1.5)
-    plt.tight_layout()
-    plt.savefig(os.path.join(fig_dir, "source_map.png"), dpi=300)
-
-
-plot_source(df_sigs, ecoregion_overlay)
 # %% ######################
-# FUNCTIONS
+# PLOTTING FUNCTIONS
+##########################
+
+# %% ######################
+#
+#  Plot signature value map
+#
 ##########################
 
 
-def plot_sig_map(df, sig_name, stats="normal", plot_mode="scatter", source=None):
+def plot_sig_map(
+    df, sig_name, stats="normal", plot_mode="scatter", source=None, fig_dir=None
+):
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
@@ -479,38 +379,25 @@ def plot_sig_map(df, sig_name, stats="normal", plot_mode="scatter", source=None)
         sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm._A = []  # Empty array for ScalarMappable
         cax = inset_axes(
-            ax, width="2.0%", height="35%", loc="lower right", borderpad=5.0
+            ax, width="2.0%", height="35%", loc="lower right", borderpad=7.0
         )
         cbar = plt.colorbar(sm, cax=cax)
         cbar.ax.tick_params(labelsize=18)
         cbar.set_label(cbar_label, fontsize=18)
 
-    ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+    ax.set_extent(conus_extent)
     for spine in ax.spines.values():
         spine.set_visible(False)
     # ax.set_title(title_label)
 
-    plt.tight_layout(pad=1.5)
+    # Output
+    fig_sigs_dir = os.path.join(fig_dir, "fig_sigs")
+    if not os.path.exists(fig_sigs_dir):
+        os.makedirs(fig_sigs_dir)
+
     plt.tight_layout()
-    plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
+    plt.savefig(os.path.join(fig_sigs_dir, out_file_name), dpi=300)
 
-
-# %% ######################
-#
-#  Plot signature value map
-#
-##########################
-
-# _____________________________________________________________________________
-# Plot signature value map
-# # For testing
-plot_sig_map(
-    df_sigs,
-    "BFI",
-    stats="normal",
-    plot_mode="polygon",
-    source="all",
-)
 
 # %% For all signatures except Wu
 for sigs_name in tqdm(
@@ -522,35 +409,13 @@ for sigs_name in tqdm(
             df_sigs,
             sigs_name,
             stats="normal",
-            plot_mode="scatter",
-            source="all",
-        )
-        plot_sig_map(
-            df_sigs,
-            sigs_name,
-            stats="normal",
             plot_mode="polygon",
             source="all",
+            fig_dir=fig_dir,
         )
     except Exception as e:
         print(f"{sigs_name}: {e}")
 
-# %% Plot the map by source
-for source in df_sigs["source"].unique():
-    for sigs_name in tqdm(
-        plot_sigs_config.column_name,
-        desc=f"Plotting maps of signature values for {source}",
-        leave=False,
-    ):
-        # Surpress the warnings.warn(
-        warnings.filterwarnings("ignore")
-        plot_sig_map(
-            df_sigs[df_sigs["source"] == source],
-            sigs_name,
-            stats="normal",
-            plot_mode="polygon",
-            source=source,
-        )
 # %%
 ########################################################################################
 #
@@ -558,6 +423,8 @@ for source in df_sigs["source"].unique():
 # Color map and the idea from Datawim: https://www.datawim.com/post/creating-professional-bivariate-maps-in-r/
 #
 ########################################################################################
+# %%
+# %%
 
 
 ########################################################################################
@@ -647,18 +514,21 @@ def plot_bivariate_map(df, sig1, sig2, fig_dir, plot_mode="polygon"):
             zorder=99,
         )
 
-    # title_label = f"Bivariate map of {sig1.label} vs. {sig2.label}"
-    # ax.set_title(title_label)
-    # Set extent to CONUS
-    ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
+    ax.set_extent(conus_extent)
     for spine in ax.spines.values():
         spine.set_visible(False)
-    # ax.outline_patch.set_visible(False)
+
+    # Output directory
+    fig_bivar_dir = os.path.join(fig_dir, "fig_processes")
+    if not os.path.exists(fig_bivar_dir):
+        os.makedirs(fig_bivar_dir)
+
     # Display the plot
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            fig_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_{plot_mode}.png"
+            fig_bivar_dir,
+            f"bivar_{sig1.column_name}_{sig2.column_name}_{plot_mode}.png",
         ),
         dpi=300,
     )
@@ -696,10 +566,17 @@ def create_bivariate_legend(colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
     ax.spines["bottom"].set_visible(False)
     ax.grid(False)
 
+    # Output directory
+    fig_bivar_dir = os.path.join(fig_dir, "fig_bivar")
+    if not os.path.exists(fig_bivar_dir):
+        os.makedirs(fig_bivar_dir)
+
     # Display the plot
     plt.tight_layout()
     plt.savefig(
-        os.path.join(fig_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_legend.pdf")
+        os.path.join(
+            fig_bivar_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_legend.pdf"
+        )
     )
 
 
@@ -749,6 +626,10 @@ dir_label_rev = ["high", "", "", "low"]
 # ______________________________________________________
 
 # %% ########################################################################################
+#
+# Plot the bivariate map of the processes
+#
+########################################################################################
 
 processes = [
     "Baseflow",
@@ -869,7 +750,6 @@ for process_name in tqdm(
 
     # Plot the bivariate map
     plot_bivariate_map(df_sigs_clean, sig1, sig2, fig_dir, plot_mode="polygon")
-    plot_bivariate_map(df_sigs_clean, sig1, sig2, fig_dir, plot_mode="scatter")
 
     # Create the legend
     # Define axis labels and tick labels
@@ -881,9 +761,14 @@ for process_name in tqdm(
     create_bivariate_legend(patch_colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
 
 
-# %%
+# %% ##################################
+#
 # Plot the process dominance map
-def plot_process_dominance_map():
+#
+##################################
+
+
+def plot_process_dominance_map(df_sigs, plot_sigs_config, fig_dir):
     """
     Create a map showing only 1-1 class (high in both variables) watersheds for
     Baseflow and Overland Flow processes with different colors.
@@ -1108,10 +993,17 @@ def plot_process_dominance_map():
     for spine in ax.spines.values():
         spine.set_visible(False)
 
+    # Output directory
+    fig_dominant_process_dir = os.path.join(fig_dir, "fig_dominant_process")
+    if not os.path.exists(fig_dominant_process_dir):
+        os.makedirs(fig_dominant_process_dir)
+
     # Display the map
     plt.tight_layout()
     plt.savefig(
-        os.path.join(fig_dir, "dominant_process_map.png"), dpi=300, bbox_inches="tight"
+        os.path.join(fig_dominant_process_dir, "fig_dominant_process.png"),
+        dpi=300,
+        bbox_inches="tight",
     )
 
     # Also create a summary stats
@@ -1122,6 +1014,7 @@ def plot_process_dominance_map():
 
 
 # Run the function
-plot_process_dominance_map()
+print("Plotting the process dominance map...")
+plot_process_dominance_map(df_sigs, plot_sigs_config, fig_dir)
 
-# %%
+print("All plots completed. Figures saved in ", fig_dir)
