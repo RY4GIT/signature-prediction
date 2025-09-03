@@ -567,15 +567,15 @@ def create_bivariate_legend(colors, x_label, y_label, x_ticks, y_ticks, fig_dir)
     ax.grid(False)
 
     # Output directory
-    fig_bivar_dir = os.path.join(fig_dir, "fig_bivar")
-    if not os.path.exists(fig_bivar_dir):
-        os.makedirs(fig_bivar_dir)
+    fig_processes_dir = os.path.join(fig_dir, "fig_processes")
+    if not os.path.exists(fig_processes_dir):
+        os.makedirs(fig_processes_dir)
 
     # Display the plot
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            fig_bivar_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_legend.pdf"
+            fig_processes_dir, f"bivar_{sig1.column_name}_{sig2.column_name}_legend.png"
         )
     )
 

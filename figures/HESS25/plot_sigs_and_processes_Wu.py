@@ -21,11 +21,14 @@ rf_dir = os.path.join(cloud_dir, "out", "rf", "output_raraki_20250827_cluster_al
 local_dir = r"D:\data"
 fig_dir = os.path.join(
     cloud_dir,
-    "out",
-    "rf",
-    "output_raraki_20250826_figures",
-    "figs_sigs_process_multiple_sources",
+    "figs",
 )
+
+# Plotting config
+plot_sigs_config_path = (
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\plot_sigs_config.csv"
+)
+plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
 conus_extent = [-125.5, -66.95, 24.396308, 47.5]
 
@@ -239,12 +242,17 @@ if "data_name" in sigs_filt.columns:
 # Plot signatures
 ############################################
 
-for sig_name in [
-    "R_Pint_RC",
-    "R_Pvol_RC",
-    "diff_RCPint_RCPvol_masked",
-    "diff_RCPint_RCPvol",
-]:
+for sig_name in ["R_Pint_RC", "R_Pvol_RC", "diff_RCPint_RCPvol_masked"]:
+    print(f"Plotting {sig_name}...")
+
+    # Set output directory
+    if sig_name == "diff_RCPint_RCPvol_masked":
+        fig_out_dir = os.path.join(fig_dir, "fig_processes")
+        os.makedirs(fig_out_dir, exist_ok=True)
+    else:
+        fig_out_dir = os.path.join(fig_dir, "fig_sigs")
+        os.makedirs(fig_out_dir, exist_ok=True)
+
     # Set up the map
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
@@ -266,7 +274,7 @@ for sig_name in [
     )
 
     c_data = sigs[sig_name]
-    cbar_label = "[-]"
+    cbar_label = r"RC_Pint - RC_Pvol [-]"
     out_file_name = f"map_{sig_name}_polygon_all.png"
 
     if "diff_RCPint_RCPvol" in sig_name:
@@ -286,28 +294,28 @@ for sig_name in [
         vmax = 0.1
     else:
         cmap = "viridis"
-        vmin = -0.5
-        vmax = 1
+        vmin = -0.2
+        vmax = 0.8
 
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
 
     # Sort by area in descending order so smaller polygons are plotted last
-    sigs_filt.sort_values(by="area", ascending=False, inplace=True)
+    sigs_filt_sorted = sigs_filt.sort_values(by="area", ascending=False)
 
     # Plot the signature data
-    sigs_filt.plot(
+    sigs_filt_sorted.plot(
         ax=ax,
         column=sig_name,
         cmap=cmap,
         norm=norm,
         linewidth=0.2,
-        alpha=0.4,
+        alpha=0.5,
         vmin=vmin,
         vmax=vmax,
         zorder=99,
     )
 
-    # Add a colorbar
+    # Add a colorbar and save to a separate file
     if "diff_RCPint_RCPvol" in sig_name:
         # Save colorbar to a separate file (no colorbar on the map)
         sm_cb = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
@@ -320,156 +328,122 @@ for sig_name in [
         cb.ax.tick_params(labelsize=18)
         cb.set_label(cbar_label, rotation=270, labelpad=30, fontsize=18)
         fig_cb.savefig(
-            os.path.join(fig_dir, f"map_{sig_name}_polygon_all_colorbar.pdf"),
+            os.path.join(fig_out_dir, f"map_{sig_name}_polygon_all_colorbar.pdf"),
             dpi=300,
             bbox_inches="tight",
             pad_inches=0.2,
         )
         plt.close(fig_cb)
     else:
-        # Add a colorbar
-        sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm._A = []
-        cax = inset_axes(
-            ax, width="2.0%", height="35%", loc="lower right", borderpad=5.0
-        )
-        cbar = plt.colorbar(sm, cax=cax)
-        cbar.ax.tick_params(labelsize=14)
-        cbar.set_label(cbar_label)
+        None
+        # # Add a colorbar and save to a separate file
+        # sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+        # sm._A = []
+        # cax = inset_axes(
+        #     ax, width="2.0%", height="35%", loc="lower right", borderpad=5.0
+        # )
+        # cbar = plt.colorbar(sm, cax=cax)
+        # cbar.ax.tick_params(labelsize=14)
+        # cbar.set_label(cbar_label)
 
     ax.set_extent(conus_extent)
     for spine in ax.spines.values():
         spine.set_visible(False)
 
     plt.tight_layout(pad=1.5)
-    plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
+    plt.savefig(os.path.join(fig_out_dir, out_file_name), dpi=300)
 
-
-# %% Plot by data_name
-print("Plotting signatures by data source ...")
-
-# Identify available data sources
-data_sources = (
-    sigs_filt["data_name"].dropna().unique().tolist()
-    if "data_name" in sigs_filt.columns
-    else []
-)
-print(f"Available data sources: {data_sources}")
-for source_name in data_sources:
-    # Subset to one source and drop rows without geometry
-    sigs_src = sigs_filt[
-        (sigs_filt["data_name"] == source_name) & (sigs_filt.geometry.notna())
-    ].copy()
-    if sigs_src.empty:
-        continue
-
-    # Ensure per-source layer order is available (mostly redundant but safe)
-    if "data_name" in sigs_src.columns:
-        sigs_src["layer_order"] = sigs_src["data_name"].map(source_order_map).fillna(-1)
-        sigs_src = sigs_src.sort_values(by=["layer_order"])  # bottom -> top
-
-    for sig_name in [
-        "R_Pint_RC",
-        "R_Pvol_RC",
-        "diff_RCPint_RCPvol_masked",
-        "diff_RCPint_RCPvol",
-    ]:
-        # Set up the map
-        fig = plt.figure(figsize=(12, 8))
-        ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
-
-        # Add the BORDERS feature first
-        ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
-
-        # Add the land feature with edgecolor set to black
-        land = cfeature.NaturalEarthFeature(
-            "physical",
-            "land",
-            "50m",
-        )
-        ax.add_feature(
-            land,
-            facecolor="#F4F5FA",
-            edgecolor="black",
-            linewidth=1.0,
-        )
-
-        cbar_label = "[-]"
-        out_file_name = f"map_{sig_name}_polygon_{source_name}.png"
-
-        if "diff_RCPint_RCPvol" in sig_name:
-            diagonal_colors = [
-                "#159DD0",
-                "#aeb5b1",
-                "#DD6A29",
-            ]
-
-            # Create the colormap
-            diag_cmap = LinearSegmentedColormap.from_list(
-                "custom_diag_gradient", diagonal_colors
-            )
-
-            cmap = diag_cmap
-            vmin = -0.1
-            vmax = 0.1
-        else:
-            cmap = "viridis"
-            vmin = -0.5
-            vmax = 1
-
-        norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-
-        # Plot the signature data
-        sigs_src.plot(
-            ax=ax,
-            column=sig_name,
-            cmap=cmap,
-            norm=norm,
-            linewidth=0.2,
-            alpha=0.4,
-            vmin=vmin,
-            vmax=vmax,
-            zorder=99,
-        )
-
-        # Add a colorbar
-        if "diff_RCPint_RCPvol" in sig_name:
-            # Save colorbar to a separate file (no colorbar on the map)
-            sm_cb = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
-            sm_cb.set_array([])
-            fig_cb = plt.figure(figsize=(2, 3), constrained_layout=True)
-            ax_cb = fig_cb.add_subplot(111)
-            ax_cb.set_axis_off()
-            cb = fig_cb.colorbar(sm_cb, ax=ax_cb, orientation="vertical")
-            cb.set_ticks(np.linspace(vmin, vmax, 5))
-            cb.ax.tick_params(labelsize=18)
-            cb.set_label(cbar_label, rotation=270, labelpad=30, fontsize=18)
-            fig_cb.savefig(
-                os.path.join(
-                    fig_dir, f"map_{sig_name}_polygon_{source_name}_colorbar.pdf"
-                ),
-                dpi=300,
-                bbox_inches="tight",
-                pad_inches=0.2,
-            )
-            plt.close(fig_cb)
-        else:
-            sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
-            sm._A = []
-            cbar = plt.colorbar(sm, ax=ax, shrink=0.3)
-            cbar.ax.tick_params(labelsize=18)
-            cbar.set_ticks(np.linspace(vmin, vmax, 5))
-            cbar.set_label(cbar_label, rotation=270, labelpad=30, fontsize=18)
-
-        # Finalize map
-        ax.set_extent(conus_extent)
-        for spine in ax.spines.values():
-            spine.set_visible(False)
-
-        plt.tight_layout(pad=1.5)
-        plt.savefig(os.path.join(fig_dir, out_file_name), dpi=300)
-        plt.close(fig)
-
-# %%
 print("Figures are saved in: ", fig_dir)
+# %% #######################################
+# Plot histograms of signatures
+############################################
+
+
+for sig_name in [
+    "R_Pint_RC",
+    "R_Pvol_RC",
+]:
+    print(f"Plotting {sig_name}...")
+    fig_out_dir = os.path.join(fig_dir, "fig_sigs")
+
+    fig = plt.figure(figsize=(3, 1.5))  # Made figure taller to accommodate colorbar
+    fontsize = 14
+    ax = fig.add_subplot(1, 1, 1, facecolor="white")
+
+    x_data = sigs_filt_sorted[sig_name].dropna()
+    x_data = x_data[~np.isinf(x_data)]
+
+    # Plot KDE instead of histogram
+    x_data.plot.kde(ax=ax, color="tab:blue", linewidth=3, label=None)
+
+    # Add x line at 0.25, 0.5, 0.75
+    ax.axvline(
+        x_data.quantile(0.25), color="tab:blue", linestyle="--", alpha=0.3, linewidth=2
+    )
+    ax.axvline(
+        x_data.quantile(0.5), color="tab:blue", linestyle="--", alpha=0.3, linewidth=2
+    )
+    ax.axvline(
+        x_data.quantile(0.75),
+        color="tab:blue",
+        linestyle="--",
+        alpha=0.3,
+        label="Quartiles",
+        linewidth=2,
+    )
+
+    # Get x limits from config
+    lower_lim = -0.2
+    upper_lim = 0.8
+    ax.set_xlim(x_data.quantile(0.01), x_data.quantile(0.99))
+
+    unit_label = plot_sigs_config.loc[plot_sigs_config["column_name"] == sig_name][
+        "unit"
+    ].values[0]
+    # ax.set_xlabel(
+    # f"{sig_name} {unit_label}", fontsize=fontsize, labelpad=10
+    # )  # Increased labelpad from default
+    ax.set_ylabel(None)
+    ax.set_yticklabels([])
+    ax.set_yticks([])
+
+    # Remove spines except the bottom
+    for spine in ax.spines.values():
+        if spine.get_linewidth() > 0:
+            spine.set_visible(False)
+    ax.spines["bottom"].set_visible(True)
+
+    # Add colorbar
+    cmap = plt.cm.viridis
+    norm = plt.Normalize(lower_lim, upper_lim)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+
+    # Adjust plot position to make room for colorbar
+    ax.set_position([0.15, 0.25, 0.8, 0.7])  # [left, bottom, width, height]
+
+    # Place colorbar below plot
+    cbar_ax = fig.add_axes(
+        [0.15, 0.1, 0.8, 0.15]
+    )  # [left, bottom, width, height] - increased height from 0.03 to 0.05
+    cbar = plt.colorbar(sm, cax=cbar_ax, orientation="horizontal")
+    # Set the background of the colorbar to the max color of the colormap
+    cbar.ax.set_facecolor(cmap(0.0))
+    cbar.set_label(f"{sig_name} {unit_label}", fontsize=fontsize, labelpad=10)
+
+    # Sync colorbar and x-axis ticks
+    xticks = ax.get_xticks()
+    # increase font size of the cba x ticks
+    cbar.ax.tick_params(labelsize=fontsize)
+    ax.set_xticks(xticks)
+    ax.set_xticklabels([])  # Hide x-axis tick labels
+    cbar.set_ticks(xticks)
+    ax.tick_params(labelsize=fontsize)
+
+    plt.savefig(
+        os.path.join(fig_out_dir, f"hist_{sig_name}.png"),
+        dpi=300,
+        bbox_inches="tight",
+        pad_inches=0.1,
+    )
+
 # %%

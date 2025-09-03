@@ -40,7 +40,7 @@ fig_dir = os.path.join(
 )
 # Plotting config
 plot_sigs_config_path = (
-    r"C:\Users\flipl\dev\signature-prediction\figures\HESS_2025\plot_sigs_config.csv"
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\plot_sigs_config.csv"
 )
 plot_sigs_config = pd.read_csv(plot_sigs_config_path)
 
