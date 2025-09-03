@@ -6,7 +6,7 @@ import json
 import numpy as np
 
 # %%
-########################## CHANGE HERE #################
+################## CHANGE HERE #############################
 cloud_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 rf_dir = os.path.join(cloud_dir, "out", "rf")
 output_date = "20250826"
@@ -21,18 +21,26 @@ file_type = "pdf"
 # Current directory
 os.chdir(r"C:\Users\flipl\dev\signature-prediction\random_forest\visualize")
 
-fig_dir = os.path.join(rf_dir, f"output_{user_name}_{output_date}_figures")
+fig_dir = os.path.join(cloud_dir, "figs", "fig_varImp")
+sfig_dir = os.path.join(cloud_dir, "figs", "supfig_varImp")
 if not os.path.exists(fig_dir):
     os.makedirs(fig_dir)
+if not os.path.exists(sfig_dir):
+    os.makedirs(sfig_dir)
 
 
 # ____________________________________________________________________________________
 # Plot configs
 
 # Attributes info & colors
-config_attrs_info_file = "plot_config_attrs_info.csv"
+config_attrs_info_file = (
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\plot_config_attrs_info.csv"
+)
 attrs_info = pd.read_csv(config_attrs_info_file)
-with open("plot_config_attrs_colors_high_contrast.json", "r") as file:
+with open(
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\plot_config_attrs_colors_high_contrast.json",
+    "r",
+) as file:
     attrs_colors = json.load(file)
 
 # Signature info
@@ -65,7 +73,10 @@ sigs_RF_names_ordered = [
 ]
 
 # Cluster colors
-with open("plot_config_expcolors_clusters.json", "r") as file:
+with open(
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\plot_config_expcolors_clusters.json",
+    "r",
+) as file:
     cluster_plot_json = json.load(file)
 # Convert keys to integers except for the first item
 cluster_info = {int(k) if k.isdigit() else k: v for k, v in cluster_plot_json.items()}
@@ -84,10 +95,9 @@ def create_color_dict(df, var_name):
     return df.set_index(var_name)["color"].to_dict()
 
 
-# %%
-
-# ____________________________________________________________________________________
+# %% ########################################################
 # load CAMELS and HYSETS attributes
+########################################################
 
 caravan_attrs_dir = r"D:\data\Caravan1.4\attributes"
 attrs_camels_file = os.path.join(
@@ -107,11 +117,11 @@ attrs_camels["gauge_id"] = attrs_camels["gauge_id"].astype(str)
 attrs_hysets["gauge_id"] = attrs_hysets["gauge_id"].astype(str)
 
 
-# %% # ____________________________________________________________________________________
-# Some base data loaders
+# %% ################################################
+# Data loader
+#####################################################
 
 
-# Function to load data
 def load_incMSE_by_cluster(
     rf_dir, user_name, output_date, output_date_Wu, cluster_num, attrs_info
 ):
@@ -141,6 +151,8 @@ def load_incMSE_by_cluster(
 df_imp = []
 for cluster_num in clusters:
     print(f"Processing {cluster_num}...")
+    if cluster_num == "all" or cluster_num == "avg":
+        continue
 
     _df_imp = load_incMSE_by_cluster(
         rf_dir, user_name, output_date, output_date_Wu, cluster_num, attrs_info
@@ -150,34 +162,11 @@ for cluster_num in clusters:
 df_imp = pd.concat(df_imp, axis=0)
 df_imp.head()
 
-# %%
-# Add some broader regions
-# Map original cluster labels to broader regions
-cluster_to_reclass = {
-    1: "Eastern U.S.",
-    5: "Eastern U.S.",
-    2: "West",
-    3: "West",
-    4: "West",
-    0: "Midwest",
-}
-df_imp = df_imp.dropna(subset=["cluster"])
-grouping_col = "region"
-cluster_num = pd.to_numeric(df_imp["cluster"], errors="coerce").astype("Int64")
-df_imp[grouping_col] = cluster_num.map(cluster_to_reclass)
-df_imp.tail()
 
 # %% ################################################
 # Count top attributes by incMSE
 #####################################################
 
-# %% #########################################################
-# COUNT SHAP VALUES PER GAUGE
-#############################################################
-
-# %% #########################################################
-# COUNT SHAP VALUES PER GAUGE
-#############################################################
 
 ########################CHANGE HERE#####################
 
@@ -185,7 +174,6 @@ df_imp.tail()
 
 top_n = 3  # Number of top attributes to assign 1 score
 show_k = 10  # Number of attributes to show in plots
-regions = ["Eastern U.S.", "Midwest", "West", "all"]  # Regions to show
 cluster_dict = {
     3: "Pacific Northwest",
     0: "Midwest",
@@ -202,10 +190,11 @@ cluster_names = ["CONUS-wide", *cluster_dict.values()]
 
 
 #############################################################
-# BY CLUSTER
+# GET STATS BY CLUSTER
 #############################################################
 # Rank absolute SHAP within each gauge and signature, then flag top-N
-print("Ranking absolute SHAP values...")
+print("Ranking absolute incMSE values...")
+
 # Rank %IncMSE within each predictor, signature and cluster group
 df_imp["rank_by_cluster"] = df_imp.groupby(["sig_name", "cluster"])["%IncMSE"].rank(
     method="first", ascending=False
@@ -214,6 +203,7 @@ df_imp["rank_by_cluster"] = df_imp.groupby(["sig_name", "cluster"])["%IncMSE"].r
 # Flag top-N
 df_imp["is_top_n"] = (df_imp["rank_by_cluster"] <= top_n).astype(int)
 df_imp.head()
+
 # %% #########################################################
 # Count the score per cluster
 #############################################################
@@ -230,11 +220,14 @@ df_top_counts = (
 df_top_counts.head()
 
 # %% #########################################################
-# Show and save the table for the top 10 SHAP values per region
+# Show and save the table for the top 10 incMSE scores per cluster
 #############################################################
 
 print(f"Showing and saving the table for the top {show_k} incMSE values per cluster...")
 for cluster, cluster_name in zip(clusters, cluster_names):
+    if cluster == "all" or cluster == "avg":
+        continue
+
     print(f"{cluster} - {cluster_name} — top {top_n} attributes by incMSE-count:")
     # Subset the data
     dfc = df_top_counts[df_top_counts["cluster"] == cluster].sort_values(
@@ -255,7 +248,7 @@ df_top_counts.to_csv(
 
 
 # %% #########################################################
-# SHOW THE COUNTS IN BAR PLOTS  — ONE SUBPLOT PER SIGNATURE
+# SHOW THE COUNTS IN BAR PLOTS  — ONE SUBPLOT PER CLUSTER
 #############################################################
 def plot_counts_by_cluster(
     df_counts: pd.DataFrame,
@@ -279,6 +272,8 @@ def plot_counts_by_cluster(
 
     # Plot each signature
     for i, (cluster, cluster_name) in enumerate(zip(clusters, cluster_names)):
+        if cluster == "all" or cluster == "avg":
+            continue
         ax = axes[i]
 
         # Subset the data
@@ -338,136 +333,3 @@ plot_counts_by_cluster(
     top_k_features=12,
     top_n=top_n,
 )
-
-#############################################################
-# BY BROADER REGIONS
-#############################################################
-# Rank absolute SHAP within each gauge and signature, then flag top-N
-print("Ranking absolute SHAP values...")
-# Rank %IncMSE within each predictor, signature and cluster group
-df_imp["rank_by_region"] = df_imp.groupby(["sig_name", "region"])["%IncMSE"].rank(
-    method="first", ascending=False
-)
-
-# Flag top-N
-df_imp["is_top_n"] = (df_imp["rank_by_region"] <= top_n).astype(int)
-df_imp.head()
-# %% #########################################################
-# Count the score per region
-#############################################################
-
-# Aggregate counts of top-N occurrences per cluster per attribute, across signatures
-print(f"Counting top-{top_n} SHAP values per region...")
-grouping_col = "region"
-df_top_counts = (
-    df_imp[df_imp["is_top_n"] == 1]
-    .groupby([grouping_col, "predictor"], dropna=False)
-    .agg(count=("is_top_n", "sum"))
-    .reset_index()
-)
-df_top_counts.head()
-
-# %% #########################################################
-# Show and save the table for the top 10 SHAP values per region
-#############################################################
-
-print(f"Showing and saving the table for the top {show_k} incMSE values per region...")
-for region in regions:
-    print(f"{region} — top {top_n} attributes by incMSE-count:")
-    # Subset the data
-    dfc = df_top_counts[df_top_counts["region"] == region].sort_values(
-        "count", ascending=False
-    )
-    top_attrs = dfc.head(show_k)
-    # print(f"{cluster} - {cluster_name} — top {top_n} attributes by incMSE-count:")
-    if top_attrs.empty:
-        print("  (no data)")
-    else:
-        print(top_attrs[["predictor", "count"]].to_string(index=False))
-    print("--------------------------------")
-
-# Out put them as csv file
-df_top_counts.to_csv(
-    os.path.join(fig_dir, f"top{top_n}_attrs_by_incMSE_count_region.csv"), index=False
-)
-
-
-# %% #########################################################
-# SHOW THE COUNTS IN BAR PLOTS  — ONE SUBPLOT PER SIGNATURE
-#############################################################
-def plot_counts_by_region(
-    df_counts: pd.DataFrame,
-    regions: list,
-    top_k_features: int = 15,
-    top_n: int = 3,
-):
-    # Create a figure with subplots
-    n_cols = 3
-    n_rows = (len(clusters) + n_cols - 1) // n_cols
-    fig, axes = plt.subplots(
-        n_rows,
-        n_cols,
-        figsize=(4 * n_cols, 2.8 * n_rows),
-        constrained_layout=True,
-    )
-    axes = axes.flatten()
-
-    # Plot each signature
-    for i, region in enumerate(regions):
-        ax = axes[i]
-
-        # Subset the data
-        df = df_counts[(df_counts["region"] == region)].copy()
-        if df.empty:
-            ax.set_visible(False)
-            continue
-
-        # Map colors from Group
-        if "color" not in df.columns:
-            df = df.merge(
-                attrs_info, how="left", left_on="predictor", right_on="variable_name"
-            )
-            df["color"] = df["Group"].map(attrs_colors)
-
-        # Aggregate total counts per feature and group, keep color/group for each feature
-        df.sort_values("count", ascending=False, inplace=True)
-        predictors_to_show = list(df.index[:top_k_features])
-
-        # Build plotting frame
-        # Select the top features
-        df_plot = (
-            df.loc[predictors_to_show]
-            .reset_index()
-            .rename(columns={"count": "total_count"})
-        )
-
-        ax.barh(
-            y=df_plot["predictor"],
-            width=df_plot["total_count"],
-            color=df_plot["color"],
-            edgecolor="dimgray",
-        )
-        ax.invert_yaxis()
-        ax.set_title(f"{region}", fontsize=10, loc="left")
-        ax.set_xlabel(f"#appearance as top-{top_n}")
-        ax.set_ylabel(None)
-        ax.tick_params(labelsize=7)
-
-    # Hide any extra axes
-    for j in range(i + 1, len(axes)):
-        axes[j].set_visible(False)
-
-    fig.suptitle(f"Top {top_n} incMSE% count, across signatures", fontsize=14)
-    out_grid = f"incMSE_count_top{top_n}_all_signatures_by_broader_regions.{file_type}"
-    fig.savefig(os.path.join(fig_dir, out_grid), dpi=300, bbox_inches="tight")
-    # plt.close(fig)
-
-
-plot_counts_by_region(
-    df_top_counts,
-    regions=regions,
-    top_k_features=12,
-    top_n=top_n,
-)
-
-# %%

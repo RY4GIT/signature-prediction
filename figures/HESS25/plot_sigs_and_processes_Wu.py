@@ -250,7 +250,7 @@ for sig_name in ["R_Pint_RC", "R_Pvol_RC", "diff_RCPint_RCPvol_masked"]:
         fig_out_dir = os.path.join(fig_dir, "fig_processes")
         os.makedirs(fig_out_dir, exist_ok=True)
     else:
-        fig_out_dir = os.path.join(fig_dir, "fig_sigs")
+        fig_out_dir = os.path.join(fig_dir, "supfig_sigs")
         os.makedirs(fig_out_dir, exist_ok=True)
 
     # Set up the map
@@ -364,7 +364,7 @@ for sig_name in [
     "R_Pvol_RC",
 ]:
     print(f"Plotting {sig_name}...")
-    fig_out_dir = os.path.join(fig_dir, "fig_sigs")
+    fig_out_dir = os.path.join(fig_dir, "supfig_sigs")
 
     fig = plt.figure(figsize=(3, 1.5))  # Made figure taller to accommodate colorbar
     fontsize = 14

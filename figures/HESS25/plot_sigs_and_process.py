@@ -391,7 +391,7 @@ def plot_sig_map(
     # ax.set_title(title_label)
 
     # Output
-    fig_sigs_dir = os.path.join(fig_dir, "fig_sigs")
+    fig_sigs_dir = os.path.join(fig_dir, "supfig_sigs")
     if not os.path.exists(fig_sigs_dir):
         os.makedirs(fig_sigs_dir)
 

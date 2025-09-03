@@ -17,7 +17,7 @@ cloud_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 rf_dir = os.path.join(cloud_dir, "out", "rf")
 rf_out_dir = os.path.join(rf_dir, "output_raraki_20250826_cluster_all")
 rf_out_dir_Wu = os.path.join(rf_dir, "output_raraki_20250827_cluster_all_Wu")
-fig_dir = os.path.join(rf_dir, "output_raraki_20250826_figures")
+fig_dir = os.path.join(rf_dir, "output_raraki_20250826_figs")
 
 user_name = "raraki"
 # file_type = "png"  # or "pdf" if you prefer PDF output
