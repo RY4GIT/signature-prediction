@@ -133,7 +133,7 @@ plt.colorbar(label="Cluster")
 plt.xlabel("t-SNE 1")
 plt.ylabel("t-SNE 2")
 plt.title("t-SNE Clustering Results")
-# plt.show()
+plt.close()
 
 # %% #########################################################################
 #
@@ -216,17 +216,9 @@ data_scaled_df = pd.DataFrame(
 )
 data_scaled_df["cluster"] = clusters
 data_scaled_df
+
+
 # %%
-# Create a subplot for each cluster
-num_clusters = len(np.unique(clusters))
-if num_clusters > 6:
-    nrows = 4
-else:
-    nrows = 3
-fig, axes = plt.subplots(3, 2, figsize=(4 * nrows, 12))
-axes = axes.flatten()
-# Define flier properties for outliers
-flierprops = dict(marker=".", color="#F2F0EF", alpha=0.1)
 
 
 def custom_palette(data):
@@ -243,6 +235,13 @@ def custom_palette(data):
     return colors
 
 
+# Create a subplot for each cluster
+num_clusters = len(np.unique(clusters))
+fig, axes = plt.subplots(3, 2, figsize=(12, 11))
+axes = axes.flatten()
+# Define flier properties for outliers
+flierprops = dict(marker=".", color="#F2F0EF", alpha=0.1)
+plt.rcParams.update({"font.size": 12})
 for cluster in range(num_clusters):
     row = cluster // 2
     col = cluster % 2
@@ -285,3 +284,5 @@ plt.savefig(
     bbox_inches="tight",
 )
 print(f"Figures saved in {out_path}")
+
+# %%

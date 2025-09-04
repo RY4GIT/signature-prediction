@@ -440,7 +440,7 @@ for sig_name in [
     ax.tick_params(labelsize=fontsize)
 
     plt.savefig(
-        os.path.join(fig_out_dir, f"hist_{sig_name}.png"),
+        os.path.join(fig_out_dir, f"hist_{sig_name}.pdf"),
         dpi=300,
         bbox_inches="tight",
         pad_inches=0.1,

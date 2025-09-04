@@ -304,12 +304,12 @@ def plot_sig_hist(df, sig_name, fig_dir=None):
     ax.tick_params(labelsize=fontsize)
 
     # Output
-    fig_sigs_dir = os.path.join(fig_dir, "fig_sigs")
+    fig_sigs_dir = os.path.join(fig_dir, "supfig_sigs")
     if not os.path.exists(fig_sigs_dir):
         os.makedirs(fig_sigs_dir)
 
     plt.savefig(
-        os.path.join(fig_sigs_dir, f"hist_{sig_name}.png"),
+        os.path.join(fig_sigs_dir, f"hist_{sig_name}.pdf"),
         dpi=300,
         bbox_inches="tight",
         pad_inches=0.1,
