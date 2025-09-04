@@ -35,11 +35,11 @@ if not os.path.exists(sfig_dir):
 
 # Attributes info & colors
 config_attrs_info_file = (
-    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\plot_config_attrs_info.csv"
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_attrs_info.csv"
 )
 attrs_info = pd.read_csv(config_attrs_info_file)
 with open(
-    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\plot_config_attrs_colors_high_contrast.json",
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_attrs_colors_high_contrast.json",
     "r",
 ) as file:
     attrs_colors = json.load(file)

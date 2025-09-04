@@ -36,7 +36,7 @@ if not os.path.exists(out_path):
     os.makedirs(out_path)
 cluster_info = json.load(
     open(
-        r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\plot_config_expcolors_clusters.json"
+        r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_expcolors_clusters.json"
     )
 )
 

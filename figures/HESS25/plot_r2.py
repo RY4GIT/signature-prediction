@@ -28,7 +28,7 @@ if not os.path.exists(fig_dir):
 # Plot config
 
 with open(
-    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\plot_config_expcolors_clusters.json",
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_expcolors_clusters.json",
     "r",
 ) as file:
     cluster_plot_json = json.load(file)

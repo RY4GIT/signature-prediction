@@ -17,10 +17,6 @@ file_type = "png"
 
 # ____________________________________________________________________________________
 # I/O paths
-
-# Current directory
-os.chdir(r"C:\Users\flipl\dev\signature-prediction\random_forest\visualize")
-
 fig_dir = os.path.join(cloud_dir, "figs", "fig_varImp")
 sfig_dir = os.path.join(cloud_dir, "figs", "supfig_varImp")
 if not os.path.exists(fig_dir):
@@ -33,14 +29,19 @@ if not os.path.exists(sfig_dir):
 # Plot configs
 
 # Attributes info & colors
-config_attrs_info_file = "plot_config_attrs_info.csv"
+config_attrs_info_file = (
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_attrs_info.csv"
+)
 attrs_info = pd.read_csv(config_attrs_info_file)
-with open("plot_config_attrs_colors.json", "r") as file:
+with open(
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_attrs_colors.json",
+    "r",
+) as file:
     attrs_colors = json.load(file)
 
 # Signature info
 cofig_sigs_file = (
-    r"C:\Users\flipl\dev\signature-prediction\signatures\visualize\plot_sigs_config.csv"
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_sigs.csv"
 )
 sigs_info = pd.read_csv(cofig_sigs_file)
 sig_names = sigs_info["column_name"]
@@ -68,7 +69,7 @@ sigs_RF_names_ordered = [
 ]
 
 # Cluster colors
-with open("plot_config_expcolors_clusters.json", "r") as file:
+with open("config_expcolors_clusters.json", "r") as file:
     cluster_plot_json = json.load(file)
 # Convert keys to integers except for the first item
 cluster_info = {int(k) if k.isdigit() else k: v for k, v in cluster_plot_json.items()}
