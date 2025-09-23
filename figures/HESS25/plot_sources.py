@@ -58,16 +58,16 @@ if not os.path.exists(fig_dir):
 # Conus extent
 conus_extent = [-125.5, -66.95, 24.396308, 47.5]
 
-# %%
-# ____________________________________________________________________________________
-# Load overlay layer for plotting
-print("Loading overlay layer...")
-# Ecoregion overlay
-_ecoregion_overlay = gpd.read_file(
-    os.path.join(gdrive_dir, "data", "EcoRegions", "NA_CEC_Eco_Level2.shp")
-)
-_ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
-ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
+# # %%
+# # ____________________________________________________________________________________
+# # Load overlay layer for plotting
+# print("Loading overlay layer...")
+# # Ecoregion overlay
+# _ecoregion_overlay = gpd.read_file(
+#     os.path.join(gdrive_dir, "data", "EcoRegions", "NA_CEC_Eco_Level2.shp")
+# )
+# _ecoregion_overlay = _ecoregion_overlay.set_crs(_ecoregion_overlay.crs)
+# ecoregion_overlay = _ecoregion_overlay.to_crs("epsg:4326")
 # %%
 # ____________________________________________________________________________________
 # Load data
@@ -278,22 +278,22 @@ source_colors = {
 }
 
 
-def plot_source(df, overlay_layer):
+def plot_source(df):  # , overlay_layer):
     # Get plot config
 
     # Set up the map
     fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
 
-    # Add a legend
-    overlay_layer.plot(
-        ax=ax,
-        edgecolor="grey",
-        facecolor="none",
-        linewidth=0.5,
-        aspect=1.1,
-        zorder=100,
-    )
+    # # Add a legend
+    # overlay_layer.plot(
+    #     ax=ax,
+    #     edgecolor="grey",
+    #     facecolor="none",
+    #     linewidth=0.5,
+    #     aspect=1.1,
+    #     zorder=100,
+    # )
 
     land = cfeature.NaturalEarthFeature(
         "physical",
@@ -305,7 +305,16 @@ def plot_source(df, overlay_layer):
     ax.add_feature(land)
 
     # Add map features
-    ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
+    # ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="white")
+    ax.add_feature(cfeature.BORDERS, linewidth=0.3, color="grey")
+
+    # Add state boundary lines beneath data
+    ax.add_feature(
+        cfeature.STATES,
+        edgecolor="grey",
+        linewidth=0.3,
+        zorder=100,
+    )
 
     # Create legend patches
     legend_patches = []
@@ -355,6 +364,6 @@ def plot_source(df, overlay_layer):
     plt.savefig(os.path.join(fig_dir, "fig_sources.png"), dpi=300)
 
 
-plot_source(df_sigs, ecoregion_overlay)
+plot_source(df_sigs)  # , ecoregion_overlay)
 
 # %%
