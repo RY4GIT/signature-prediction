@@ -253,7 +253,7 @@ def plot_shap_in_map(
 
     # Set extent to CONUS
     ax.set_extent([-125.5, -66.95, 24.396308, 47.5])
-    ax.set_title(attr_name, fontsize=18, loc="left")
+    ax.set_title(rf"{attr_name}, $\phi$ ({sig_name})", fontsize=18, loc="left")
     # ax.set_extent(conus_extent)
 
     # Set spines invisible
@@ -290,8 +290,23 @@ attr_names = [
     "FORESTNLCD06",
     "PDEN_2000_BLOCK",
 ]
-sig_name = "BFI"
-for attr_name in attr_names:
+sig_attr_pairs = [
+    ("P_mm_day", "BFI"),
+    ("PET_mm_day", "AverageStorage"),
+    ("ARIDITY_GAGES2", "TotalRR"),
+    ("seasonality_FAO_PM", "Recession_a_Seasonality"),
+    ("low_prec_freq", "VariabilityIndex"),
+    ("SNOW_FRAC_PRECIP", "BFI"),
+    ("ELEV_MEAN_M_BASIN", "RecessionParameters_b"),
+    ("SLOPE_DEG_x10", "R_Pvol_RC"),
+    ("CLAYAVE", "BFI"),
+    ("SILTAVE", "BaseflowRecessionK"),
+    ("geol_weighted_ave_age_ma", "BFI"),
+    ("kar_pc_sse", "TotalRR"),
+    ("FORESTNLCD06", "R_Pint_RC"),
+    ("PDEN_2000_BLOCK", "TotalRR"),
+]
+for attr_name, sig_name in sig_attr_pairs:
     df_subset = df_shap_with_attrs[
         (df_shap_with_attrs["feature"] == attr_name)
         & (df_shap_with_attrs["sig_name"] == sig_name)
@@ -312,3 +327,5 @@ for attr_name in attr_names:
         varname="phi",
         file_type="png",
     )
+
+# %%

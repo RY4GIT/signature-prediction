@@ -12,10 +12,35 @@ import geopandas as gpd
 # %%
 ########################## CHANGE HERE #################
 cloud_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
-rf_dir = os.path.join(cloud_dir, "out", "rf")
-rf_out_dir = os.path.join(rf_dir, "output_raraki_20250826_cluster_all")
-rf_out_dir_Wu = os.path.join(rf_dir, "output_raraki_20250827_cluster_all_Wu")
-fig_dir = os.path.join(cloud_dir, "figs", "fig_varImp")
+local_dir = r"D:\data"
+attr_file = os.path.join(
+    cloud_dir,
+    "data",
+    "derived_attrs",
+    "assembled_RA",
+    "attrs_cara_gages2_etc_20250517+cluster.csv",
+)
+gg2_polygon_file = os.path.join(
+    cloud_dir,
+    "data",
+    "GAGES2",
+    "GAGES_II_Geospa",
+    "all_gages2_polygons.shp",
+)
+camels_polygon_file = os.path.join(
+    local_dir,
+    "Caravan1.4",
+    "shapefiles",
+    "camels",
+    "camels_basin_shapes.shp",
+)
+hysets_polygon_file = os.path.join(
+    local_dir,
+    "Caravan1.4",
+    "shapefiles",
+    "hysets",
+    "hysets_basin_shapes.shp",
+)
 sfig_dir = os.path.join(cloud_dir, "figs", "supfig_attrs_and_shap")
 user_name = "raraki"
 # file_type = "png"  # or "pdf" if you prefer PDF output
@@ -25,86 +50,71 @@ file_type = "pdf"
 # ____________________________________________________________________________________
 # I/O paths
 
-if not os.path.exists(fig_dir):
-    os.makedirs(fig_dir)
 if not os.path.exists(sfig_dir):
     os.makedirs(sfig_dir)
 
-# ____________________________________________________________________________________
-# Plot configs
-
-# Attributes info & colors
-config_attrs_info_file = (
-    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_attrs_info.csv"
-)
-attrs_info = pd.read_csv(config_attrs_info_file)
-with open(
-    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_attrs_colors_high_contrast.json",
-    "r",
-) as file:
-    attrs_colors = json.load(file)
-
-# Signature info
-sigs_RF_names_ordered = [
-    "BFI",
-    "BaseflowRecessionK",
-    "AverageStorage",
-    "RecessionParameters_b",
-    "TotalRR",
-    "EventRR",
-    "Recession_a_Seasonality",
-    "VariabilityIndex",
-    "IE_thresh",
-    "IE_thresh_signif",
-    "SE_thresh",
-    "SE_thresh_signif",
-    "R_Pint_RC",
-    "R_Pvol_RC",
-]
-sig_Wu_names = [
-    "R_Pint_RC",
-    "R_Pvol_RC",
-]
-
 
 # %%
 # ____________________________________________________________________________________
-# load CAMELS and HYSETS attributes
+# load attrs
 
-caravan_attrs_dir = r"D:\data\Caravan1.4\attributes"
-attrs_camels_file = os.path.join(
-    caravan_attrs_dir,
-    "camels",
-    "attributes_other_camels.csv",
+# Load attributes
+attrs = pd.read_csv(attr_file, index_col="gauge_id")
+attrs["usgs_gauge_id"] = attrs["usgs_gauge_id"].astype(str).str.zfill(8)
+attrs["usgs_gauge_id"].head()
+# %%
+# Load watershed shapefiles
+gg2_polygon = gpd.read_file(gg2_polygon_file).to_crs(epsg=4326)
+gg2_polygon["gauge_id"] = "gages2_" + gg2_polygon["GAGE_ID"].astype(str).str.zfill(8)
+# %%
+gg2_polygon["gauge_num"] = gg2_polygon["GAGE_ID"].astype(str).str.zfill(8)
+# %%
+camels_polygon = gpd.read_file(camels_polygon_file).to_crs(epsg=4326)
+camels_polygon["gauge_num"] = (
+    camels_polygon["gauge_id"]
+    .str.split("_")
+    .str[1]
+    .astype(int)
+    .astype(str)
+    .str.zfill(8)
 )
-attrs_hysets_file = os.path.join(
-    caravan_attrs_dir,
-    "hysets",
-    "attributes_other_hysets.csv",
+# %%
+hysets_polygon = gpd.read_file(hysets_polygon_file).to_crs(epsg=4326)
+hysets_polygon["gauge_num"] = (
+    hysets_polygon["gauge_id"].str.split("_").str[1].astype(str).str.zfill(8)
 )
-
-attrs_camels = pd.read_csv(attrs_camels_file)
-attrs_hysets = pd.read_csv(attrs_hysets_file)
-attrs_camels["gauge_id"] = attrs_camels["gauge_id"].astype(str)
-attrs_hysets["gauge_id"] = attrs_hysets["gauge_id"].astype(str)
+# %%
+col_sel = ["gauge_num", "gauge_id", "geometry"]
+_polygons = pd.concat(
+    [gg2_polygon[col_sel], camels_polygon[col_sel], hysets_polygon[col_sel]],
+    ignore_index=True,
+)
+polygons = _polygons.drop_duplicates(subset=["gauge_num"], keep="first")
+polygons.head()
+print(len(polygons))
+# %%
+attrs = attrs.merge(
+    polygons,
+    left_on="usgs_gauge_id",
+    right_on="gauge_num",
+    suffixes=("", "_polygons"),
+    how="left",
+)
+# %%
+attrs.set_index("gauge_id", inplace=True)
+# %%
+attrs.head()
 
 # %%
-print("Loading Caravan watershed shapefiles...")
+attrs["area"] = attrs["geometry"].values.area
+attrs = gpd.GeoDataFrame(attrs, geometry="geometry")
+# %%
+print(len(attrs))
 
-
-# cARAVAN 1.5 shapefile is somehow corrupted, so use Caravan 1.4
-local_dir = r"D:\data"
-wspolygon_camels_file = os.path.join(
-    local_dir, "Caravan1.4", "shapefiles", "camels", "camels_basin_shapes.shp"
-)
-wspolygon_camels = gpd.read_file(wspolygon_camels_file).to_crs(epsg=4326)
-wspolygon_hysets_file = os.path.join(
-    local_dir, "Caravan1.4", "shapefiles", "hysets", "hysets_basin_shapes.shp"
-)
-wspolygon_hysets = gpd.read_file(wspolygon_hysets_file).to_crs(epsg=4326)
-wspolygon = pd.concat([wspolygon_camels, wspolygon_hysets]).set_index("gauge_id")
 
 # %%
+from matplotlib.colors import Normalize, LogNorm
+from matplotlib.cm import ScalarMappable
 
 
 def plot_attrs_in_map(
@@ -134,26 +144,36 @@ def plot_attrs_in_map(
         linewidth=1.0,  # Optionally adjust linewidth for edges
     )
 
-    # # Add state boundary lines beneath data
-    # ax.add_feature(
-    #     cfeature.STATES,
-    #     edgecolor="#9e9e9e",
-    #     linewidth=0.75,
-    # )
-
-    df["area"] = df["geometry"].area
     df.sort_values(by="area", ascending=False, inplace=True)
 
     # Plot the max category per location
     df.dropna(subset=[attr_name], inplace=True)
 
-    vabs = np.mean(
-        [np.abs(df[attr_name].quantile(0.10)), np.abs(df[attr_name].quantile(0.90))]
-    )
-    vmin = vabs * -1
-    vmax = vabs
+    # Define the bounds of the attribute
+    bound_dict = {
+        "P_mm_day": (0, 5),
+        "PET_mm_day": (0, 4),
+        "ARIDITY_GAGES2": (0, 2),
+        "seasonality_FAO_PM": (0, 2),
+        "low_prec_freq": (0.6, 1.0),
+        "SNOW_FRAC_PRECIP": (0, 0.5),
+        "ELEV_MEAN_M_BASIN": (0, 2000),
+        "SLOPE_DEG_x10": (1e-16, 50),
+        "CLAYAVE": (0, 50),
+        "SILTAVE": (0, 70),
+        "geol_weighted_ave_age_ma": (0, 2500),
+        "kar_pc_sse": (0, 70),
+        "FORESTNLCD06": (0, 60),
+        "PDEN_2000_BLOCK": (0, 500),
+        "T_AVG_BASIN": (0, 20),
+        "ROCKDEPAVE": (20, 60),
+        "WTDEPAVE": (0, 7),
+    }
+
+    vmin = bound_dict[attr_name][0]
+    vmax = bound_dict[attr_name][1]
     norm = Normalize(vmin=vmin, vmax=vmax)
-    cmap = plt.get_cmap("viridis")
+    cmap = plt.get_cmap("YlGnBu")
     sm = ScalarMappable(norm=norm, cmap=cmap)
     df.plot(
         ax=ax,
@@ -164,10 +184,32 @@ def plot_attrs_in_map(
         zorder=99,
     )
 
+    # Dictionary mapping attribute names to their units
+    unit_dict = {
+        "P_mm_day": "mm/day",
+        "PET_mm_day": "mm/day",
+        "ARIDITY_GAGES2": "-",
+        "seasonality_FAO_PM": "-",
+        "low_prec_freq": "-",
+        "SNOW_FRAC_PRECIP": "-",
+        "ELEV_MEAN_M_BASIN": "m",
+        "SLOPE_DEG_x10": "deg×10",
+        "CLAYAVE": r"%",
+        "SILTAVE": r"%",
+        "geol_weighted_ave_age_ma": "Ma",
+        "kar_pc_sse": r"%area",
+        "FORESTNLCD06": r"%area",
+        "PDEN_2000_BLOCK": r"ppl/$km^2$",
+        "T_AVG_BASIN": "°C",
+        "ROCKDEPAVE": "inches",
+        "WTDEPAVE": "feet",
+    }
+
     # Add a colorbar in bottom right corner
     cax = fig.add_axes([0.85, 0.15, 0.02, 0.2])  # [left, bottom, width, height]
     cbar = plt.colorbar(sm, cax=cax)
-    cbar.set_label(attr_name, fontsize=12)
+    unit = unit_dict.get(attr_name, "")
+    cbar.set_label(f"[{unit}]", fontsize=12)
     cbar.ax.tick_params(labelsize=12)
 
     # Save plot
@@ -190,37 +232,34 @@ def plot_attrs_in_map(
     )
 
 
+# attr_names = [
+#     "P_mm_day",
+#     "PET_mm_day",
+#     "ARIDITY_GAGES2",
+#     "seasonality_FAO_PM",
+#     "low_prec_freq",
+#     "SNOW_FRAC_PRECIP",
+#     "ELEV_MEAN_M_BASIN",
+#     "SLOPE_DEG_x10",
+#     "CLAYAVE",
+#     "SILTAVE",
+#     "geol_weighted_ave_age_ma",
+#     "kar_pc_sse",
+#     "FORESTNLCD06",
+#     "PDEN_2000_BLOCK",
+# ]
 attr_names = [
-    "P_mm_day",
-    "PET_mm_day",
-    "ARIDITY_GAGES2",
-    "seasonality_FAO_PM",
-    "low_prec_freq",
-    "SNOW_FRAC_PRECIP",
-    "ELEV_MEAN_M_BASIN",
-    "SLOPE_DEG_x10",
-    "CLAYAVE",
-    "SILTAVE",
-    "geol_weighted_ave_age_ma",
-    "kar_pc_sse",
-    "FORESTNLCD06",
-    "PDEN_2000_BLOCK",
+    # "T_AVG_BASIN",
+    # "ROCKDEPAVE",
+    "WTDEPAVE",
 ]
 for attr_name in attr_names:
-    df_subset = df_shap_with_attrs[(df_shap_with_attrs["feature"] == attr_name)].copy()
-
-    # Concatenate the dataframes and add the polygon data
-    print("Original length of wspolygon: ", len(wspolygon))
-    print("Original length of df_subset: ", len(df_subset))
-    df_subset = wspolygon.join(
-        df_subset.set_index("gauge_id"), how="right"
-    ).reset_index()
-    print("Length of df_subset: ", len(df_subset))
-
-    plot_shap_in_map(
-        df_subset,
-        sig_name=sig_name,
+    plot_attrs_in_map(
+        attrs,
         attr_name=attr_name,
-        varname="phi",
         file_type="png",
     )
+
+# %%
+attrs["WTDEPAVE"].hist(bins=100)
+# %%
