@@ -284,5 +284,3 @@ plt.savefig(
     bbox_inches="tight",
 )
 print(f"Figures saved in {out_path}")
-
-# %%

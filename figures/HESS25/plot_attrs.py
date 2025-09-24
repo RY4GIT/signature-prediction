@@ -164,6 +164,7 @@ def plot_attrs_in_map(
         "geol_weighted_ave_age_ma": (0, 2500),
         "kar_pc_sse": (0, 70),
         "FORESTNLCD06": (0, 60),
+        "CROPSNLCD06": (0, 60),
         "PDEN_2000_BLOCK": (0, 500),
         "T_AVG_BASIN": (0, 20),
         "ROCKDEPAVE": (20, 60),
@@ -203,6 +204,7 @@ def plot_attrs_in_map(
         "T_AVG_BASIN": "°C",
         "ROCKDEPAVE": "inches",
         "WTDEPAVE": "feet",
+        "CROPSNLCD06": r"%area",
     }
 
     # Add a colorbar in bottom right corner
@@ -251,7 +253,8 @@ def plot_attrs_in_map(
 attr_names = [
     # "T_AVG_BASIN",
     # "ROCKDEPAVE",
-    "WTDEPAVE",
+    # "WTDEPAVE",
+    "CROPSNLCD06",
 ]
 for attr_name in attr_names:
     plot_attrs_in_map(
@@ -261,5 +264,5 @@ for attr_name in attr_names:
     )
 
 # %%
-attrs["WTDEPAVE"].hist(bins=100)
+attrs["CROPSNLCD06"].hist(bins=100)
 # %%

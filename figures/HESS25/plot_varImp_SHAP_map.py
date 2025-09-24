@@ -334,6 +334,18 @@ for process in process_list:
     print(process)
     print(df_group_avg_max_polygon["Group_max"].value_counts())
 
+# %% ##################################
+# The key figure (without cities)
+#######################################
+climate_cluster_shp_file = os.path.join(
+    cloud_dir,
+    "figs",
+    "fig_geographic_region",
+    "geograhpic_divide_climate_cluster",
+    "geograhpic_divide_climate_cluster.shp",
+)
+climate_cluster_shp = gpd.read_file(climate_cluster_shp_file)
+
 
 # %% ##################################
 # The key figure (without cities)
@@ -366,13 +378,39 @@ def plot_shap_in_map_max(
         edgecolor="black",  # Set edgecolor to black
         linewidth=1.0,  # Optionally adjust linewidth for edges
     )
-
-    # Add state boundary lines beneath data
-    ax.add_feature(
-        cfeature.STATES,
-        edgecolor="#9e9e9e",
-        linewidth=0.75,
+    water = cfeature.NaturalEarthFeature(
+        "physical",
+        "lakes",
+        "50m",
     )
+    ax.add_feature(
+        water, facecolor="#e8eef9", edgecolor="#9e9e9e", linewidth=0.75, alpha=0.5
+    )
+    # It is a lineplot
+    climate_cluster_shp.plot(
+        ax=ax,
+        color="grey",
+        edgecolor="#9e9e9e",
+        linewidth=2.00,
+        zorder=200,
+        linestyle=":",
+    )
+    # Add US border lines
+    borders = cfeature.NaturalEarthFeature(
+        category="cultural",
+        name="admin_0_boundary_lines_land",
+        scale="50m",
+        facecolor="none",
+        edgecolor="#9e9e9e",
+        linewidth=0.5,
+    )
+    ax.add_feature(borders)
+    # # Add state boundary lines beneath data
+    # ax.add_feature(
+    #     cfeature.STATES,
+    #     edgecolor="#9e9e9e",
+    #     linewidth=0.75,
+    # )
 
     if show_cities:
         major_cities = [
@@ -518,7 +556,8 @@ def plot_shap_in_map_max(
 # %% ######################################################
 # Plot the "All processes" etc. figures
 ########################################################
-for process in df_group_avg_max_polygon["process"].unique():
+for process in ["All processes"]:
+    # for process in df_group_avg_max_polygon["process"].unique():
     df_group_avg_max_process = df_group_avg_max_polygon[
         df_group_avg_max_polygon["process"] == process
     ].copy()
@@ -537,3 +576,30 @@ for process in df_group_avg_max_polygon["process"].unique():
         file_type="png",
         show_cities=False,
     )
+
+# %%
+# make a plot of the land + water + borders + overlay layer (climate cluster)
+fig = plt.figure(figsize=(2, 2))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree(), facecolor="white")
+ax.add_feature(cfeature.LAND, facecolor="white", edgecolor="black", linewidth=1.0)
+ax.add_feature(cfeature.BORDERS, linewidth=1.0, linestyle=":", color="k")
+# ax.add_feature(cfeature.LAKES, alpha=0.5)
+climate_cluster_shp.plot(
+    ax=ax,
+    color="grey",
+    edgecolor="black",
+    linewidth=1.0,
+    zorder=100,
+)
+# Remove the lines around the plot
+for spine in ax.spines.values():
+    spine.set_visible(False)
+plt.tight_layout()
+# Set the background be transparent
+plt.gca().set_facecolor("none")
+plt.savefig(
+    os.path.join(fig_dir, "mini_map.pdf"),
+    dpi=300,
+    bbox_inches="tight",
+)
+# %%
