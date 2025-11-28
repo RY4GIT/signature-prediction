@@ -577,6 +577,27 @@ for process in ["All processes"]:
         show_cities=False,
     )
 
+for process in ["All processes"]:
+    # for process in df_group_avg_max_polygon["process"].unique():
+    df_group_avg_max_process = df_group_avg_max_polygon[
+        df_group_avg_max_polygon["process"] == process
+    ].copy()
+
+    if process == "All processes":
+        # This includes 14 signatures, so the median is more robust
+        stats = "median"
+    else:
+        # This includes around 2 signatures, so the mean is more robust
+        stats = "mean"
+
+    plot_shap_in_map_max(
+        df_group_avg_max_process,
+        process=process,
+        varname=f"max_{stats}_phi_abs_perc",
+        file_type="png",
+        show_cities=True,
+    )
+
 # %%
 # make a plot of the land + water + borders + overlay layer (climate cluster)
 fig = plt.figure(figsize=(2, 2))

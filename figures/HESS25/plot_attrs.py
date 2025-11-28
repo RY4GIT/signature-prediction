@@ -169,6 +169,8 @@ def plot_attrs_in_map(
         "T_AVG_BASIN": (0, 20),
         "ROCKDEPAVE": (20, 60),
         "WTDEPAVE": (0, 7),
+        "CROPSNLCD06": (0, 60),
+        "PCT_IRRIG_AG": (0, 10),
     }
 
     vmin = bound_dict[attr_name][0]
@@ -205,6 +207,7 @@ def plot_attrs_in_map(
         "ROCKDEPAVE": "inches",
         "WTDEPAVE": "feet",
         "CROPSNLCD06": r"%area",
+        "PCT_IRRIG_AG": r"%area",
     }
 
     # Add a colorbar in bottom right corner
@@ -254,7 +257,8 @@ attr_names = [
     # "T_AVG_BASIN",
     # "ROCKDEPAVE",
     # "WTDEPAVE",
-    "CROPSNLCD06",
+    # "CROPSNLCD06",
+    "PCT_IRRIG_AG",
 ]
 for attr_name in attr_names:
     plot_attrs_in_map(
@@ -264,5 +268,5 @@ for attr_name in attr_names:
     )
 
 # %%
-attrs["CROPSNLCD06"].hist(bins=100)
+attrs["PCT_IRRIG_AG"].hist(bins=100)
 # %%

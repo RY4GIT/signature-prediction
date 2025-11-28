@@ -206,3 +206,5 @@ df_r2_by_region.head()
 
 # %%
 plot_r2_regional(df_r2_by_region)
+
+# %%

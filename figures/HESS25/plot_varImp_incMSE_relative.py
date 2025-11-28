@@ -69,7 +69,10 @@ sigs_RF_names_ordered = [
 ]
 
 # Cluster colors
-with open("config_expcolors_clusters.json", "r") as file:
+with open(
+    r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_expcolors_clusters.json",
+    "r",
+) as file:
     cluster_plot_json = json.load(file)
 # Convert keys to integers except for the first item
 cluster_info = {int(k) if k.isdigit() else k: v for k, v in cluster_plot_json.items()}
@@ -163,7 +166,7 @@ def plot_incMSE_category_delta_vs_avg(
     """
 
     # Preload data for all regional clusters (exclude "all")
-    regional_clusters = [c for c in cluster_info.keys() if c != "all"]
+    regional_clusters = [c for c in cluster_info.keys() if c != "all" and c != "avg"]
     print("--------------------------------")
     print(regional_clusters)
     print("--------------------------------")
@@ -199,7 +202,7 @@ def plot_incMSE_category_delta_vs_avg(
 
     # Plot per cluster
     for cluster_num in cluster_info.keys():
-        if cluster_num == "all":
+        if cluster_num == "all" or cluster_num == "avg":
             continue
 
         # Pre-compute deltas for all signatures for this cluster
@@ -317,7 +320,7 @@ def plot_incMSE_category_delta_vs_avg__sigs(
     """
 
     # Preload data for all regional clusters (exclude "all")
-    regional_clusters = [c for c in cluster_info.keys() if c != "all"]
+    regional_clusters = [c for c in cluster_info.keys() if c != "all" and c != "avg"]
     df_by_cluster = {
         c: load_incMSE_by_cluster(
             rf_dir, user_name, output_date, output_date_Wu, c, attrs_info
@@ -344,7 +347,7 @@ def plot_incMSE_category_delta_vs_avg__sigs(
 
     list_deltas = []
     for cluster_num in cluster_info.keys():
-        if cluster_num == "all":
+        if cluster_num == "all" or cluster_num == "avg":
             continue
 
         # Pre-compute deltas for all signatures for this cluster
@@ -393,7 +396,7 @@ def plot_incMSE_category_delta_vs_avg__sigs(
     plt.rcParams.update({"font.size": 12})
 
     for i, cluster_num in enumerate(cluster_info.keys()):
-        if cluster_num == "all":
+        if cluster_num == "all" or cluster_num == "avg":
             continue
 
         # Symmetric x-limits shared across subplots
@@ -439,9 +442,9 @@ def plot_incMSE_category_delta_vs_avg__sigs(
 # #####################################################
 cluster_dict = {
     3: "Pacific Northwest",
-    0: "Midwest",
+    0: "Midwest and Central",
     5: "Northeast",
-    4: "Western Coast and Deserts",
+    4: "Southwest",
     2: "Mountain West",
     1: "South",
 }

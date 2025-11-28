@@ -176,9 +176,9 @@ top_n = 3  # Number of top attributes to assign 1 score
 show_k = 10  # Number of attributes to show in plots
 cluster_dict = {
     3: "Pacific Northwest",
-    0: "Midwest",
+    0: "Midwest and Central",
     5: "Northeast",
-    4: "Western Coast and Deserts",
+    4: "Southwest",
     2: "Mountain West",
     1: "South",
 }
@@ -321,6 +321,7 @@ def plot_counts_by_cluster(
     # fig.suptitle(f"Top {top_n} incMSE% count, across signatures", fontsize=14)
     fig.suptitle("(b)", fontsize=14, x=0.0)
     # fig.suptitle(f"Top {top_n} incMSE% count, across signatures", fontsize=14)
+    file_type = "png"
     out_grid = f"incMSE_count_top{top_n}_all_signatures_by_clusters.{file_type}"
     fig.savefig(os.path.join(fig_dir, out_grid), dpi=300, bbox_inches="tight")
     # plt.close(fig)
@@ -333,3 +334,5 @@ plot_counts_by_cluster(
     top_k_features=12,
     top_n=top_n,
 )
+
+# %%

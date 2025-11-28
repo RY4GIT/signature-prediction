@@ -31,7 +31,7 @@ file_path = os.path.join(
     "assembled_RA",
     "attrs_cara1p4_gages2_etc_20250311.csv",
 )
-out_path = os.path.join(cloud_dir, "figs", "subfig_climate_clusters")
+out_path = os.path.join(cloud_dir, "figs", "supfig_climate_clusters")
 if not os.path.exists(out_path):
     os.makedirs(out_path)
 cluster_info = json.load(
@@ -284,3 +284,5 @@ plt.savefig(
     bbox_inches="tight",
 )
 print(f"Figures saved in {out_path}")
+
+# %%
