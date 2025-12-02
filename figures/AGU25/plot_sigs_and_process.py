@@ -503,7 +503,12 @@ dir_label_rev = ["high", "", "", "low"]
 #
 ########################################################################################
 
-processes = ["Baseflow"]
+processes = [
+    "Baseflow",
+    # "Overland Flow",
+    # "Water balance losses",
+    # "High storage capacity",
+]
 
 for process_name in tqdm(
     processes, desc="Plotting bivariate maps of process hypothesis", leave=False
@@ -623,7 +628,9 @@ def plot_process_dominance_map(df_sigs, plot_sigs_config, fig_dir):
     # Get the bivariate class for each process
     df_baseflow = get_bivariate_class(df_sigs, sig1_bf, sig2_bf, labels, labels)
     df_overland = get_bivariate_class(df_sigs, sig1_of, sig2_of, labels_rev, labels)
-    df_ET = get_bivariate_class(df_sigs, sig1_ET, sig2_ET, labels, labels_rev)
+    df_ET = get_bivariate_class(
+        df_sigs, sig1_ET, sig2_ET, labels_rev, labels
+    )  # Reverse the labels for the water balance losses for slides
     df_high_str = get_bivariate_class(df_sigs, sig1_str, sig2_str, labels_rev, labels)
 
     # Sort by area in descending order so smaller polygons are plotted last
@@ -670,7 +677,7 @@ def plot_process_dominance_map(df_sigs, plot_sigs_config, fig_dir):
     # df_unclassified.sort_values("order", ascending=False, inplace=True)
     print(f"Unclassified watersheds: {len(df_unclassified)}")
 
-    legend_elements = []
+    # legend_elements = []
 
     # Plot each group
 
@@ -686,62 +693,17 @@ def plot_process_dominance_map(df_sigs, plot_sigs_config, fig_dir):
     plot_list = [
         (0, df_baseflow, "Baseflow", "royalblue"),
         (1, df_overland, "Overland Flow", "lightcoral"),
-        # (2, df_ET, "Water balance losses", None),
+        (2, df_ET, "Water balance losses", None),
         (3, df_high_str, "High storage capacity", None),
     ]
 
-    slide_n = 3  # Number of processes to plot
+    slide_n = 4  # Number of processes to plot
 
     for i, df, process, color in plot_list[:slide_n]:
         # Plot each class with different transparency
         for class_name, alpha in classes_alpha.items():
             df_class = df[df["bivariate_class"] == class_name].copy()
             df_class.sort_values("area", ascending=False, inplace=True)
-
-            # _______________________________________________________________________
-            # Make legend elements
-            if class_name == "1-4":
-                # For Water balance losses
-                if i == 2:
-                    # Add unclassified legend element
-                    legend_elements.append(
-                        Patch(
-                            facecolor="lightgrey",
-                            alpha=1.0,
-                            edgecolor="white",
-                            label="Unclassified",
-                        )
-                    )
-                    # Add water balance loss legend element
-                    legend_elements.append(
-                        Patch(
-                            facecolor="none",
-                            alpha=1.0,
-                            edgecolor="dimgrey",
-                            hatch="////",
-                            label=f"{process}",
-                        )
-                    )
-                # For High storage capacity
-                elif i == 3:
-                    legend_elements.append(
-                        Patch(
-                            facecolor="none",
-                            alpha=1.0,
-                            edgecolor="#1B1212",
-                            label=f"{process}",
-                        )
-                    )
-                # For Baseflow and Overland flow
-                else:
-                    legend_elements.append(
-                        Patch(
-                            facecolor=color,
-                            alpha=1.0,
-                            edgecolor="white",
-                            label=f"{process}",
-                        )
-                    )
 
             # _______________________________________________________________________
             # Plot watershed polygons
@@ -780,13 +742,13 @@ def plot_process_dominance_map(df_sigs, plot_sigs_config, fig_dir):
                     )
                 print(f"{process} class {class_name}: {len(df_class)} watersheds")
 
-    # Add legend and title
-    ax.legend(
-        title="Dominant Process",
-        handles=legend_elements,
-        loc="lower right",
-        fontsize=11,
-    )
+    # # Add legend and title
+    # ax.legend(
+    #     title="Dominant Process",
+    #     handles=legend_elements,
+    #     loc="lower right",
+    #     fontsize=11,
+    # )
 
     # Set extent to CONUS
     ax.set_extent(conus_extent)
