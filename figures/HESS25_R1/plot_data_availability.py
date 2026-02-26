@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+from matplotlib.collections import LineCollection
+import matplotlib.dates as mdates
 
 # %%
 home_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
@@ -153,5 +155,150 @@ qa_concat = pd.concat(
 )
 print(len(qa_concat))
 qa_concat.head()
+
+# %% Plot data availability (one bar per gauge, colored by subset_nan_fraction)
+df = qa_concat.copy()
+
+# Sort by start_date then subset_nan_fraction (stable ordering)
+df = df.sort_values(["start_date", "subset_nan_fraction"]).reset_index(drop=True)
+
+# Build line segments for LineCollection
+x_start = mdates.date2num(pd.to_datetime(df["start_date"]))
+x_end = mdates.date2num(pd.to_datetime(df["end_date"]))
+y_positions = np.arange(len(df))
+segments = [((xs, y), (xe, y)) for xs, xe, y in zip(x_start, x_end, y_positions)]
+
+# Color map by subset_nan_fraction
+cmap = plt.get_cmap("RdYlBu_r")
+norm = plt.Normalize(
+    vmin=float(df["subset_nan_fraction"].min()),
+    vmax=float(df["subset_nan_fraction"].max()),
+)
+colors = cmap(norm(df["subset_nan_fraction"].to_numpy(dtype=float)))
+
+height_inches = min(4, max(3, len(df) * 0.003))
+fig, ax = plt.subplots(figsize=(8, height_inches))
+lc = LineCollection(segments, colors=colors, linewidths=1, antialiased=True)
+lc.set_rasterized(True)
+ax.add_collection(lc)
+
+# Axes formatting
+ax.set_xlim(x_start.min(), x_end.max())
+ax.set_ylim(-1, len(df))
+ax.xaxis_date()
+ax.xaxis.set_major_locator(mdates.YearLocator(base=5))
+ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+fig.autofmt_xdate()
+
+ax.set_xlabel("Date")
+ax.set_ylabel("Gauge")
+
+# Optional: show sparse y tick labels if not too many gauges
+if len(df) <= 50:
+    ax.set_yticks(y_positions)
+    # Prefer gauge_id if present, else gauge_num, else row index
+    if "gauge_id" in df.columns:
+        ax.set_yticklabels(df["gauge_id"])
+    elif "gauge_num" in df.columns:
+        ax.set_yticklabels(df["gauge_num"])
+    else:
+        ax.set_yticklabels(df.index.astype(str))
+else:
+    ax.set_yticks([])
+
+# Colorbar
+sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+sm.set_array([])
+cbar = fig.colorbar(sm, ax=ax, pad=0.01)
+cbar.set_label("Fraction of missing data")
+
+ax.set_title("Streamflow data availability")
+plt.tight_layout()
+plt.show()
+plt.savefig(
+    os.path.join(qa_dir, "fig_data_availability.png"), dpi=300, bbox_inches="tight"
+)
+# %%
+
+
+# %% Make the same availability plots per dataset (GAGES II, HYSETS, CAMELS)
+def _plot_availability(df_in: pd.DataFrame, title: str, outfile: str) -> None:
+    df = df_in.copy()
+    # Ensure required columns
+    required_cols = {"start_date", "end_date", "subset_nan_fraction"}
+    missing = required_cols - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing columns for plotting: {missing}")
+
+    # Sort by start_date then subset_nan_fraction
+    df = df.sort_values(["start_date", "subset_nan_fraction"]).reset_index(drop=True)
+
+    # Build line segments
+    x_start = mdates.date2num(pd.to_datetime(df["start_date"]))
+    x_end = mdates.date2num(pd.to_datetime(df["end_date"]))
+    y_positions = np.arange(len(df))
+    segments = [((xs, y), (xe, y)) for xs, xe, y in zip(x_start, x_end, y_positions)]
+
+    # Colors by NaN fraction
+    cmap = plt.get_cmap("RdYlBu_r")
+    norm = plt.Normalize(
+        vmin=float(df["subset_nan_fraction"].min()),
+        vmax=float(df["subset_nan_fraction"].max()),
+    )
+    colors = cmap(norm(df["subset_nan_fraction"].to_numpy(dtype=float)))
+
+    height_inches = min(4, max(3, len(df) * 0.003))
+    fig, ax = plt.subplots(figsize=(8, height_inches))
+    lc = LineCollection(segments, colors=colors, linewidths=1, antialiased=True)
+    lc.set_rasterized(True)
+    ax.add_collection(lc)
+
+    # Axes formatting
+    ax.set_xlim(x_start.min(), x_end.max())
+    ax.set_ylim(-1, len(df))
+    ax.xaxis_date()
+    ax.xaxis.set_major_locator(mdates.YearLocator(base=5))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    fig.autofmt_xdate()
+
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Gauge")
+
+    # Optional y tick labels
+    if len(df) <= 50:
+        ax.set_yticks(y_positions)
+        if "gauge_id" in df.columns:
+            ax.set_yticklabels(df["gauge_id"])
+        elif "gauge_num" in df.columns:
+            ax.set_yticklabels(df["gauge_num"])
+        else:
+            ax.set_yticklabels(df.index.astype(str))
+    else:
+        ax.set_yticks([])
+
+    # Colorbar
+    sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=ax, pad=0.01)
+    cbar.set_label("Fraction of missing data")
+
+    ax.set_title(title)
+    plt.tight_layout()
+    fig.savefig(os.path.join(qa_dir, outfile), dpi=300, bbox_inches="tight")
+    plt.show()
+
+
+_plot_availability(
+    qa_gages2_filt,
+    "GAGES II streamflow availability",
+    "fig_data_availability_gages2.png",
+)
+_plot_availability(
+    qa_hysets_filt, "HYSETS streamflow availability", "fig_data_availability_hysets.png"
+)
+_plot_availability(
+    qa_camels_filt, "CAMELS streamflow availability", "fig_data_availability_camels.png"
+)
+
 
 # %%
