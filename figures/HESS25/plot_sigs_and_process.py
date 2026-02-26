@@ -996,10 +996,29 @@ def plot_process_dominance_map(df_sigs, plot_sigs_config, fig_dir, climate_clust
     climate_cluster_shp.plot(
         ax=ax,
         facecolor="none",
-        edgecolor="white",  # sienna Saddlebrown, gold, yellow
+        edgecolor="yellow",  # sienna, saddlebrown, gold, yellow
         linewidth=5.0,
-        alpha=0.8,
+        alpha=0.3,
         zorder=103,
+    )
+
+    # Add blank line in legend
+    legend_elements.append(
+        Patch(
+            facecolor="none",
+            edgecolor="none",
+            label="Additional information:",
+        )
+    )
+
+    legend_elements.append(
+        Patch(
+            facecolor="yellow",
+            alpha=0.3,
+            edgecolor="none",
+            label="Region boundary",
+            fontsize=11,
+        )
     )
 
     # Add legend and title
