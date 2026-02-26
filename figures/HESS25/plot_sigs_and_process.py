@@ -773,8 +773,8 @@ climate_cluster_shp_file = os.path.join(
     cloud_dir,
     "figs",
     "fig_geographic_region",
-    "geograhpic_divide_climate_cluster",
-    "geograhpic_divide_climate_cluster.shp",
+    "geograhpic_divide_climate_cluster_3groups",
+    "geograhpic_divide_climate_cluster_3groups.shp",
 )
 climate_cluster_shp = gpd.read_file(climate_cluster_shp_file)
 
@@ -992,15 +992,15 @@ def plot_process_dominance_map(df_sigs, plot_sigs_config, fig_dir, climate_clust
                     )
                 print(f"{process} class {class_name}: {len(df_class)} watersheds")
 
-    # # Add climate cluster shapefile
-    # climate_cluster_shp.plot(
-    #     ax=ax,
-    #     facecolor="none",
-    #     edgecolor="yellow",
-    #     linewidth=5.0,
-    #     alpha=0.5,
-    #     zorder=103,
-    # )
+    # Add climate cluster shapefile
+    climate_cluster_shp.plot(
+        ax=ax,
+        facecolor="none",
+        edgecolor="white",  # sienna Saddlebrown, gold, yellow
+        linewidth=5.0,
+        alpha=0.8,
+        zorder=103,
+    )
 
     # Add legend and title
     ax.legend(
