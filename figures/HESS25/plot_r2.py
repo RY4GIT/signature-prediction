@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import os
 import json
 import numpy as np
-import json
 
 # %%
 ############## CHANGE HERE #################
@@ -37,27 +36,28 @@ clusters = cluster_info.keys()
 print(clusters)
 
 
-# Signature info
-sigs_RF_names_ordered = [
-    "BFI",
-    "BaseflowRecessionK",
-    "AverageStorage",
-    "RecessionParameters_b",
-    "TotalRR",
-    "EventRR",
-    "Recession_a_Seasonality",
-    "VariabilityIndex",
-    "IE_thresh",
-    "IE_thresh_signif",
-    "SE_thresh",
-    "SE_thresh_signif",
-    "R_Pint_RC",
-    "R_Pvol_RC",
-]
-sig_Wu_names = [
-    "R_Pint_RC",
-    "R_Pvol_RC",
-]
+# Signature info (acronym -> full label)
+sigs_RF_names = {
+    "BFI": "Baseflow Index",
+    "BaseflowRecessionK": "Baseflow Recession K",
+    "AverageStorage": "Average Storage",
+    "RecessionParameters_b": "Recession Parameter b",
+    "TotalRR": "Total Runoff Ratio",
+    "EventRR": "Event Runoff Ratio",
+    "Recession_a_Seasonality": "Recession Seasonality",
+    "VariabilityIndex": "Variability Index",
+    "IE_thresh": "IE Threshold",
+    "IE_thresh_signif": "IE Threshold Significance",
+    "SE_thresh": "SE Threshold",
+    "SE_thresh_signif": "SE Threshold Significance",
+    "R_Pint_RC": "IE Correlation",
+    "R_Pvol_RC": "SE Correlation",
+}
+sig_Wu_names = {
+    "R_Pint_RC": "IE Correlation",
+    "R_Pvol_RC": "SE Correlation",
+}
+sigs_RF_names_ordered = list(sigs_RF_names.keys())
 
 # %%
 ######################################################
@@ -109,9 +109,15 @@ def plot_r2_conus_wide(dfs_r2):
     )
     ax.set_xlabel(None)
     ax.set_ylabel(r"$R^2$")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
+    ax.set_xticks(np.arange(len(sigs_RF_names_ordered)))
+    ax.set_xticklabels(
+        [sigs_RF_names[sig] for sig in sigs_RF_names_ordered],
+        rotation=45,
+        ha="right",
+    )
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, f"r2_conus_wide.{file_type}"), dpi=300)
+    print(f"Figures saved to: {os.path.join(fig_dir, f'r2_conus_wide.{file_type}')}")
 
 
 # %%
@@ -165,7 +171,9 @@ def plot_r2_regional(df_r2_by_region):
     # Customize plot
     ax.set_ylabel(r"$R^2$")
     ax.set_xticks(index + bar_width * 3)
-    ax.set_xticklabels(sigs_RF_names_ordered, rotation=45, ha="right")
+    ax.set_xticklabels(
+        [sigs_RF_names[sig] for sig in sigs_RF_names_ordered], rotation=45, ha="right"
+    )
     ax.set_xlabel("Signature")
     ax.set_ylim(0, 1)
     ax.legend(bbox_to_anchor=(0.5, 1.15), loc="center", borderaxespad=0.0, ncol=4)
@@ -174,6 +182,7 @@ def plot_r2_regional(df_r2_by_region):
     plt.savefig(
         os.path.join(fig_dir, f"r2_regional.{file_type}"), dpi=300, bbox_inches="tight"
     )
+    print(f"Figures saved to: {os.path.join(fig_dir, f'r2_regional.{file_type}')}")
 
 
 # %%

@@ -37,6 +37,8 @@ config_attrs_info_file = (
     r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_attrs_info.csv"
 )
 attrs_info = pd.read_csv(config_attrs_info_file)
+# attrs_plot_name_map = attrs_info.set_index("variable_name")["plot_name"].to_dict()
+
 with open(
     r"C:\Users\flipl\dev\signature-prediction\figures\HESS25\config_attrs_colors_high_contrast.json",
     "r",
@@ -302,11 +304,12 @@ def plot_counts_by_cluster(
         )
 
         ax.barh(
-            y=df_plot["predictor"],
+            y=df_plot["plot_name"],
             width=df_plot["total_count"],
             color=df_plot["color"],
             edgecolor="dimgray",
         )
+
         ax.invert_yaxis()
         ax.set_title(f"{cluster_name}", fontsize=13, loc="left", fontstyle="italic")
         ax.set_xlabel(f"#appearance as top-{top_n}")
@@ -321,7 +324,7 @@ def plot_counts_by_cluster(
     # fig.suptitle(f"Top {top_n} incMSE% count, across signatures", fontsize=14)
     fig.suptitle("(b)", fontsize=14, x=0.0)
     # fig.suptitle(f"Top {top_n} incMSE% count, across signatures", fontsize=14)
-    file_type = "png"
+    # file_type = "png"
     out_grid = f"incMSE_count_top{top_n}_all_signatures_by_clusters.{file_type}"
     fig.savefig(os.path.join(fig_dir, out_grid), dpi=300, bbox_inches="tight")
     # plt.close(fig)

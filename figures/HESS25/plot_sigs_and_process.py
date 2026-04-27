@@ -1017,7 +1017,6 @@ def plot_process_dominance_map(df_sigs, plot_sigs_config, fig_dir, climate_clust
             alpha=0.3,
             edgecolor="none",
             label="Region boundary",
-            fontsize=11,
         )
     )
 
