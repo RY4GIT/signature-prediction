@@ -1,6 +1,0 @@
-{
-    "1": {"name": "Baseline (caravan + gagesII attrs)", "shortname":"baseline", "color": "#D3D3D3"},
-    "2": {"name": "Northness", "shortname":"north", "color": "#80cdc1"},
-    "3": {"name": "Eastness", "shortname":"east", "color": "#80cdc1"},
-    "4": {"name": "Caravan equivalent recalc", "shortname":"equiv_recalc", "color": "#80cdc1"}
-}

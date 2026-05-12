@@ -1,8 +1,0 @@
-{
-    "1": {"name": "Baseline (caravan + gagesII attrs)", "shortname":"baseline", "color": "#D3D3D3"},
-    "2": {"name": "+ Input seasonality", "shortname":"input_seasonality", "color": "#80cdc1"},
-    "3": {"name": "+ Input PET synchrony", "shortname":"input_PET_synchrony", "color": "#80cdc1"},
-    "4": {"name": "+ PETdivP", "shortname":"PETdivP", "color": "#80cdc1"},
-    "5": {"name": "+ peakSWEdivP", "shortname":"peakSWEdivP", "color": "#80cdc1"},
-    "6": {"name": "+ p99_pave", "shortname":"p99_pave", "color": "#80cdc1"}
-}

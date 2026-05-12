@@ -1,5 +1,0 @@
-{
-    "1": {"name": "Baseline (caravan attrs)", "shortname":"baseline", "color": "#D3D3D3"},
-    "2": {"name": "Climate (caravan + climate)", "shortname":"climate", "color": "#80cdc1"},
-    "3": {"name": "Geomorphology (caravan + beta)", "shortname":"morph", "color": "#dfc27d"}
-}
