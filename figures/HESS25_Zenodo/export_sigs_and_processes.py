@@ -121,11 +121,6 @@ gages2_wspolygon["gauge_id"] = "gages2_" + gages2_wspolygon["GAGE_ID"].astype(
     str
 ).str.zfill(8)
 
-# %%
-# gages2_wspolygon.drop(columns=["area_km2","gauge_num"], inplace=True)
-# gages2_wspolygon.rename(columns={"usgs_gauge": "gauge_num"}, inplace=True)
-
-# gages2_wspolygon.rename(columns={"AREA": "area"}, inplace=True)
 
 # %%
 print("Concatenating Caravan and GAGES2 watershed shapefiles...")
@@ -193,7 +188,7 @@ _df_sigs_rf_overlap_baddata = pd.read_csv(
 _df_sigs_rf_overlap_baddata = _df_sigs_rf_overlap_baddata.pivot(
     columns="sig_name", values="prediction"
 )
-_df_sigs_rf_overlap_baddata["source"] = "pred_overlap_baddata"
+_df_sigs_rf_overlap_baddata["source"] = "pred_hys_gg2"
 _df_sigs_rf_overlap_baddata["order"] = 3
 
 print("Loading signatures results from RF predictions (only hys basins)...")
@@ -204,7 +199,7 @@ _df_sigs_rf_hys_only = pd.read_csv(
 _df_sigs_rf_hys_only = _df_sigs_rf_hys_only.pivot(
     columns="sig_name", values="prediction"
 )
-_df_sigs_rf_hys_only["source"] = "pred_hys_only"
+_df_sigs_rf_hys_only["source"] = "pred_hys"
 _df_sigs_rf_hys_only["order"] = 4
 
 print("Loading signatures results from RF predictions (only GAGES2 basins)...")
@@ -215,7 +210,7 @@ _df_sigs_rf_gg2_only = pd.read_csv(
 _df_sigs_rf_gg2_only = _df_sigs_rf_gg2_only.pivot(
     columns="sig_name", values="prediction"
 )
-_df_sigs_rf_gg2_only["source"] = "pred_gg2_only"
+_df_sigs_rf_gg2_only["source"] = "pred_gg2"
 _df_sigs_rf_gg2_only["order"] = 5
 
 

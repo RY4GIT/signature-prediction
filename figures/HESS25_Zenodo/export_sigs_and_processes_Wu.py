@@ -5,7 +5,7 @@ import numpy as np
 import geopandas as gpd
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap, Normalize, to_hex
 import matplotlib as mpl
 
 import cartopy.crs as ccrs
@@ -80,6 +80,8 @@ print("Loading observed signatures results file for Caravan ...")
 sigs_obs_cara = load_sigs_obs(
     os.path.join(sig_dir, "out_sigEvent_cara_gg2_rf_train.csv")
 )
+sigs_obs_cara["data_name"] = "Caravan"
+sigs_obs_cara["source"] = "obs_Caravan"
 print(f"Number of Caravan gauges in sigs_obs_cara: {len(sigs_obs_cara)}")
 sigs_obs_cara.head()
 # %%
@@ -88,6 +90,8 @@ _sigs_obs_gg2 = load_sigs_obs(
     os.path.join(sig_dir, "out_sigEvent_cara_gg2_no_duplicates.csv")
 )
 sigs_obs_gg2 = _sigs_obs_gg2[_sigs_obs_gg2["data_name"] == "gages2"].copy()
+sigs_obs_gg2["data_name"] = "GAGES2"
+sigs_obs_gg2["source"] = "obs_GAGES2"
 print(f"Number of GAGES2 gauges in sigs_obs_gg2: {len(sigs_obs_gg2)}")
 sigs_obs_gg2.head()
 # TDOO:
@@ -97,21 +101,26 @@ sigs_pred_gg2 = load_sigs_obs(
     os.path.join(rf_dir, "predicted_signatures_pred_gg2_only_Wu.csv")
 )
 print(f"Number of GAGES2 gauges in sigs_pred_gg2: {len(sigs_pred_gg2)}")
-sigs_pred_gg2["data_name"] = "pred_gg2"
+# sigs_pred_gg2["data_name"] = "pred_gg2"
+sigs_pred_gg2["data_name"] = "GAGES2"
+sigs_pred_gg2["source"] = "pred_gg2"
 sigs_pred_gg2.head()
 # %%
 sigs_pred_hys_gg2 = load_sigs_obs(
     os.path.join(rf_dir, "predicted_signatures_pred_hys_gg2_baddata_Wu.csv")
 )
 print(f"Number of GAGES2 gauges in sigs_pred_hys_gg2: {len(sigs_pred_hys_gg2)}")
-sigs_pred_hys_gg2["data_name"] = "pred_hys_gg2"
+# sigs_pred_hys_gg2["data_name"] = "pred_hys_gg2"
+sigs_pred_hys_gg2["data_name"] = "GAGES2"
+sigs_pred_hys_gg2["source"] = "pred_hys_gg2"
 sigs_pred_hys_gg2.head()
 # %%
 sigs_pred_hys = load_sigs_obs(
     os.path.join(rf_dir, "predicted_signatures_pred_hys_only_Wu.csv")
 )
 print(f"Number of GAGES2 gauges in sigs_pred_hys: {len(sigs_pred_hys)}")
-sigs_pred_hys["data_name"] = "pred_hys"
+sigs_pred_hys["data_name"] = "GAGES2"
+sigs_pred_hys["source"] = "pred_hys"
 sigs_pred_hys.head()
 
 
@@ -159,7 +168,7 @@ gages2_attrs_path = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki
 gages2_attrs = pd.read_csv(gages2_attrs_path)
 gages2_attrs["gauge_id"] = "gages2_" + gages2_attrs["STAID"].astype(str).str.zfill(8)
 gages2_attrs.set_index("gauge_id", inplace=True)
-
+gages2_attrs.head()
 
 # %%
 print("Concatenating Caravan and GAGES2 signatures and watershed shapefiles...")
@@ -204,12 +213,15 @@ sigs = sigs.sort_values(by="area", ascending=False)
 # #################################################
 # Calculate signature statistics
 # ################################################
-sigs["diff_RCPint_RCPvol"] = sigs["R_Pint_RC"] - sigs["R_Pvol_RC"]
+sigs["_diff_RCPint_RCPvol"] = sigs["R_Pint_RC"] - sigs["R_Pvol_RC"]
 # Mask where both R_Pint_RC and R_Pvol_RC are negative
-sigs["diff_RCPint_RCPvol_masked"] = sigs["diff_RCPint_RCPvol"].mask(
+sigs["diff_RCPint_RCPvol"] = sigs["_diff_RCPint_RCPvol"].mask(
     (sigs["R_Pint_RC"] < 0) & (sigs["R_Pvol_RC"] < 0)
 )
-
+sigs = sigs.dropna(subset=["diff_RCPint_RCPvol"])
+sigs["dominance"] = sigs["diff_RCPint_RCPvol"].apply(
+    lambda x: "IE" if x > 0 else ("SE" if x < 0 else None)
+)
 # %% #######################################
 # Filter out gauges with snow data below a threshold
 ############################################
@@ -236,7 +248,17 @@ sigs_filt = sigs[
 print(
     f"Number of gauges in sigs_filt: {len(sigs_filt)} ({len(sigs_filt) / len(sigs) * 100:.1f}%)"
 )
-sigs_filt
+# %%
+# HEX per gauge from diff_RCPint_RCPvol (same gradient / scale as plot_sigs_and_processes_Wu.py)
+_wu_diff_vmin, _wu_diff_vmax = -0.1, 0.1
+_wu_diag_colors = ["#159DD0", "#aeb5b1", "#DD6A29"]
+_wu_diag_cmap = LinearSegmentedColormap.from_list(
+    "custom_diag_gradient", _wu_diag_colors
+)
+_wu_diff_norm = Normalize(vmin=_wu_diff_vmin, vmax=_wu_diff_vmax)
+_diff_vals = sigs_filt["diff_RCPint_RCPvol"].to_numpy(dtype=float)
+_rgba = _wu_diag_cmap(_wu_diff_norm(_diff_vals))
+sigs_filt["color"] = [to_hex(tuple(row[:3])) for row in _rgba]
 
 # %% Zenodo CSV (same destination pattern as export_sigs_and_processes.py)
 _wu_csv = sigs_filt.drop(columns=["geometry"], errors="ignore").copy()
@@ -247,32 +269,30 @@ _wu_csv["gauge_num"] = (
 _wu_base_cols = [
     "gauge_id",
     "gauge_num",
-    "gauge_name",
-    "gauge_lat",
-    "gauge_lon",
-    "data_name",
+    "source",
+    "color",
 ]
 _wu_sig_cols = [
     "R_Pint_RC",
     "R_Pvol_RC",
     "diff_RCPint_RCPvol",
-    "diff_RCPint_RCPvol_masked",
+    "dominance",
 ]
 _wu_out_cols = [c for c in _wu_base_cols + _wu_sig_cols if c in _wu_csv.columns]
-_wu_out_path = os.path.join(zenodo_dir, "sigs_Wu_RC_components.csv")
+_wu_out_path = os.path.join(zenodo_dir, "sigs_OverlandFlowType.csv")
 _wu_csv[_wu_out_cols].to_csv(_wu_out_path, index=False)
 print(f"Wrote {_wu_out_path} ({len(_wu_csv)} rows, columns: {_wu_out_cols})")
 
+
+# %%
 # Polygon GeoJSON (same attributes as CSV + geometry; polygons already simplified before join)
 _wu_poly_cols = [c for c in _wu_out_cols if c in sigs_filt.columns and c != "gauge_id"]
 _wu_poly = sigs_filt[_wu_poly_cols + ["geometry"]].copy()
-_wu_poly.insert(0, "gauge_id", sigs_filt.index.astype(str))
-if "gauge_num" in _wu_out_cols and "gauge_num" not in _wu_poly.columns:
-    _wu_poly.insert(
-        1,
-        "gauge_num",
-        _wu_poly["gauge_id"].str.split("_").str[1].astype(str).str.zfill(8),
-    )
-_wu_poly_path = os.path.join(zenodo_dir, "sigs_Wu_RC_components_polygons.geojson")
+# _wu_poly.insert(0, "gauge_id", sigs_filt.index.astype(str))
+leaflet_json_dir = r"C:\Users\flipl\dev\ry4git.github.io\docs\assets\shp\sig_us"
+os.makedirs(leaflet_json_dir, exist_ok=True)
+_wu_poly_path = os.path.join(leaflet_json_dir, "sigs_OverlandFlowType.geojson")
 _wu_poly.to_file(_wu_poly_path, driver="GeoJSON")
 print(f"Wrote {_wu_poly_path} ({len(_wu_poly)} features)")
+
+# %%
