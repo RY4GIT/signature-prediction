@@ -670,7 +670,10 @@ for process_name in tqdm(
     # Dominance
     ########################################################
 
-    class_list = ["1-4", "1-3", "2-3", "2-4"]
+    if process_name == "Water balance losses":
+        class_list = ["4-1", "3-1", "3-2", "4-2"]
+    else:
+        class_list = ["1-4", "1-3", "2-3", "2-4"]
     _df_sigs_clean["dominance"] = _df_sigs_clean["bivariate_class"].isin(class_list)
 
     #######################################################
@@ -679,9 +682,10 @@ for process_name in tqdm(
     _df_sigs_clean["gauge_num"] = (
         _df_sigs_clean.index.str.split("_").str[1].astype(str).str.zfill(8)
     )
+    _df_sigs_clean["gauge_id"] = _df_sigs_clean.index.astype(str)
 
     keep_columns_base = [
-        # "gauge_id",
+        "gauge_id",
         "gauge_num",
         # "gauge_num_wspolygon",
         "gauge_name",
@@ -698,8 +702,8 @@ for process_name in tqdm(
 
     keep_columns = keep_columns_base + keep_columns_sig
 
-    process_name = "".join([word.capitalize() for word in process_name.split()])
-    out_filename = f"sigs_{process_name}.csv"
+    process_stem = "".join([word.capitalize() for word in process_name.split()])
+    out_filename = f"sigs_{process_stem}.csv"
     _df_sigs_clean[keep_columns].to_csv(os.path.join(zenodo_dir, out_filename))
 
     #######################################################
@@ -707,18 +711,39 @@ for process_name in tqdm(
     ########################################################
 
     keep_columns_base = [
-        # "gauge_id",
+        "gauge_id",
         "gauge_num",
         "geometry",
+        "gauge_name",
         "bivariate_class",
         "dominance",
         "color",
         "source",
         "order",
     ]
-    keep_columns = keep_columns_base + keep_columns_sig
-    _df_sigs_clean[keep_columns].to_file(
-        os.path.join(leaflet_json_dir, f"sigs_{process_name}.geojson"),
+
+    if process_name == "Overland Flow":
+        keep_columns_sig_geo = [
+            "avg_IE_SE_signif",
+            "avg_IE_SE_signif_perc",
+            "avg_IE_SE_thresh",
+            "avg_IE_SE_thresh_perc",
+        ]
+    else:
+        keep_columns_sig_geo = keep_columns_sig
+
+    keep_columns = keep_columns_base + keep_columns_sig_geo
+
+    _gjson = _df_sigs_clean[keep_columns].copy()
+    # Avoid "cannot insert gauge_id, already exists" (index name + column both gauge_id)
+    _gjson = _gjson.reset_index(drop=True)
+    _gjson = gpd.GeoDataFrame(
+        _gjson,
+        geometry="geometry",
+        crs=df_sigs.crs if df_sigs.crs is not None else "EPSG:4326",
+    )
+    _gjson.to_file(
+        os.path.join(leaflet_json_dir, f"sigs_{process_stem}.geojson"),
         driver="GeoJSON",
     )
 
