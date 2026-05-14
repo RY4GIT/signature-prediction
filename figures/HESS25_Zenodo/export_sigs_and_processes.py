@@ -68,6 +68,21 @@ plot_sigs_config = plot_sigs_config[
 # Conus extent
 conus_extent = [-125.5, -66.95, 24.396308, 47.5]
 
+
+def sort_polygons_area_descending(gdf, equal_area_epsg=5070):
+    """
+    Sort by polygon area in an equal-area CRS (largest first, smallest last) so small
+    watersheds draw on top in Leaflet. Returns GeoDataFrame in the original CRS.
+    """
+    out = gdf.copy()
+    orig = out.crs if out.crs is not None else "EPSG:4326"
+    out = out.to_crs(equal_area_epsg)
+    out["_area_m2"] = out.geometry.area
+    out = out.sort_values("_area_m2", ascending=False).drop(columns=["_area_m2"])
+    out = out.to_crs(orig)
+    return gpd.GeoDataFrame(out, geometry="geometry", crs=orig)
+
+
 # %%
 # ____________________________________________________________________________________
 # Load data
@@ -736,6 +751,11 @@ for process_name in tqdm(
 
     _gjson = _df_sigs_clean[keep_columns].copy()
     # Avoid "cannot insert gauge_id, already exists" (index name + column both gauge_id)
+
+    # Order by area
+    _gjson = sort_polygons_area_descending(_gjson)
+
+    #
     _gjson = _gjson.reset_index(drop=True)
     _gjson = gpd.GeoDataFrame(
         _gjson,
