@@ -157,7 +157,9 @@ def sort_polygons_area_descending(gdf, equal_area_epsg=5070):
 
 
 # %%
+print("Building cross-signature GeoDataFrame...")
 cross_sig_gdf = build_cross_signature_gdf(sigs_gdfs)
+print("Sorting polygons by area descending...")
 cross_sig_gdf = sort_polygons_area_descending(cross_sig_gdf)
 cross_sig_gdf.head()
 

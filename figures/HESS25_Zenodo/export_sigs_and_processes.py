@@ -653,7 +653,7 @@ for process_name in tqdm(
     update_column_name(sig2)
 
     print(
-        f"Plotting the bivariate map for Y: {sig2.column_name} & X: {sig1.column_name}"
+        f"Processing the bivariate classification for Y: {sig2.column_name} & X: {sig1.column_name}"
     )
 
     #####################################################
