@@ -8,14 +8,14 @@ import numpy as np
 # Config
 
 shared_drive = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
-local_dir = r"D:\data"
+local_dir = r"E:\data"
 
 # Specify signature output directory
 sig_outdir = os.path.join(shared_drive, "out", "signatures")
-hys_dir = "caravan_hysets_20250525"
-camels_dir = "caravan_camels_20250525"
-caravan_dir = "caravan_us_20250525"
-results_filename = "out_calc_All_custom"
+hys_dir = "caravan_hysets_20260716"  # 20250525 is the HESS version
+camels_dir = "caravan_camels_20260716"  # 20250525 is the HESS version
+caravan_dir = "caravan_us_20260716"  # 20250525 is the HESS version
+results_filename = "out_calc_All_custom_shortlist"
 results_file = f"{results_filename}.csv"
 
 out_dir = os.path.join(sig_outdir, caravan_dir)
@@ -173,27 +173,36 @@ attrs_caravan_camels = pd.read_csv(
 attrs_caravan = pd.concat([attrs_caravan_hys, attrs_caravan_camels])
 
 sigs_fs = sigs.join(attrs_caravan.frac_snow, how="left")
+
 row_mask_idx = sigs_fs["frac_snow"] > frac_snow_thresh
 columns_mask = [
-    "IE_thresh",
-    "IE_effect",
-    "SE_effect",
     "IE_thresh_signif",
     "SE_thresh_signif",
     "IE_thresh",
     "SE_thresh",
-    "SE_slope",
-    "Storage_thresh_signif",
-    "Storage_thresh",
-    "R_Pvol_RC",
-    "R_Pint_RC",
 ]
+
+# Filter for all signatures
+# columns_mask = [
+#     "IE_thresh",
+#     "IE_effect",
+#     "SE_effect",
+#     "IE_thresh_signif",
+#     "SE_thresh_signif",
+#     "IE_thresh",
+#     "SE_thresh",
+#     "SE_slope",
+#     "Storage_thresh_signif",
+#     "Storage_thresh",
+#     "R_Pvol_RC",
+#     "R_Pint_RC",
+# ]
 
 sigs.loc[row_mask_idx, columns_mask] = np.nan
 
 print(
     "After quality controlling the IE/SE signatures by snow, "
-    + f"{(~pd.isna(sigs.IE_effect)).sum()} gauges survived ({(~pd.isna(sigs.IE_effect)).sum() / len(sigs) * 100:.1f} %)"
+    + f"{(~pd.isna(sigs.IE_thresh)).sum()} gauges survived ({(~pd.isna(sigs.IE_thresh)).sum() / len(sigs) * 100:.1f} %)"
 )
 # Save
 sigs.to_csv(os.path.join(out_dir, f"{results_filename}_filt_qc_snow.csv"))

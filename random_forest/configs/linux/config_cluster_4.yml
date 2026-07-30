@@ -2,7 +2,7 @@ paths:
   home_dir: /home/raraki/data/signature-prediction
   out_dir: /out/rf
   train:
-    signatures: /signatures/caravan_us_20250525/out_calc_All_custom_filt_qc_snow_area.csv
+    signatures: /signatures/caravan_us_20260716/out_calc_All_custom_filt_qc_snow_area.csv
     attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv
   test:
     attributes: /derived_attrs/assembled_RA/attrs_cara_gages2_etc_20250517+cluster.csv

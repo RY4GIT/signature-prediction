@@ -5,18 +5,20 @@ import numpy as np
 
 # %%
 sig_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures"
-gridmet_sigs_dir = "gages2_20250608"
-caravan_sigs_dir = "caravan_us_20250525"
+gridmet_sigs_dir = "gages2_20260716"  # 20250608 is the HESS version
+caravan_sigs_dir = "caravan_us_20260716"  # 20250525 is the HESS version
 out_dir = os.path.join(sig_dir, gridmet_sigs_dir)
 
-
-gridmet_sigs_file = os.path.join(sig_dir, gridmet_sigs_dir, "out_calc_All_custom.csv")
-caravan_attrs_file = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data\derived_attrs\assembled_RA\attrs_caravan_us_epa.csv"
-
-# %%
+gridmet_sigs_file = os.path.join(
+    sig_dir, gridmet_sigs_dir, "out_calc_All_custom_shortlist.csv"
+)
 gridmet_sigs = pd.read_csv(gridmet_sigs_file)
 gridmet_sigs["gauge_id"] = gridmet_sigs["gauge_id"].astype(str).str.zfill(8)
 # %%
+data_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\data"
+caravan_attrs_file = os.path.join(
+    data_dir, "derived_attrs", "assembled_RA", "attrs_caravan_us_epa.csv"
+)
 caravan_attrs = pd.read_csv(caravan_attrs_file)
 caravan_attrs["usgs_gauge_id"] = (
     caravan_attrs["gauge_id"].str.split("_").str[1].astype(str).str.zfill(8)
@@ -147,20 +149,28 @@ print(len(df))
 row_mask_idx = df["SNOW_PCT_PRECIP"] > perc_snow_thresh
 print("row_mask_idx sum:", row_mask_idx.sum())
 
+# For only the HESS paper signatures
 columns_mask = [
-    "IE_thresh",
-    "IE_effect",
-    "SE_effect",
     "IE_thresh_signif",
     "SE_thresh_signif",
     "IE_thresh",
     "SE_thresh",
-    "SE_slope",
-    "Storage_thresh_signif",
-    "Storage_thresh",
-    "R_Pvol_RC",
-    "R_Pint_RC",
 ]
+# For all signatures
+# columns_mask = [
+#     "IE_thresh",
+#     "IE_effect",
+#     "SE_effect",
+#     "IE_thresh_signif",
+#     "SE_thresh_signif",
+#     "IE_thresh",
+#     "SE_thresh",
+#     "SE_slope",
+#     "Storage_thresh_signif",
+#     "Storage_thresh",
+#     "R_Pvol_RC",
+#     "R_Pint_RC",
+# ]
 
 # # Check which columns exist in the dataframe
 # print("\nChecking columns:")
@@ -175,12 +185,12 @@ columns_mask = [
 df.loc[row_mask_idx.values, columns_mask] = np.nan
 
 print(
-    "\nAfter masking - number of non-null IE_effect values:",
-    (~pd.isna(df.IE_effect)).sum(),
+    "\nAfter masking - number of non-null IE_thresh values:",
+    (~pd.isna(df.IE_thresh)).sum(),
 )
 print(
     "After quality controlling the IE/SE signatures by snow, "
-    + f"{(~pd.isna(df.IE_effect)).sum()} gauges survived ({(~pd.isna(df.IE_effect)).sum() / len(df) * 100:.1f} %)"
+    + f"{(~pd.isna(df.IE_thresh)).sum()} gauges survived ({(~pd.isna(df.IE_thresh)).sum() / len(df) * 100:.1f} %)"
 )
 
 

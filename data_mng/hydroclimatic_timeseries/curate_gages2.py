@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 
 # %% Config #########################################################
-data_dir = r"D:\data"
+data_dir = r"E:\data"
 out_dir = os.path.join(data_dir, "GAGES2_concat")
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)

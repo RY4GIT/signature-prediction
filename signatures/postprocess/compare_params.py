@@ -5,13 +5,18 @@ import matplotlib.pyplot as plt
 import os
 
 # %%
+# df_adj = pd.read_csv(
+#     r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_camels_20260714\out_calc_All_custom_shortlist.csv"
+# )
+# df = pd.read_csv(
+#     r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_camels_20250525\out_calc_All_custom.csv"
+# )
 df_adj = pd.read_csv(
-    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_camels_20260714\out_calc_All_custom_shortlist.csv"
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_hysets_20260716\out_calc_All_custom_shortlist.csv"
 )
 df = pd.read_csv(
-    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_camels_20250525\out_calc_All_custom.csv"
+    r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki\out\signatures\caravan_hysets_20250525\out_calc_All_custom.csv"
 )
-
 # %%
 df_adj.set_index("gauge_id", inplace=True)
 df.set_index("gauge_id", inplace=True)
@@ -19,8 +24,6 @@ df.set_index("gauge_id", inplace=True)
 # %%
 df = df.join(df_adj.add_suffix("_adj"), how="left")
 
-# %%
-df.set_index("gauge_id", inplace=True)
 
 # %%
 df
@@ -51,8 +54,8 @@ for i, sig_name in enumerate(sig_names):
     x = df[sig_name]
     y = df[sig_name + "_adj"]
 
-    # Drop NaNs for correlation calculation
-    valid = x.notna() & y.notna()
+    # Drop NaNs and infs for correlation calculation
+    valid = x.notna() & y.notna() & np.isfinite(x) & np.isfinite(y)
     x_valid = x[valid]
     y_valid = y[valid]
 
