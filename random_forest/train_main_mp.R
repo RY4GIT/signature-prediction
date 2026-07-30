@@ -169,8 +169,15 @@ if (config$filter_by_cluster$run) {
 print("initiating parallel pool")
 
 # Set up parallel backend
-num_cores <- min(config$parallel$num_cores, detectCores())
+num_cores <- min(config$parallel$nCores, detectCores())
+message(
+  "DEBUG: num_cores resolved to ",
+  num_cores,
+  " | detectCores() = ",
+  detectCores()
+)
 cl <- makeCluster(num_cores)
+on.exit(stopCluster(cl), add = TRUE)
 registerDoParallel(cl)
 print(paste("Using", num_cores, "cores for parallel processing"))
 

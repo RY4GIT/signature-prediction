@@ -1,4 +1,12 @@
 #!/bin/bash
+#SBATCH --job-name=signature-prediction
+#SBATCH --output=slurm_%j.log
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
+#SBATCH --time=24:00:00
+
 # Script to execute Random Forest models, predicting hydrologic signatures based on catchment attribute datasets
 # This code runs Random Forest in a parallel computing mode
 
@@ -19,6 +27,10 @@
 project_dir="/home/raraki/signature-prediction/random_forest"
 config_dir="$project_dir/configs/linux"
 
+echo "Which R: $(which R)"
+echo "Which Rscript: $(which Rscript)"
+Rscript -e '.libPaths(); packageVersion("rlang")'
+    
 # Function to run an experiment with a given config
 run_experiment() {
     local config_name="$1"
