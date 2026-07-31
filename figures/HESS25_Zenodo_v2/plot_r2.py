@@ -10,7 +10,7 @@ import numpy as np
 ############## CHANGE HERE #################
 cloud_dir = r"G:\Shared drives\Signatures -- large scale\baseflow\RAraki"
 rf_dir = os.path.join(cloud_dir, "out", "rf")
-output_date = "20260729"
+output_date = "20250826"
 output_date_Wu = "20250827"
 fig_dir = os.path.join(cloud_dir, "figs", "fig_r2")
 user_name = "raraki"

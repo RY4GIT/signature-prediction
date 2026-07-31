@@ -1,0 +1,24 @@
+﻿Group,plot_name,variable_name,unit
+Topography,Elevation,ELEV_MEAN_M_BASIN,
+Topography,Watershed area,DRAIN_SQKM,
+Topography,Slope,SLOPE_DEG_x10,
+Land Cover,Forest,FORESTNLCD06,
+Land Cover,Cropland,CROPSNLCD06,
+Land Cover,Pasture,PASTURENLCD06,
+Land Cover,Irrigated agriculture,PCT_IRRIG_AG,
+Land Cover,Protected area,PADCAT1_AND_2,
+Land Cover,Isolated wetland,isowet_areafrac,-
+Soils & Geology,Clay fraction,CLAYAVE,
+Soils & Geology,Silt fraction,SILTAVE,
+Soils & Geology,Soil organic carbon,soc_th_sav,
+Soils & Geology,Karst,kar_pc_sse,% cover
+Soils & Geology,Geologic age,geol_weighted_ave_age_ma,ma
+Human alteration,Population density,PDEN_2000_BLOCK,
+Climate,Precipitation,P_mm_day,
+Climate,PET,PET_mm_day,
+Climate,Aridity,ARIDITY_GAGES2,
+Climate,Snow fraction,SNOW_FRAC_PRECIP,
+Climate,Seasonality,seasonality_FAO_PM,
+Climate,High precipitation frequency,high_prec_freq,-
+Climate,Low precipitation frequency,low_prec_freq,-
+Climate,Low precipitation duration,low_prec_dur,days

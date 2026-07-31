@@ -118,16 +118,25 @@ Once you are familiar with the workflow, use the automated workflow to train an 
 
 #### For predicting signatures using a trained model
 - Use ```random_forest\pred_main_serial.R``` and ```random_forest\pred_run.bat```
+    - Example configuration files are in `.\random_forest\configs\win`: 
+        - `config_pred_hys_gg2_baddata.yml`: predicting signatures for gauges overlapping between Caravan HYSETS and GAGES-II, excluded in the RF training due to quality flag
+        - `config_pred_hys_only`: gages only available in Caravan HYSETS
+        - `config_pred_gg2_only`: gages only available in GAGES-II
+        - `config_*_Wu` is a separate configuration for `R_Pvol/int_RC` signatures, because when we did this development, these RFmodels were run separately from other group of signatures (but doesn't need to be separate!)
+    - Example execution file is: `.\random_forest\pred_run.bat`
 - The input attribute files must have the same column names used in the training. Refer to ```data_mng\attrs\c4-attrs_for_RF_prediction.py``` and ```data_mng\attrs\g3-attrs_equiv_for_RF_prediction.py``` to create such attribute files. 
 - You must specify the directory of the trained model and the path to the input attribute file in the configuration (e.g., ```random_forest\configs\win\config_pred_gg2_only.yml```). 
 
 ### 5. Derive process inference (Python)
-- Visualization code is available in ```signatures\visualize``` and ```random_forest\visualize```, as well as in ```plotting```. 
+- Visualization code is available in ```figures```, ```signatures\visualize``` and ```random_forest\visualize```, as well as in ```plotting```. 
+- ```figures``` contain the version of visualization code used for publication
 - Visualize the signature patterns using ```signatures\visualize\plot_sigs_process_single_source.py``` and ```signatures\visualize\plot_sigs_process_multiple_sources.py```
 - Visualize the RF results using ```random_forest\visualize\plot_experiments_cluster.py``` to investigate the drivers of signatures
 
 ## Citation
-> Araki, R., Holt, A., Hammond, J. C., Husic, A., Coxon, G., and McMillan, H. K. (2026). Continental-scale prediction of hydrologic signatures and processes, Hydrology and Earth System Sciences (In Press)
+> Araki, R., Holt, A., Hammond, J. C., Husic, A., Coxon, G., and McMillan, H. K. (2026). Continental-scale prediction of hydrologic signatures and processes, Hydrology and Earth System Sciences. Vol 30, 3647–3673, https://doi.org/10.5194/hess-30-3647-2026
+
+- Interactive map of the results are available here: https://ry4git.github.io/maps/sig-prediction.html, built using the code here: https://github.com/RY4GIT/ry4git.github.io/blob/gh-pages/docs/maps/sig-prediction.html
 
 ## Reference
 - We drew extensively on the ideas and code of Holt, A. (2024):
