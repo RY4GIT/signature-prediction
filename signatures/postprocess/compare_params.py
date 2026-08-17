@@ -89,7 +89,8 @@ for i, sig_name in enumerate(sig_names):
         else "correlation: n/a"
     )
     ax.legend(title=corr_label, loc="best")
-plt.suptitle("CAMELS")
+# plt.suptitle("CAMELS")
+plt.suptitle("Caravan")
 
 # Hide empty subplot if sig_names < 16
 for j in range(len(sig_names), 16):
