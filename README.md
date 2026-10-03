@@ -5,6 +5,10 @@ This repository contains code for predicting hydrologic processes using signatur
 
 > Araki, R., Holt, A., Hammond, J. C., Husic, A., Coxon, G., and McMillan, H. K. (2026). Continental-scale prediction of hydrologic signatures and processes, Hydrology and Earth System Sciences. Vol 30, 3647–3673, https://doi.org/10.5194/hess-30-3647-2026
 
+Output signature dataset is available at 
+
+> Araki, R., Holt, A., Hammond, J., Husic, A., Coxon, G., & McMillan, H. (2026). Dataset and source codes for Araki et al., (2026) "Continental-scale prediction of hydrologic signatures and processes" [Dataset]. Zenodo. https://doi.org/10.5281/zenodo.20185649
+
 The repository contains scripts to (a) calculate hydrologic signatures using TOSSH Toolbox functions, (b) to predict hydrologic signatures with random forest models, and (c) derive inferences from signatures and RF models.
 
 It extends the work by [Holt & McMillan (2025)](https://doi.org/10.1002/hyp.70080). This repository was originally a fork of the repository created by Anne Holt: https://github.com/annieholt/Baseflow_Signature_Prediction

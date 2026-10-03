@@ -717,7 +717,9 @@ for process_name in tqdm(
 
     process_stem = "".join([word.capitalize() for word in process_name.split()])
     out_filename = f"sigs_{process_stem}.csv"
-    _df_sigs_clean[keep_columns].to_csv(os.path.join(zenodo_dir, out_filename))
+    _df_sigs_clean[keep_columns].to_csv(
+        os.path.join(zenodo_dir, out_filename), index=False
+    )
 
     #######################################################
     # output as geojson
