@@ -3,7 +3,7 @@
 
 This repository contains code for predicting hydrologic processes using signatures as detailed in the corresponding manuscript:
 
-> Araki, R., Holt, A., Hammond, J. C., Husic, A., Coxon, G., and McMillan, H. K. (2026). Continental-scale prediction of hydrologic signatures and processes, Hydrology and Earth System Sciences (In Press)
+> Araki, R., Holt, A., Hammond, J. C., Husic, A., Coxon, G., and McMillan, H. K. (2026). Continental-scale prediction of hydrologic signatures and processes, Hydrology and Earth System Sciences. Vol 30, 3647–3673, https://doi.org/10.5194/hess-30-3647-2026
 
 The repository contains scripts to (a) calculate hydrologic signatures using TOSSH Toolbox functions, (b) to predict hydrologic signatures with random forest models, and (c) derive inferences from signatures and RF models.
 
@@ -136,7 +136,8 @@ Once you are familiar with the workflow, use the automated workflow to train an 
 ## Citation
 > Araki, R., Holt, A., Hammond, J. C., Husic, A., Coxon, G., and McMillan, H. K. (2026). Continental-scale prediction of hydrologic signatures and processes, Hydrology and Earth System Sciences. Vol 30, 3647–3673, https://doi.org/10.5194/hess-30-3647-2026
 
-- Interactive map of the results are available here: https://ry4git.github.io/maps/sig-prediction.html, built using the code here: https://github.com/RY4GIT/ry4git.github.io/blob/gh-pages/docs/maps/sig-prediction.html
+- Interactive map of the results are available here: https://ry4git.github.io/maps/sig-prediction.html
+    - Map is built using the code here: [ry4git.github.io/docs/maps/sig-prediction.html](https://github.com/RY4GIT/ry4git.github.io/blob/gh-pages/docs/maps/sig-prediction.html) and ```\figures\HESS25_Zenodo```
 
 ## Reference
 - We drew extensively on the ideas and code of Holt, A. (2024):
